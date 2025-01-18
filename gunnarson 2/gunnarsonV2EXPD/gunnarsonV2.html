@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<!--
+Gunnarson V2 
+All Credits to Gunnar
+0.01 ALPHA 1-18-25
+- begin
+
+
+-->
+    <head>
+        <title>Gunnarson V2</title>
+        <style>
+            body {
+                margin:0;
+                overflow:hidden;
+                font-family:trebuchet ms;
+            }
+
+        </style>
+        <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script>
+        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script>-->
+        <script type="importmap">
+            {
+                "imports": {
+                  "three": "https://unpkg.com/three/build/three.module.js",
+                  "three/addons/": "https://unpkg.com/three/examples/jsm/"
+                }
+              }
+          </script>
+    </head>
+    <body>
+        <canvas id='gl-canvas'></canvas>
+        <canvas id='ui-canvas'></canvas>
+        <canvas id='board-canvas' width='800' height='1500'></canvas>
+        <script src='threeMAIN.js'></script>
+
+    </body>
+</html>
