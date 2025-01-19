@@ -108,6 +108,38 @@
                 }
               }
           </script>
+          <script type="x-shader/x-vertex" id="vertexShader">
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+				vWorldPosition = worldPosition.xyz;
+
+				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+			}
+
+		</script>
+
+		<script type="x-shader/x-fragment" id="fragmentShader">
+
+			uniform vec3 topColor;
+			uniform vec3 bottomColor;
+			uniform float offset;
+			uniform float exponent;
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				float h = normalize( vWorldPosition + offset ).y;
+				gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
+
+			}
+
+		</script>
 
 		<script type="module">
 
@@ -116,37 +148,125 @@
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 			import { KMZLoader } from 'three/addons/loaders/KMZLoader.js';
 
-			let camera, scene, renderer;
+			let camera, scene, renderer, plat1, prototype5x5G;
 
-			init();
+			//init();
 
-			function init() {
+
+            function resize( object)
+                {
+                    const box = new Box3();
+                    box.setFromObject(object);
+                    let measure = new THREE.Vector3();
+                    let size = box.getSize(measure);
+
+                    let scalex = size.x;
+                    let scaley = size.y;
+                    let scalez = size.z;
+
+                    var pos = object.geometry.getAttribute( 'position' ),
+                        uv = object.geometry.getAttribute( 'uv' );
+
+                    for( var i=0; i<pos.count; i++ )
+                    {
+                        var x = scaleX * (-pos.getX(i)+0.5),
+                            y = scaleY * (-pos.getY(i)+0.5),
+                            z = scaleZ * (-pos.getZ(i)+0.5);
+
+                        if( i<8 ) uv.setXY( i, z, y );
+                        else if( i<16 ) uv.setXY( i, x, z );
+                        else uv.setXY( i, y, x );
+                    }
+                    uv.needsUpdate = true;
+                
+            }
+            
+			//function init() {
 
                 /*Scene*/
                 {
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
-				scene = new THREE.Scene();
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color().setRGB( 100, 100, 100 );
+
+                renderer = new THREE.WebGLRenderer( {antialias: true} );
+                renderer.setSize( innerWidth, innerHeight );
+                renderer.setAnimationLoop( animationLoop );
                 }
 
                 /*Lights*/
                 {
-				const light = new THREE.DirectionalLight( 0xffffff, 3 );
-				light.position.set( 0.5, 1.0, 0.5 ).normalize();
-                light.castShadow = false;
-				scene.add( light );
+ 
+                scene.fog = new THREE.Fog( scene.background, 1, 5000 );
 
-                const amblight = new THREE.AmbientLight( 0xffffff, 3 );
-                scene.add( amblight );
+                const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
+				hemiLight.color.setHSL( 0.6, 1, 0.6 );
+				hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+				hemiLight.position.set( 0, 50, 0 );
+				scene.add( hemiLight );
+				
+				const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
+				dirLight.color.setHSL( 0.1, 1, 0.95 );
+				dirLight.position.set( - 1, 1.75, 1 );
+				dirLight.position.multiplyScalar( 30 );
+				scene.add( dirLight );
+
+				dirLight.castShadow = true;
+				dirLight.shadow.mapSize.width = 2048;
+				dirLight.shadow.mapSize.height = 2048;
+
+				const d = 50;
+
+				dirLight.shadow.camera.left = - d;
+				dirLight.shadow.camera.right = d;
+				dirLight.shadow.camera.top = d;
+				dirLight.shadow.camera.bottom = - d;
+				dirLight.shadow.camera.far = 3500;
+				dirLight.shadow.bias = - 0.0001;
+
+               
+
+               /* Skybox */
+               
+				const vertexShader = document.getElementById( 'vertexShader' ).textContent;
+				const fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+				const uniforms = {
+					'topColor': { value: new THREE.Color( 0x0077ff ) },
+					'bottomColor': { value: new THREE.Color( 0xdeefff ) },
+					'offset': { value: 33 },
+					'exponent': { value: 0.6 }
+				};
+				uniforms[ 'topColor' ].value.copy( hemiLight.color );
+
+				scene.fog.color.copy( uniforms[ 'bottomColor' ].value );
+
+				const skyGeo = new THREE.SphereGeometry( 4000, 32, 15 );
+				const skyMat = new THREE.ShaderMaterial( {
+					uniforms: uniforms,
+					vertexShader: vertexShader,
+					fragmentShader: fragmentShader,
+					side: THREE.BackSide
+				} );
+
+				const sky = new THREE.Mesh( skyGeo, skyMat );
+				scene.add( sky );
+
+               }
+
+               /*Camera*/
+                {
+                camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+
+                camera.position.y = 5;
+                camera.position.z = 10;
+
+                scene.add( camera );
                 }
 
-                /*Camera*/
+                /*Textures*/
                 {
-				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                   
 
-				camera.position.y = 5;
-				camera.position.z = 10;
-
-				scene.add( camera );
                 }
 
                 /*Assets*/
@@ -154,32 +274,28 @@
 
                 /*
                 const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
-				scene.add( grid );
+                scene.add( grid );
                 */
-                
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				document.body.appendChild( renderer.domElement );
 
-                //const loader = new THREE.CubeTextureLoader();
-                //loader.setPath( 'https://i.ibb.co/zbcHTcm/' );
-  
-                const prototype5x5Gpath = "https://i.ibb.co/zbcHTcm/prototype5x5";
-                var pngext = '.png';				
-                const prototype5x5Gurls = [
-                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext,
-                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext,
-                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext
-                ];
-				const prototype5x5G = pmremgen.fromCubeMap(new THREE.CubeTextureLoader().load( prototype5x5Gurls ));
+                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( renderer.domElement );
+
+                const prototype5x5G = new THREE.TextureLoader().load( "https://i.ibb.co/zbcHTcm/prototype5x5.png" );
+                prototype5x5G.wrapS = THREE.RepeatWrapping;
+                prototype5x5G.wrapT = THREE.RepeatWrapping;
+                prototype5x5G.repeat.set( 1, 1 );
 
                 const platSQgeometry = new THREE.BoxGeometry(10, 1, 10 );
                 const platRECTgeometry = new THREE.BoxGeometry(5, 1, 15 );
                 const platCUBEgeometry = new THREE.BoxGeometry(1, 1, 1 );
-                const platmaterial = new THREE.MeshStandardMaterial( { envMap: prototype5x5G } ); //, color: new THREE.Color('#707070'), lightMapIntensity: 0, metalness: 0.9 } );
+                const platmaterial = new THREE.MeshStandardMaterial( { map: prototype5x5G } );
 
-                const plat1 = new THREE.Mesh( platCUBEgeometry, platmaterial );
+                const plat1 = new THREE.Mesh( 
+                    platRECTgeometry,
+                    platmaterial 
+                );
                 plat1.position.set( 0, 0, 0 ).normalize();
                 scene.add( plat1 );
 
@@ -212,21 +328,25 @@
                     `
                     })
                     const daskybox = new THREE.Mesh( skybxgeometry, skybxgradient );
-                    scene.add( daskybox );
+                    scene.background = new THREE.Color( 'skyblue' );
+                   // scene.add( daskybox );
+                    renderer.render( scene, camera );
+
+
                 }   
 
                 /*Controls*/
                 {
                 const controls = new OrbitControls( camera, renderer.domElement );
-				controls.addEventListener( 'change', render );
-				controls.update();
+                controls.addEventListener( 'change', render );
+                controls.update();
                 }
 
                 /*Events*/
                 {
-				window.addEventListener( 'resize', onWindowResize );
+                window.addEventListener( 'resize', onWindowResize );
                 }
-			}
+            //}
 
 			function onWindowResize() {
 
@@ -244,6 +364,15 @@
 				renderer.render( scene, camera );
 
 			}
+
+            function animationLoop() {
+
+
+              
+                renderer.render( scene, camera );
+                //console.log('hi');
+
+            }
 
 		</script>
 	</body>
