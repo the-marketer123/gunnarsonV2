@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>box template</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<!--<link type="text/css" rel="stylesheet" href="main.css">-->
+        <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Monospace;
+            font-size: 13px;
+            line-height: 24px;
+            overscroll-behavior: none;
+        }
+        
+        a {
+            color: #ff0;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        button {
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        
+        #info {
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            pointer-events: none;
+            z-index: 1; /* TODO Solve this in HTML */
+        }
+        
+        a, button, input, select {
+            pointer-events: auto;
+        }
+        
+        .lil-gui {
+            z-index: 2 !important; /* TODO Solve this in HTML */
+        }
+        
+        @media all and ( max-width: 640px ) {
+            .lil-gui.root { 
+                right: auto;
+                top: auto;
+                max-height: 50%;
+                max-width: 80%;
+                bottom: 0;
+                left: 0;
+            }
+        }
+        
+        #overlay {
+            position: absolute;
+            font-size: 16px;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: rgba(0,0,0,0.7);
+        }
+        
+            #overlay button {
+                background: transparent;
+                border: 0;
+                border: 1px solid rgb(255, 255, 255);
+                border-radius: 4px;
+                color: #ffffff;
+                padding: 12px 18px;
+                text-transform: uppercase;
+                cursor: pointer;
+            }
+        
+        #notSupported {
+            width: 50%;
+            margin: auto;
+            background-color: #f00;
+            margin-top: 20px;
+            padding: 10px;
+        }</style>
+	</head>
+	<body>
+
+		<script type="importmap">
+            {
+                "imports": {
+                  "three": "https://unpkg.com/three/build/three.module.js",
+                  "three/addons/": "https://unpkg.com/three/examples/jsm/"
+                }
+              }
+          </script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { KMZLoader } from 'three/addons/loaders/KMZLoader.js';
+
+			let camera, scene, renderer;
+
+			init();
+
+			function init() {
+
+                /*Scene*/
+                {
+                const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
+				scene = new THREE.Scene();
+                }
+
+                /*Lights*/
+                {
+				const light = new THREE.DirectionalLight( 0xffffff, 3 );
+				light.position.set( 0.5, 1.0, 0.5 ).normalize();
+                light.castShadow = false;
+				scene.add( light );
+
+                const amblight = new THREE.AmbientLight( 0xffffff, 3 );
+                scene.add( amblight );
+                }
+
+                /*Camera*/
+                {
+				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+
+				camera.position.y = 5;
+				camera.position.z = 10;
+
+				scene.add( camera );
+                }
+
+                /*Assets*/
+                {
+
+                /*
+                const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
+				scene.add( grid );
+                */
+                
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+                //const loader = new THREE.CubeTextureLoader();
+                //loader.setPath( 'https://i.ibb.co/zbcHTcm/' );
+  
+                const prototype5x5Gpath = "https://i.ibb.co/zbcHTcm/prototype5x5";
+                var pngext = '.png';				
+                const prototype5x5Gurls = [
+                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext,
+                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext,
+                prototype5x5Gpath + pngext, prototype5x5Gpath + pngext
+                ];
+				const prototype5x5G = pmremgen.fromCubeMap(new THREE.CubeTextureLoader().load( prototype5x5Gurls ));
+
+                const platSQgeometry = new THREE.BoxGeometry(10, 1, 10 );
+                const platRECTgeometry = new THREE.BoxGeometry(5, 1, 15 );
+                const platCUBEgeometry = new THREE.BoxGeometry(1, 1, 1 );
+                const platmaterial = new THREE.MeshStandardMaterial( { envMap: prototype5x5G } ); //, color: new THREE.Color('#707070'), lightMapIntensity: 0, metalness: 0.9 } );
+
+                const plat1 = new THREE.Mesh( platCUBEgeometry, platmaterial );
+                plat1.position.set( 0, 0, 0 ).normalize();
+                scene.add( plat1 );
+
+                const skybxgeometry = new THREE.BoxGeometry(-500, -500, -500 );
+                let skybxgradient = new THREE.ShaderMaterial({
+                    uniforms: {
+                        colors: { 
+                        value: [ new THREE.Color('#1396c2'), new THREE.Color('#8ce2fa')]
+                        }
+                    },
+                    vertexShader: `
+                        varying float h; 
+
+                        void main() {
+                        h = position.y;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform vec3 colors[2]; 
+
+                        varying float h;
+
+                        void main() {
+                        float f = (h + 100.) / 200.;  // linear interpolation
+                                                    // but you can also use 'smoothstep'
+                        f = clamp(f, 0., 1.);
+                        gl_FragColor = vec4(mix(colors[0], colors[1], f), 1.0);
+                        }
+                    `
+                    })
+                    const daskybox = new THREE.Mesh( skybxgeometry, skybxgradient );
+                    scene.add( daskybox );
+                }   
+
+                /*Controls*/
+                {
+                const controls = new OrbitControls( camera, renderer.domElement );
+				controls.addEventListener( 'change', render );
+				controls.update();
+                }
+
+                /*Events*/
+                {
+				window.addEventListener( 'resize', onWindowResize );
+                }
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				render();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
