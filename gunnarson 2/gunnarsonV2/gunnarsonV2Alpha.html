@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
-        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
         <style>
         body {
             margin: 0;
@@ -106,9 +106,8 @@
 		<script type="importmap">
             {
                 "imports": {
-                  "three": "https://unpkg.com/three/build/three.module.js",
-                  "three/addons/": "https://unpkg.com/three/examples/jsm/",
-                  "three/addons/": "https://unpkg.com/three/examples/jsm/",
+                  "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js",
+                  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/",
                 }
             }
         </script>
@@ -149,7 +148,7 @@
 		<script type="module">
 
 			import * as THREE from 'three';
-
+			import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			let camera, scene, renderer, plat1, prototype5x5G;
@@ -183,7 +182,6 @@
                 {
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
                 scene = new THREE.Scene();
-                //const physics = new AmmoPhysics(scene)
                 scene.background = new THREE.Color().setRGB( 100, 100, 100 );
 
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
