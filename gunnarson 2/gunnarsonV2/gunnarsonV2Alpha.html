@@ -4,7 +4,9 @@
 		<title>box template</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<!--<link type="text/css" rel="stylesheet" href="main.css">-->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
+        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
         <style>
         body {
             margin: 0;
@@ -96,7 +98,8 @@
             background-color: #f00;
             margin-top: 20px;
             padding: 10px;
-        }</style>
+        }
+        </style>
 	</head>
 	<body>
 
@@ -104,11 +107,13 @@
             {
                 "imports": {
                   "three": "https://unpkg.com/three/build/three.module.js",
-                  "three/addons/": "https://unpkg.com/three/examples/jsm/"
+                  "three/addons/": "https://unpkg.com/three/examples/jsm/",
+                  "three/addons/": "https://unpkg.com/three/examples/jsm/",
                 }
-              }
-          </script>
-          <script type="x-shader/x-vertex" id="vertexShader">
+            }
+        </script>
+   
+        <script type="x-shader/x-vertex" id="vertexShader">
 
 			varying vec3 vWorldPosition;
 
@@ -146,24 +151,16 @@
 			import * as THREE from 'three';
 
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-			import { KMZLoader } from 'three/addons/loaders/KMZLoader.js';
 
 			let camera, scene, renderer, plat1, prototype5x5G;
 
-			//init();
 
-
-            function resize( object)
+            function resize( object, scaleX, scaleY, scaleZ, updateUV )
+            {
+                object.scale.set( 5*scaleX, 5*scaleY, 5*scaleZ );
+            
+                if( updateUV )
                 {
-                    const box = new Box3();
-                    box.setFromObject(object);
-                    let measure = new THREE.Vector3();
-                    let size = box.getSize(measure);
-
-                    let scalex = size.x;
-                    let scaley = size.y;
-                    let scalez = size.z;
-
                     var pos = object.geometry.getAttribute( 'position' ),
                         uv = object.geometry.getAttribute( 'uv' );
 
@@ -178,15 +175,15 @@
                         else uv.setXY( i, y, x );
                     }
                     uv.needsUpdate = true;
-                
-            }
-            
+                }
+            }           
 			//function init() {
 
                 /*Scene*/
                 {
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
                 scene = new THREE.Scene();
+                //const physics = new AmmoPhysics(scene)
                 scene.background = new THREE.Color().setRGB( 100, 100, 100 );
 
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
@@ -282,22 +279,30 @@
                 renderer.setSize( window.innerWidth, window.innerHeight );
                 document.body.appendChild( renderer.domElement );
 
-                const prototype5x5G = new THREE.TextureLoader().load( "https://i.ibb.co/zbcHTcm/prototype5x5.png" );
+                // Load the texture
+                const prototype5x5G = new THREE.TextureLoader().load("https://i.ibb.co/zbcHTcm/prototype5x5.png");
+
+                // Set wrapping and repeating
                 prototype5x5G.wrapS = THREE.RepeatWrapping;
                 prototype5x5G.wrapT = THREE.RepeatWrapping;
-                prototype5x5G.repeat.set( 1, 1 );
+                const pt5gtextureRepeatX = -1; // Width / Length of platRECTgeometry
+                const pt5gtextureRepeatY = 1;      // Height remains constant
+                prototype5x5G.repeat.set(pt5gtextureRepeatX, pt5gtextureRepeatY);
+                prototype5x5G.flipY = true;
 
-                const platSQgeometry = new THREE.BoxGeometry(10, 1, 10 );
-                const platRECTgeometry = new THREE.BoxGeometry(5, 1, 15 );
-                const platCUBEgeometry = new THREE.BoxGeometry(1, 1, 1 );
-                const platmaterial = new THREE.MeshStandardMaterial( { map: prototype5x5G } );
+                // Define material with the texture
+                const platmaterial = new THREE.MeshStandardMaterial({ map: prototype5x5G });
 
-                const plat1 = new THREE.Mesh( 
-                    platRECTgeometry,
-                    platmaterial 
-                );
-                plat1.position.set( 0, 0, 0 ).normalize();
-                scene.add( plat1 );
+                // Shapes
+                const platSQgeometry = new THREE.BoxGeometry(10, 1, 10);
+                const platRECTgeometry = new THREE.BoxGeometry(7, 1, 10);
+                const platCUBEgeometry = new THREE.BoxGeometry(1, 1, 1);
+
+                // Create the platform
+                const plat1 = new THREE.Mesh(platRECTgeometry, platmaterial);
+                plat1.position.set(0, 0, 0);
+                scene.add(plat1);
+                physics.add.existing(plat1)
 
                 const skybxgeometry = new THREE.BoxGeometry(-500, -500, -500 );
                 let skybxgradient = new THREE.ShaderMaterial({
@@ -331,7 +336,7 @@
                     scene.background = new THREE.Color( 'skyblue' );
                    // scene.add( daskybox );
                     renderer.render( scene, camera );
-
+                    resize(plat1, 1, 1, 1, true);
 
                 }   
 
@@ -346,7 +351,7 @@
                 {
                 window.addEventListener( 'resize', onWindowResize );
                 }
-            //}
+            
 
 			function onWindowResize() {
 
@@ -370,8 +375,6 @@
 
               
                 renderer.render( scene, camera );
-                //console.log('hi');
-
             }
 
 		</script>
