@@ -224,8 +224,9 @@
                 function updateCubePhysics() {
 
                     for (var i = 0; i<cubeShapes.length; i++) {
-                        cubeMeshes[i].position.set(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z)
-                        cubeMeshes[i].quaternion.set(cubeBody.quaternion.x, cubeBody.quaternion.y, cubeBody.quaternion.z, cubeBody.quaternion.w)
+			console.log(i);
+                        cubeMeshes[i].position.set(pcubeBodys[i].position.x, pcubeBodys[i].position.y, pcubeBodys[i].position.z)
+                        cubeMeshes[i].quaternion.set(pcubeBodys[i].quaternion.x, pcubeBodys[i].quaternion.y, pcubeBodys[i].quaternion.z, pcubeBodys[i].quaternion.w)
                     }
 
                 }
