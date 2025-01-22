@@ -107,7 +107,7 @@
             {
                 "imports": {
                   "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js",
-                  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/",
+                  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/"
                 }
             }
         </script>
@@ -150,6 +150,8 @@
 			import * as THREE from 'three';
 			import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+            import  Stats  from 'three/addons/libs/stats.module.js'
+
 
 			let camera, scene, renderer, plat1, prototype5x5G;
 
@@ -179,7 +181,7 @@
 			//function init() {
 
                 /*Scene*/
-                {
+                
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
                 scene = new THREE.Scene();
                 scene.background = new THREE.Color().setRGB( 100, 100, 100 );
@@ -187,10 +189,50 @@
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
                 renderer.setSize( innerWidth, innerHeight );
                 renderer.setAnimationLoop( animationLoop );
+
+                // CANNON.JS World
+                const cannonworld = new CANNON.World();
+                cannonworld.gravity.set(0, -9.82, 0);
+
+                const stats = new Stats()
+                document.body.appendChild(stats.dom)
+
+                const clock = new THREE.Clock()
+                let delta
+                            
+                
+                /*Functions*/ 
+
+                let pcubeBodys =[], pcubeShapes =[], cubeMeshes =[];
+
+                function addCubePhysics(object, mass) { // automatically add physics to cubes
+
+                    cubeMeshes[cubeMeshes.length + 1] = object;
+                    let newPhysicsShapes = pcubeShapes.push();
+                    let newPhysicsBody = pcubeBodys.push();
+
+                    newPhysicsShapes = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5))
+                    newPhysicsBody = new CANNON.Body({mass: mass})
+
+                    newPhysicsBody.addShape(newPhysicsShapes)
+                    newPhysicsBody.position.x = object.position.x
+                    newPhysicsBody.position.y = object.position.y
+                    newPhysicsBody.position.z = object.position.z
+                    cannonworld.addBody(newPhysicsBody)
                 }
 
+                function updateCubePhysics() {
+
+                    for (var i = 0; i<cubeShapes.length; i++) {
+                        cubeMeshes[i].position.set(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z)
+                        cubeMeshes[i].quaternion.set(cubeBody.quaternion.x, cubeBody.quaternion.y, cubeBody.quaternion.z, cubeBody.quaternion.w)
+                    }
+
+                }
+
+
                 /*Lights*/
-                {
+                
  
                 scene.fog = new THREE.Fog( scene.background, 1, 5000 );
 
@@ -246,26 +288,26 @@
 				const sky = new THREE.Mesh( skyGeo, skyMat );
 				scene.add( sky );
 
-               }
+               
 
                /*Camera*/
-                {
+                
                 camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
 
                 camera.position.y = 5;
                 camera.position.z = 10;
 
                 scene.add( camera );
-                }
+                
 
                 /*Textures*/
-                {
+                
                    
 
-                }
+                
 
                 /*Assets*/
-                {
+                
 
                 /*
                 const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
@@ -278,7 +320,7 @@
                 document.body.appendChild( renderer.domElement );
 
                 // Load the texture
-                const prototype5x5G = new THREE.TextureLoader().load("https://i.ibb.co/zbcHTcm/prototype5x5.png");
+                prototype5x5G = new THREE.TextureLoader().load("https://i.ibb.co/zbcHTcm/prototype5x5.png");
 
                 // Set wrapping and repeating
                 prototype5x5G.wrapS = THREE.RepeatWrapping;
@@ -288,6 +330,8 @@
                 prototype5x5G.repeat.set(pt5gtextureRepeatX, pt5gtextureRepeatY);
                 prototype5x5G.flipY = true;
 
+
+
                 // Define material with the texture
                 const platmaterial = new THREE.MeshStandardMaterial({ map: prototype5x5G });
 
@@ -296,11 +340,28 @@
                 const platRECTgeometry = new THREE.BoxGeometry(7, 1, 10);
                 const platCUBEgeometry = new THREE.BoxGeometry(1, 1, 1);
 
+                //box
+                const normalMaterial = new THREE.MeshStandardMaterial()
+                const cubeGeometry = new THREE.BoxGeometry(10, 10, 10)
+                const cubeMesh = new THREE.Mesh(cubeGeometry, normalMaterial)
+                cubeMesh.position.x = -3
+                cubeMesh.position.y = 30
+                cubeMesh.castShadow = true
+                scene.add(cubeMesh)
+
+                addCubePhysics(cubeMesh, 1);
+                /*const cubeShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5))
+                const cubeBody = new CANNON.Body({ mass: 1 })
+                cubeBody.addShape(cubeShape)
+                cubeBody.position.x = cubeMesh.position.x
+                cubeBody.position.y = cubeMesh.position.y
+                cubeBody.position.z = cubeMesh.position.z
+                cannonworld.addBody(cubeBody)*/
+
                 // Create the platform
-                const plat1 = new THREE.Mesh(platRECTgeometry, platmaterial);
+                plat1 = new THREE.Mesh(platRECTgeometry, platmaterial);
                 plat1.position.set(0, 0, 0);
                 scene.add(plat1);
-                physics.add.existing(plat1)
 
                 const skybxgeometry = new THREE.BoxGeometry(-500, -500, -500 );
                 let skybxgradient = new THREE.ShaderMaterial({
@@ -336,19 +397,19 @@
                     renderer.render( scene, camera );
                     resize(plat1, 1, 1, 1, true);
 
-                }   
+                
 
                 /*Controls*/
-                {
+                
                 const controls = new OrbitControls( camera, renderer.domElement );
                 controls.addEventListener( 'change', render );
                 controls.update();
-                }
+                
 
                 /*Events*/
-                {
+                
                 window.addEventListener( 'resize', onWindowResize );
-                }
+                
             
 
 			function onWindowResize() {
@@ -370,9 +431,15 @@
 
             function animationLoop() {
 
+                delta = Math.min(clock.getDelta(), 0.1)
+                cannonworld.step(delta)
 
-              
+                updateCubePhysics();
+                //cubeMesh.position.set(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z)
+                //cubeMesh.quaternion.set(cubeBody.quaternion.x, cubeBody.quaternion.y, cubeBody.quaternion.z, cubeBody.quaternion.w)
+                
                 renderer.render( scene, camera );
+                stats.update();
             }
 
 		</script>
