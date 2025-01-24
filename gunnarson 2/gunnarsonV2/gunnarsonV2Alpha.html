@@ -248,6 +248,7 @@
                     pcubeBodys.push(newPhysicsBody);
 
                     if (!gravity) {
+			cubeMeshes.push(object);
                         newPhysicsBody.type = CANNON.Body.KINEMATIC;
                     } else {
                         cubeMeshes.push(object);
