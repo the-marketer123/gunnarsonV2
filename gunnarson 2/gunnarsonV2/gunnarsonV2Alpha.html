@@ -166,6 +166,7 @@
 
 
 			let camera, scene, renderer, plat1, prototype5x5G;
+            const pi = Math.PI;
 
 
             function resize( object, scaleX, scaleY, scaleZ, updateUV )
@@ -402,26 +403,10 @@
                 const cubeMaterial = new THREE.MeshStandardMaterial({ color: 'blue'})
                 const cubeGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25)
  
-                
-                //new skybox
-                const sky = new Sky();
-                sky.scale.setScalar( 450000 );
+        
+            /*Main Functions*/
 
-                const pi = Math.PI;
-                const phi = 90 * pi/180//MathUtils.degToRad( 90 );
-                const theta = 180 * pi/180//MathUtils.degToRad( 180 );
-                const sunPosition = new THREE.Vector3().setFromSphericalCoords( 10, phi, theta );
-
-                sky.material.uniforms.sunPosition.value = sunPosition;
-
-                scene.add( sky );
-
-
-                /*Main Functions*/
-
-                
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
-
                 function addCubePhysics(object, mass, gravity) { // automatically add physics to cubes
 
                     let newPhysicsBody;
@@ -458,22 +443,20 @@
                     let rigidBody = world.createRigidBody(newPhysicsBody);
                     let collider = world.createCollider(newPhysicsCollider, newPhysicsBody);
               }
-
-                
                 function updateCubePhysics() {
+                    let cml = cubeMeshes.length;
                     let rbl = rigidBodies.length;
                     let pcl = pcolliders.length;
-                    for (var i = 0; i<rbl; i++) {
+                    for (var i = 0; i<cml; i++) {
                         let e = i;
-                        let positionvector = new THREE.Vector3(rigidBodies[e].translation.x,rigidBodies[e].translation.y,rigidBodies[e].translation.z); 
-                        console.log(e);
-                        cubeMeshes[e].position.x = (positionvector.x);
-                        cubeMeshes[e].position.y = (positionvector.y);
-                        cubeMeshes[e].position.z = (positionvector.z);
-                        cubeMeshes[e].quaternion.copy(rigidBodies[e].rotation);    
+                        let mesh = cubeMeshes[e];
+                        let body = rigidBodies[e];
+                        let pv = new THREE.Vector3(rigidBodies[e].translation.x,rigidBodies[e].translation.y,rigidBodies[e].translation.z); 
+                        mesh.position.set(pv.x,pv.y,pv.z);
+                        mesh.quaternion.copy(body.rotation);    
                     }   
-                    console.log('check');
                 }
+                
                 let plats = [];
                 let cubes = [];
                 function addPCube (x,y,z) {
@@ -515,7 +498,7 @@
                     newPlatform.rotateZ(rttz);
                     resize(newPlatform, 1, 1, 1, true);
                     plats.push(newPlatform);
-                    //cubeMeshes.push(newPlatform);
+                    cubeMeshes.push(newPlatform);
 
                     let newPhysicsBody = RAPIER.RigidBodyDesc.dynamic();
 
@@ -547,13 +530,29 @@
 
                     scene.add(newPlatform);
                 }
-               
+                function addSkybox(angle) {
+                    const sky = new Sky();
+                    sky.scale.setScalar( 450000 );
+
+                    const phi = angle * pi/180//MathUtils.degToRad( 90 );
+                    const theta = 180 * pi/180//MathUtils.degToRad( 180 );
+                    const sunPosition = new THREE.Vector3().setFromSphericalCoords( 10, phi, theta );
+
+                    sky.material.uniforms.sunPosition.value = sunPosition;
+
+                    scene.add( sky );
+                }
+
+                addSkybox(90);
                 addPlatform(0, 0, 0, 0, 45, 0,"SQRE","GRAY");
                 addPCube(0,20,0);
-                addPCube(4.9,20,4.9);
-                addPCube(-4.9,20,-4.9);
-                addPCube(4.9,20,-4.9);
-                addPCube(-4.9,20,4.9);
+                addPCube( 4.9, 20,  4.9);
+                addPCube(-4.9, 20, -4.9);
+                addPCube( 4.9, 20, -4.9);
+                addPCube(-4.9, 20,  4.9);
+                console.log(rigidBodies.length);
+                console.log(cubeMeshes.length);
+                console.log(pcolliders.length);
 
 
 
