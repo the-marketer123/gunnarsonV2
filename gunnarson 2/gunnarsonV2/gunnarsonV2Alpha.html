@@ -6,7 +6,8 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
-        <script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
+        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
+        <!--<script src="https://unpkg.com/rapier@1.0.5/build/rapier.min.js"></script> <!--Rapier.js-->
 
         <style>
         body {
@@ -157,9 +158,9 @@
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             import { Sky } from 'three/addons/objects/Sky.js';
             import  Stats  from 'three/addons/libs/stats.module.js'
-        
-        
+            import * as RAPIER from 'https://unpkg.com/rapier@1.0.5/build/rapier.js';
 
+ 
 
 			let camera, scene, renderer, plat1, prototype5x5G;
 
@@ -203,73 +204,15 @@
                 let boardCanvas=document.getElementById('board-canvas');
                 let board_ctx=boardCanvas.getContext('2d');
 
-                // CANNON.JS World
-                const cannonworld = new CANNON.World();
-                cannonworld.gravity.set(0, -9.82, 0);
+                let gravity = { x: 0.0, y: -9.81, z: 0.0 };
+                console.log(RAPIER.World);
+                let world = new RAPIER.World(gravity);
 
                 const stats = new Stats()
                 document.body.appendChild(stats.dom)
 
                 const clock = new THREE.Clock()
                 let delta
-
-                        
-                
-                /*Functions*/ 
-
-                let pcubeBodys = [], pcubeShapes = [], cubeMeshes = [];
-
-                function addCubePhysics(object, mass, gravity) { // automatically add physics to cubes
-
-
-                    let box = new THREE.Box3().setFromObject(object); 
-                    let size = new THREE.Vector3(); 
-
-                    box.getSize(size); 
-
-                    let objWidth  = size.x / 2; 
-                    let objHeight = size.y / 2;
-                    let objLength = size.z / 2;
-
-
-                    let newPhysicsShape = new CANNON.Box(new CANNON.Vec3(objWidth, objHeight, objLength))
-                    let newPhysicsBody = new CANNON.Body({mass: mass})
-
-                    newPhysicsBody.addShape(newPhysicsShape);
-
-                    newPhysicsBody.position.x = object.position.x
-                    newPhysicsBody.position.y = object.position.y
-                    newPhysicsBody.position.z = object.position.z
-
-                    newPhysicsBody.quaternion.copy(object.quaternion)
-
-
-                    pcubeShapes.push(newPhysicsShape);
-                    pcubeBodys.push(newPhysicsBody);
-
-                    if (!gravity) {
-			cubeMeshes.push(object);
-                        newPhysicsBody.type = CANNON.Body.KINEMATIC;
-                    } else {
-                        cubeMeshes.push(object);
-                    }
- 
-
-                    cannonworld.addBody(newPhysicsBody)
-
-                }
-
-                
-                function updateCubePhysics() {
-                    let cml = cubeMeshes.length;
-                    for (var i = 0; i<cml; i++) {
-                        var e = i;
-                        cubeMeshes[e].position.set(pcubeBodys[e].position.x, pcubeBodys[e].position.y, pcubeBodys[e].position.z)
-                        cubeMeshes[e].quaternion.set(pcubeBodys[e].quaternion.x, pcubeBodys[e].quaternion.y, pcubeBodys[e].quaternion.z, pcubeBodys[e].quaternion.w)
-                    }
-
-                }
-
 
                 /*Lights*/
                 
@@ -294,19 +237,12 @@
 
 				const d = 50;
 
-				dirLight.shadow.camera.left = - d;
-				dirLight.shadow.camera.right = d;
-				dirLight.shadow.camera.top = d;
+				dirLight.shadow.camera.left =   - d;
+				dirLight.shadow.camera.right =    d;
+				dirLight.shadow.camera.top =      d;
 				dirLight.shadow.camera.bottom = - d;
-				dirLight.shadow.camera.far = 3500;
-				dirLight.shadow.bias = - 0.0001;
-
-               
-
-               /* Skybox */
-               
-
-               
+				dirLight.shadow.camera.far =   3500;
+				dirLight.shadow.bias =     - 0.0001;
 
                /*Camera*/
                 
@@ -476,6 +412,57 @@
 
 
                 /*Main Functions*/
+
+                
+                let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
+
+                function addCubePhysics(object, mass, gravity) { // automatically add physics to cubes
+
+                    cubeMeshes.push(object);
+                    if (!gravity) {
+                        let newPhysicsBody = new RAPIER.RigidBodyDesc.fixed();
+
+                    } else {
+                        let newPhysicsBody = new RAPIER.RigidBodyDesc.dynamic();
+                    }
+
+                    newPhysicsBody.setTranslation(object.position.x, object.position.y, object.position.z);
+                    newPhysicsBody.setRotation({ x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w});
+   
+                    let box = new THREE.Box3().setFromObject(object); 
+                    let size = new THREE.Vector3(); 
+                    box.getSize(size); 
+
+                    let objWidth  = size.x / 2; 
+                    let objHeight = size.y / 2;
+                    let objLength = size.z / 2;
+
+                    let newPhysicsCollider = RAPIER.ColliderDesc.cuboid(objWidth, objHeight, objLength);
+                    newPhysicsCollider.setFriction(0.7)
+                    newPhysicsCollider.setTranslation(object.position.x, object.position.y, object.position.z);
+                    newPhysicsCollider.setRotation({ x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w});
+                    
+
+                    pcubeBodys.push(newPhysicsBody);
+                    pcubeColliders.push(newPhysicsCollider);
+
+
+                    let collider = world.createCollider(newPhysicsCollider, newPhysicsBody);
+                    let rigidBody = world.createRigidBody(newPhysicsBody);
+                }
+
+                
+                function updateCubePhysics() {
+                    world.step(delta)
+                    let cml = cubeMeshes.length;
+                    for (var i = 0; i<cml; i++) {
+                        let e = i;
+                        cubeMeshes[e].position.copy(pcubeBodys[e].position);
+                        cubeMeshes[e].quaternion.copy(pcubeBodys[e].quaternion);                
+                    }
+
+                }
+
                 let plats = [];
                 let cubes = [];
                 function addPCube (x,y,z) {
@@ -515,13 +502,47 @@
                     newPlatform.rotateX(rttx);
                     newPlatform.rotateY(rtty);
                     newPlatform.rotateZ(rttz);
-                    scene.add(newPlatform);
-                    addCubePhysics(newPlatform, 0, true);
                     resize(newPlatform, 1, 1, 1, true);
                     plats.push(newPlatform);
+
+
+
+                    
+
+                   
+                    let newPhysicsBody = new RAPIER.RigidBodyDesc.dynamic();
+
+                    newPhysicsBody.setTranslation(newPlatform.position.x, newPlatform.position.y, newPlatform.position.z);
+                    newPhysicsBody.setRotation({ x: newPlatform.quaternion.x, y: newPlatform.quaternion.y, z: newPlatform.quaternion.z, w: newPlatform.quaternion.w});
+   
+                    let box = new THREE.Box3().setFromObject(object); 
+                    let size = new THREE.Vector3(); 
+                    box.getSize(size); 
+
+                    let objWidth  = size.x / 2; 
+                    let objHeight = size.y / 2;
+                    let objLength = size.z / 2;
+
+                    let newPhysicsCollider = RAPIER.ColliderDesc.cuboid(objWidth, objHeight, objLength);
+                    newPhysicsCollider.setFriction(0.7)
+                    newPhysicsCollider.setTranslation(newPlatform.position.x, newPlatform.position.y, newPlatform.position.z);
+                    newPhysicsCollider.setRotation({ x: newPlatform.quaternion.x, y: newPlatform.quaternion.y, z: newPlatform.quaternion.z, w: newPlatform.quaternion.w});
+                    
+
+                    pcubeBodys.push(newPhysicsBody);
+                    pcubeColliders.push(newPhysicsCollider);
+
+
+                    let collider = world.createCollider(newPhysicsCollider, newPhysicsBody);
+                    let rigidBody = world.createRigidBody(newPhysicsBody);
+                    scene.add(newPlatform);
                 }
-                addPlatform(0, 0, 0, , 45, 0,"SQRE","GRAY");
+                addPlatform(0, 0, 0, 0, 45, 0,"SQRE","GRAY");
                 addPCube(0,20,0);
+                addPCube(4.9,20,4.9);
+                addPCube(-4.9,20,-4.9);
+                addPCube(4.9,20,-4.9);
+                addPCube(-4.9,20,4.9);
 
 
 
@@ -562,12 +583,9 @@
             function animationLoop() {
 
                 delta = Math.min(clock.getDelta(), 0.1)
-                cannonworld.step(delta)
 
 
-                updateCubePhysics();
-                //cubeMesh.position.set(cubeBody.position.x, cubeBody.position.y, cubeBody.position.z)
-                //cubeMesh.quaternion.set(cubeBody.quaternion.x, cubeBody.quaternion.y, cubeBody.quaternion.z, cubeBody.quaternion.w)
+                //updateCubePhysics();
                 
                 renderer.render( scene, camera );
                 stats.update();
