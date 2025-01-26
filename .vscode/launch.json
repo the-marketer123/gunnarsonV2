@@ -7,8 +7,8 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Open RAPIERtemplate.html",
-            "file": "c:\\Users\\gm116\\OneDrive\\Documents\\GitHub\\gunnarsonV2\\gunnarson 2\\gunnarsonV2\\RAPIERtemplate.html"
+            "name": "Open Gunnarson 2",
+            "file": "c:\\Users\\gm116\\OneDrive\\Documents\\GitHub\\gunnarsonV2\\gunnarson 2\\gunnarsonV2\\gunnarsonV2Alpha.html"
         }
     ]
 }
