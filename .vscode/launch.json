@@ -4,12 +4,11 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Open gunnarsonV2Alpha.html",
-            "file": "c:\\Users\\gm116\\OneDrive\\Documents\\GitHub\\gunnarsonV2\\gunnarson 2\\gunnarsonV2\\gunnarsonV2Alpha.html"
+            "name": "Open RAPIERtemplate.html",
+            "file": "c:\\Users\\gm116\\OneDrive\\Documents\\GitHub\\gunnarsonV2\\gunnarson 2\\gunnarsonV2\\RAPIERtemplate.html"
         }
     ]
 }
