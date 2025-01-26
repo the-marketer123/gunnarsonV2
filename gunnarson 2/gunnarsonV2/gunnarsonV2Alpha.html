@@ -208,9 +208,8 @@
                 let boardCanvas=document.getElementById('board-canvas');
                 let board_ctx=boardCanvas.getContext('2d');
 
-                let gravity = { x: 0.0, y: -9.81, z: 0.0 };
-                console.log(RAPIER.World);
-                let world = new RAPIER.World(gravity);
+                const gravity = { x: 0.0, y: 0, z: 0.0 };
+                const world = new RAPIER.World(gravity);
 
                 let rigidBodies = [];
                 let pcolliders = [];
@@ -407,7 +406,7 @@
             /*Main Functions*/
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
- 
+ /*
                 function addCubePhysics(object, mass = 1, gravity = true) {
                     // Validate the object
                     if (!object || !object.geometry || !object.position) {
@@ -426,10 +425,13 @@
 
                     // Set position and rotation
                     rigidBodyDesc.setTranslation(x, y, z);
+                    console.log('check 1:   ' + rigidBodyDesc.translation.x + " " + rigidBodyDesc.translation.y + " " + rigidBodyDesc.translation.z);
                     rigidBodyDesc.setRotation({ x: xr, y: yr, z: zr, w: wr });
 
                     // Create and configure the rigid body
-                    const rigidBody = world.createRigidBody(rigidBodyDesc);
+                    let rigidBody = world.createRigidBody(rigidBodyDesc);
+                    console.log('check 2:   ' + rigidBody.translation.x + " " + rigidBody.translation.y + " " + rigidBody.translation.z);
+
 
                     // Calculate the bounding box of the object
                     const boundingBox = new THREE.Box3().setFromObject(object);
@@ -460,7 +462,7 @@
                     rigidBodies.push(rigidBody); // Physics body
 
                     // Debugging info
-                    console.log("Physics added:", { rigidBody, collider, halfExtents });
+                    //console.log("Physics added:", { rigidBody, collider, halfExtents });
                 }
                 function updateCubePhysics() {
                     // Ensure arrays are synchronized
@@ -476,32 +478,30 @@
                         const mesh = cubeMeshes[i];
                         const body = rigidBodies[i];
 
+                        body.resetForces(true); 
+
                         // Update position
-                        const translation = body.translation();
-                        positionVector.set(translation.x, translation.y, translation.z);
-                        mesh.position.copy(positionVector);
+                        let { x, y, z } = body.translation();
+                        //positionVector.set(x, y, z);
+                        //mesh.position.copy(positionVector);
+                        mesh.position.set(x, y, z);
 
                         // Update rotation
                         const rotation = body.rotation();
                         mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
                     }
                 } 
+             */
+                const sceneMiddle = new THREE.Vector3(0, 0, 0);
+                let f = false
 
                 let plats = [];
                 let cubes = [];
-                function addPCube (x,y,z) {
+                function addPlatform (pos, rot, size, shape, color) {
 
-                    let newCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-                    newCube.position.set(x, y, z);
-                    scene.add(newCube);
-                    addCubePhysics(newCube, 1, true);
-                    cubes.push(newCube);
-                }
-                function addPlatform (x, y, z, rotateX, rotateY, rotateZ ,shape, color) {
-
-                    let rttx = rotateX * pi/180
-                    let rtty = rotateY * pi/180
-                    let rttz = rotateZ * pi/180;
+                    let rttx = rot.x * pi/180
+                    let rtty = rot.y * pi/180
+                    let rttz = rot.z * pi/180;
 
                     let newGeometry;
                     switch (shape){
@@ -521,43 +521,73 @@
                         newMaterial = gplatmaterial;
                     }
 
-                    let newPlatform = new THREE.Mesh(newGeometry, newMaterial);
-                    newPlatform.position.set(x, y, z);
-                    newPlatform.rotateX(rttx);
-                    newPlatform.rotateY(rtty);
-                    newPlatform.rotateZ(rttz);
-                    resize(newPlatform, 1, 1, 1, true);
-                    plats.push(newPlatform);
-                    cubeMeshes.push(newPlatform);
 
-                    let newPhysicsBody = RAPIER.RigidBodyDesc.fixed()
-                    .setTranslation(newPlatform.position.x, newPlatform.position.y, newPlatform.position.z)
-                    .setRotation({ x: newPlatform.quaternion.x, y: newPlatform.quaternion.y, z: newPlatform.quaternion.z, w: newPlatform.quaternion.w});
-   
-                    let box = new THREE.Box3().setFromObject(newPlatform); 
-                    let size = new THREE.Vector3(); 
-                    box.getSize(size); 
+                    let geometry = new THREE.BoxGeometry(size.x,size.y,size.z);
+                    let mesh = new THREE.Mesh(newGeometry, newMaterial);
+                    mesh.position.set(pos.x, pos.y, pos.z);
+                    mesh.rotateX(rttx);
+                    mesh.rotateY(rtty);
+                    mesh.rotateZ(rttz);
+                    resize(mesh, 1, 1, 1, true);
+                    plats.push(mesh);
+                    cubeMeshes.push(mesh);
 
-                    let objWidth  = size.x / 2; 
-                    let objHeight = size.y / 2;
-                    let objLength = size.z / 2;
 
-                    let newPhysicsCollider = RAPIER.ColliderDesc.cuboid(objWidth, objHeight, objLength);
-                    newPhysicsCollider.setFriction(0.7)
-                    newPhysicsCollider.setTranslation(newPlatform.position.x, newPlatform.position.y, newPlatform.position.z);
-                    newPhysicsCollider.setRotation({ x: newPlatform.quaternion.x, y: newPlatform.quaternion.y, z: newPlatform.quaternion.z, w: newPlatform.quaternion.w});
+                    const range = 6;
+                    const density = 20;
+                    // physics
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.fixed()
+                            .setTranslation(x, y, z)
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.cuboid(size.x,size.y,size.z).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
                     
+                    function update () {
+                        rigid.resetForces(true); 
+                        let { x, y, z } = rigid.translation();
+                        let rot = rigid.rotation();
+                        let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+                        let pos = new THREE.Vector3(x, y, z);
+                        mesh.position.set(x, y, z);
+                        mesh.quaternion.set(xr, yr, zr, wr);
+                    }
+                    cubes.push({ mesh, rigid, update });
+                    scene.add(mesh);
+                    return { mesh, rigid, update };
+                }
+                function addPCube(x,y,z) {
+                    const range = 6;
+                    const density = 20;
+                    // physics
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+                            .setTranslation(x, y, z)
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.cuboid(0.5,0.5,0.5).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
+                
+                    //Mesh
+                    const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                    const material = new THREE.MeshStandardMaterial({
+                    color: 0x0000ff,
+                    flatShading: true
+                    });
 
-                    pcubeBodys.push(newPhysicsBody);
-                    pcubeColliders.push(newPhysicsCollider);
+                    const mesh = new THREE.Mesh(geometry, material);
 
-
-                    pcolliders.push(newPhysicsCollider);
-                    rigidBodies.push(newPhysicsBody);
-                    let rigidBody = world.createRigidBody(newPhysicsBody);
-                    let collider = world.createCollider(newPhysicsCollider, newPhysicsBody);
-
-                    scene.add(newPlatform);
+                    
+                    function update () {
+                    rigid.resetForces(true); 
+                    let { x, y, z } = rigid.translation();
+                    let rot = rigid.rotation();
+                    let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+                    let pos = new THREE.Vector3(x, y, z);
+                    rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
+                    mesh.position.set(x, y, z);
+                    mesh.quaternion.set(xr, yr, zr, wr);
+                    }
+                    cubes.push({ mesh, rigid, update });
+                    scene.add(mesh);
+                    return { mesh, rigid, update };
                 }
                 function addSkybox(angle) {
                     const sky = new Sky();
@@ -573,12 +603,16 @@
                 }
 
                 addSkybox(90);
-                addPlatform(0, 0, 0, 0, 45, 0,"SQRE","GRAY");
-                addPCube(0,20,0);
+                addPlatform({x:0, y:0, z:0},{x:0, y:45, z:0},{x:5,y:1,z:5},"SQRE","GRAY");
+                //addPCube(0,20,0);
                 addPCube( 4.9, 20,  4.9);
                 addPCube(-4.9, 20, -4.9);
                 addPCube( 4.9, 20, -4.9);
                 addPCube(-4.9, 20,  4.9);
+               
+ 
+
+
 
                 /*Controls*/
                 
@@ -592,7 +626,9 @@
                 window.addEventListener( 'resize', onWindowResize );
                 
             
-
+                function UPDATE() {
+                    cubes.forEach(b => b.update());
+                }
                 function onWindowResize() {
 
                     camera.aspect = window.innerWidth / window.innerHeight;
@@ -610,11 +646,11 @@
                 }
                 function animationLoop() {
 
-                world.step();
-                updateCubePhysics();
-                render();
-                stats.update();
-            }
+                    world.step();
+                    UPDATE();
+                    render();
+                    stats.update();
+                }
 		</script>
 	</body>
 </html>
