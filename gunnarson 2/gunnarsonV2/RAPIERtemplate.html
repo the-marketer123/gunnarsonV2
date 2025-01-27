@@ -164,8 +164,8 @@
 
             function getBody(RAPIER, world) {
                 const sizex = 1, sizey = 1, sizez = 1;
-                const range = 6;
-                const density = 20;
+                const range = 50;
+                const density = 5;
                 let x = Math.random() * range - range * 0.5;
                 let y = Math.random() * range - range * 0.5 + 3;
                 let z = Math.random() * range - range * 0.5;
@@ -173,10 +173,10 @@
                 let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
                         .setTranslation(x, y, z);
                 let rigid = world.createRigidBody(rigidBodyDesc);
-                let colliderDesc = RAPIER.ColliderDesc.cuboid(0.1,0.1,0.1).setDensity(density);
+                let colliderDesc = RAPIER.ColliderDesc.cuboid(sizex/2,sizey/2,sizez/2).setDensity(density);
                 world.createCollider(colliderDesc, rigid);
             
-                const geometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+                const geometry = new THREE.BoxGeometry(sizex,sizey,sizez);
                 const material = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 flatShading: true
@@ -199,7 +199,7 @@
                 let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
                 let pos = new THREE.Vector3(x, y, z);
                 let dir = pos.clone().sub(sceneMiddle).normalize();
-                rigid.addForce(dir.multiplyScalar(-0.5), true);
+                rigid.addForce(dir.multiplyScalar(-5), true);
                 mesh.position.set(x, y, z);
                // console.log(xr + " " +yr + " " +zr + " " +wr);
                 mesh.quaternion.set(xr, yr, zr, wr);
@@ -223,9 +223,9 @@
                 let dynamicCollider = RAPIER.ColliderDesc.ball(mouseSize * 3.0);
                 world.createCollider(dynamicCollider, mouseRigid);
                 function update (mousePos) {
-                mouseRigid.setTranslation({ x: mousePos.x * 5, y: mousePos.y * 5, z: 0.2 });
-                let { x, y, z } = mouseRigid.translation();
-                mouseMesh.position.set(x, y, z);
+                    mouseRigid.setTranslation({ x: mousePos.x * 5, y: mousePos.y * 5, z: 0.2 });
+                    let { x, y, z } = mouseRigid.translation();
+                    mouseMesh.position.set(x, y, z);
                 }
                 return { mesh: mouseMesh, update };
             }
@@ -240,7 +240,7 @@
             const h = window.innerHeight;
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-            camera.position.z = 5;
+            camera.position.z = 10;
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(w, h);
             document.body.appendChild(renderer.domElement);
