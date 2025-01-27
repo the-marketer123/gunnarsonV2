@@ -503,6 +503,7 @@
 
 
             /*Levels*/
+                let curLevel = 'test';
                 function testLevel1() {
                     camera.position.y = 5;
                     camera.position.z = 10;
@@ -575,7 +576,6 @@
                         if (!debugmode) {controls.lock();}
                     } );
                 }}
-            
                 if (debugmode){
                     controls = new OrbitControls( camera, renderer.domElement );                
                 controls.addEventListener( 'change', render );
@@ -587,7 +587,20 @@
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
-            
+                function camSetup() {
+                    if (debugmode){
+                        controls = new OrbitControls( camera, renderer.domElement );                
+                        controls.addEventListener( 'change', render );
+                        controls.update();
+                    } else {
+                        createPlayer(camera.position.x,camera.position.y,camera.position.z, debugmode);
+                    }
+                }
+                function levelSetup() {
+                    switch (curLevel) {
+                        case 'test': testLevel1();
+                    } 
+                }
                 function UPDATE() {
                     cubes.forEach(b => b.update());
                 }
@@ -606,7 +619,9 @@
                     renderer.render( scene, camera );
 
                 }
-                testLevel1(); createPlayer(camera.position.x,camera.position.y,camera.position.z, debugmode);
+
+                camSetup()
+                levelSetup();
                 function animationLoop() {
 
                     world.step();
