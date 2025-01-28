@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Gunnarson V2 Alpha</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
+        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
+        <!--<script src="https://unpkg.com/rapier@1.0.5/build/rapier.min.js"></script> <!--Rapier.js-->
+
+        <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Monospace;
+            font-size: 13px;
+            line-height: 24px;
+            overscroll-behavior: none;
+        }
+        
+        #board-canvas {
+            display: none; 
+        }
+        a {
+            color: #ff0;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        button {
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        
+        #info {
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            pointer-events: none;
+            z-index: 1; /* TODO Solve this in HTML */
+        }
+        
+        a, button, input, select {
+            pointer-events: auto;
+        }
+        
+        .lil-gui {
+            z-index: 2 !important; /* TODO Solve this in HTML */
+        }
+        
+        @media all and ( max-width: 640px ) {
+            .lil-gui.root { 
+                right: auto;
+                top: auto;
+                max-height: 50%;
+                max-width: 80%;
+                bottom: 0;
+                left: 0;
+            }
+        }
+        
+        #overlay {
+            position: absolute;
+            font-size: 16px;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: rgba(0,0,0,0.7);
+        }
+        
+            #overlay button {
+                background: transparent;
+                border: 0;
+                border: 1px solid rgb(255, 255, 255);
+                border-radius: 4px;
+                color: #ffffff;
+                padding: 12px 18px;
+                text-transform: uppercase;
+                cursor: pointer;
+            }
+        
+        #notSupported {
+            width: 50%;
+            margin: auto;
+            background-color: #f00;
+            margin-top: 20px;
+            padding: 10px;
+        }
+        </style>
+        
+    </head>
+	<body>
+        <canvas id='board-canvas' width='800' height='1500'></canvas>
+		<script type="importmap">
+            {
+                "imports": {
+                  "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js",
+                  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/",
+                  "@dimforge/rapier3d-compat": "https://cdn.skypack.dev/@dimforge/rapier3d-compat"
+                }
+            }
+        </script>
+   
+        <script type="x-shader/x-vertex" id="vertexShader">
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+				vWorldPosition = worldPosition.xyz;
+
+				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+			}
+
+		</script>
+		<script type="x-shader/x-fragment" id="fragmentShader">
+
+			uniform vec3 topColor;
+			uniform vec3 bottomColor;
+			uniform float offset;
+			uniform float exponent;
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				float h = normalize( vWorldPosition + offset ).y;
+				gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
+
+			}
+
+		</script>
+
+		<script type="module"> // imports
+            import * as THREE from 'three';
+            const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
+            await RAPIER.init();
+
+            // Initialize Three.js scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 5);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Create a Rapier.js physics world
+            const gravity = { x: 0.0, y: -9.81, z: 0.0 };
+            const physicsWorld = new RAPIER.World(gravity);
+
+            // Create the body that will follow the camera's gaze
+            const bodyDesc = RAPIER.RigidBodyDesc.KinematicPositionBased;
+            const trackingBody = physicsWorld.createRigidBody(bodyDesc);
+            const trackingCollider = RAPIER.ColliderDesc.ball(0.5); // Adjust size if needed
+            physicsWorld.createCollider(trackingCollider, trackingBody);
+
+            // Add a visual representation for the body in Three.js
+            const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphereMesh);
+
+            // Add lighting
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(10, 10, 10);
+            scene.add(light);
+
+            // Animate and update the body position
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Get the direction the camera is looking
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection);
+
+                // Set the position of the tracking body to be 3 units in front of the camera's gaze direction
+                const cameraPosition = camera.position.clone();
+                const targetPosition = cameraPosition.add(cameraDirection.multiplyScalar(3));
+
+                // Update the position of the Rapier body
+                trackingBody.setNextKinematicTranslation({ x: targetPosition.x, y: targetPosition.y, z: targetPosition.z });
+
+                // Update the position of the Three.js mesh
+                sphereMesh.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
+
+                // Step the physics world
+                physicsWorld.step();
+
+                // Render the scene
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+		</script>
+	</body>
+</html>
+            

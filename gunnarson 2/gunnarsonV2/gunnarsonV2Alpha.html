@@ -542,18 +542,22 @@
                 function updatePlayerMovement(playerbody , playercam) {
                     moveDirection.x = Math.max(-100, Math.min(100, moveDirection.x));
                     moveDirection.z = Math.max(-100, Math.min(100, moveDirection.z));
-                    playerbody.setLinvel(moveDirection);//.multiplyScalar(moveSpeed));
-                    //playerbody.setLinvel(recoil.multiplyScalar(moveSpeed));
+                    playerbody.setLinvel(moveDirection);
                     let {x,y,z} = playerbody.translation();
                     playercam.position.x = x;
                     playercam.position.y = y;
                     playercam.position.z = z;
+                    speedup( vector, 'wasd_');
                     slowdown(vector, 'wasd_');
                     console.log("MD:" + moveDirection.x + ' ' + moveDirection.y + ' ' +moveDirection.z);
 
                 }
                 function createPlayer(x,y,z,debug) {if (!debug){
-                    const playerBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z);
+                    const playerBodyDesc = RAPIER.RigidBodyDesc
+                        .kinematicVelocityBased()
+                        .setGravityScale(1.0)
+                        .setTranslation(x,y,z);
+                    playerBodyDesc.mass = 20;
                     playerBody = world.createRigidBody(playerBodyDesc);
                     const playerColliderDesc = RAPIER.ColliderDesc.capsule(1, 0.5);
                     world.createCollider(playerColliderDesc, playerBody);
@@ -564,6 +568,33 @@
                     controls = new PointerLockControls( camera, document.body );
                     scene.add( controls.object );
 
+                    function speedup(vector,keypattern) { 
+                        switch (keypattern) {
+                            case 'wasd_':
+                            let w = 85, a = 65, s = 83, d = 68;
+
+                            if (keys[w])
+                            {
+
+                            }
+                            if (keys[s])
+                            {
+
+                            }
+                            if (keys[a])
+                            {
+
+                            }
+                            if (keys[d])
+                            {
+
+                            }
+                            
+
+
+                        }
+
+                    }
                     function slowdown(vector,keypattern) { 
                         switch (keypattern) {
                             case 'wasd_':
