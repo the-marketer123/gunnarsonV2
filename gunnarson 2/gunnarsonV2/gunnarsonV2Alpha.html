@@ -203,6 +203,11 @@
                 renderer.setSize( innerWidth, innerHeight );
                 renderer.setAnimationLoop( animationLoop );
 
+                const keys = [];
+                document.addEventListener('keydown', (event) => {
+                    keys[event.keyCode] = true; 
+                });
+
                 
 
                 //textures
@@ -533,62 +538,97 @@
                 let controls;
                 const moveSpeed = 5;
                 const jumpForce = 5;
-                let moveDirection = new THREE.Vector3(0, 0, 0);                
-                function updatePlayerMovement(playerbody) {
-                    playerbody.setLinvel(moveDirection.multiplyScalar(moveSpeed));
+                let playerBody, moveDirection, recoil, slowdownvar;
+                function updatePlayerMovement(playerbody , playercam) {
+                    moveDirection.x = Math.max(-100, Math.min(100, moveDirection.x));
+                    moveDirection.z = Math.max(-100, Math.min(100, moveDirection.z));
+                    playerbody.setLinvel(moveDirection);//.multiplyScalar(moveSpeed));
+                    //playerbody.setLinvel(recoil.multiplyScalar(moveSpeed));
                     let {x,y,z} = playerbody.translation();
-                    camera.position.x = x;
-                    camera.position.y = y;
-                    camera.position.z = z;
+                    playercam.position.x = x;
+                    playercam.position.y = y;
+                    playercam.position.z = z;
+                    slowdown(vector, 'wasd_');
+                    console.log("MD:" + moveDirection.x + ' ' + moveDirection.y + ' ' +moveDirection.z);
+
                 }
                 function createPlayer(x,y,z,debug) {if (!debug){
-                    const playerBodyDesc = RAPIER.RigidBodyDesc.newKinematicPositionBased().setTranslation(x,y,z);
-                    const playerBody = world.createRigidBody(playerBodyDesc);
+                    const playerBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z);
+                    playerBody = world.createRigidBody(playerBodyDesc);
                     const playerColliderDesc = RAPIER.ColliderDesc.capsule(1, 0.5);
                     world.createCollider(playerColliderDesc, playerBody);
+
+                    //let {x, y, z} = playerBody.translation();
+                    moveDirection = new THREE.Vector3(x, y, z);                
 
                     controls = new PointerLockControls( camera, document.body );
                     scene.add( controls.object );
 
+                    function slowdown(vector,keypattern) { 
+                        switch (keypattern) {
+                            case 'wasd_':
+                            let w = 85, a = 65, s = 83, d = 68;
+
+                            if (!keys[w])
+                            {
+
+                            }
+                            if (!keys[s])
+                            {
+
+                            }
+                            if (!keys[a])
+                            {
+
+                            }
+                            if (!keys[d])
+                            {
+
+                            }
+                            
+
+
+                        }
+
+                    }
+
                     document.addEventListener('keydown', (event) => {
                         switch (event.key) {
-                            case 'w': moveDirection.z = 1; break;
-                            case 's': moveDirection.z = -1; break;
-                            case 'a': moveDirection.x = -1; break;
-                            case 'd': moveDirection.x = 1; break;
+                            case 'w': if (moveDirection.z <  10) {moveDirection.z += 0.2;} break;
+                            case 's': if (moveDirection.z > -10) {moveDirection.z -= 0.2;} break;
+                            case 'a': if (moveDirection.x <  10) {moveDirection.x += 0.2;} break;
+                            case 'd': if (moveDirection.x > -10) {moveDirection.x -= 0.2;} break;
                             case ' ':
-                                // Apply jump impulse
-                                playerBody.applyImpulse(new RAPIER.Vector3(0, jumpForce, 0), true);
-                                break;
+                                playerBody.applyImpulse(new RAPIER.Vector3(0, jumpForce*50, 0), true);
+                                break; // jump
                         }
-                        updatePlayerMovement(playerBody);
                     });
+   /*
                     document.addEventListener('keyup', (event) => {
                         switch (event.key) {
-                            case 'w': if (moveDirection.z > 0) moveDirection.z = 0; break;
-                            case 's': if (moveDirection.z < 0) moveDirection.z = 0; break;
-                            case 'a': if (moveDirection.x < 0) moveDirection.x = 0; break;
-                            case 'd': if (moveDirection.x > 0) moveDirection.x = 0; break;
+                            case 'w': if (moveDirection.z > 0) {slowdown(moveDirection,'w',10,10);} break;
+                            case 's': if (moveDirection.z < 0) {slowdown(moveDirection,'s',10,10);} break;
+                            case 'a': if (moveDirection.x > 0) {slowdown(moveDirection,'a',10,10);} break;
+                            case 'd': if (moveDirection.x < 0) {slowdown(moveDirection,'d',10,10);} break;
                         }
-                        updatePlayerMovement(playerBody);
                     });
+   */
                     document.addEventListener( 'click', function () {
                         if (!debugmode) {controls.lock();}
                     } );
-                }}
-                if (debugmode){
+                } else {
                     controls = new OrbitControls( camera, renderer.domElement );                
-                controls.addEventListener( 'change', render );
-                controls.update();
-                }
-
-
+                    controls.addEventListener( 'change', render );
+                    controls.update();
+ 
+                }}
+                
             /*Events*/
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
                 function camSetup() {
-                    if (debugmode){
+                    if (debugmode === true){
                         controls = new OrbitControls( camera, renderer.domElement );                
                         controls.addEventListener( 'change', render );
                         controls.update();
@@ -604,6 +644,8 @@
                 function UPDATE() {
                     cubes.forEach(b => b.update());
                 }
+
+                /*nessecities*/
                 function onWindowResize() {
 
                     camera.aspect = window.innerWidth / window.innerHeight;
@@ -628,6 +670,8 @@
                     UPDATE();
                     render();
                     stats.update();
+                    updatePlayerMovement(playerBody, camera);
+          
                 }
 		</script>
 	</body>
