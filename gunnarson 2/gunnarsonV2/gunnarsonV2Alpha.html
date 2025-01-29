@@ -152,14 +152,20 @@
 
 		</script>
 
+ 
+
 		<script type="module"> // imports
 
 			import * as THREE from 'three';
+            //import {addPass,useCamera,useControls,useGui,useLoader,useRenderSize,useScene,useTick,} from './render/init'
 			import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             import { Sky } from 'three/addons/objects/Sky.js';
             import  Stats  from 'three/addons/libs/stats.module.js'
             const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
+            //import { addPhysics } from './render/physics/physics'
+            import AvatarController from './render/controllers/character-controller'
+            //import { TickData } from './render/controllers/tick-manager'
             await RAPIER.init();
 
 
@@ -539,7 +545,7 @@
                 const moveSpeed = 5;
                 const jumpForce = 5;
                 let playerBody, moveDirection, recoil, slowdownvar;
-                function updatePlayerMovement(playerbody , playercam) {
+/*                function updatePlayerMovement(playerbody , playercam) {
                     moveDirection.x = Math.max(-100, Math.min(100, moveDirection.x));
                     moveDirection.z = Math.max(-100, Math.min(100, moveDirection.z));
                     playerbody.setLinvel(moveDirection);
@@ -551,19 +557,25 @@
                     slowdown(vector, 'wasd_');
                     console.log("MD:" + moveDirection.x + ' ' + moveDirection.y + ' ' +moveDirection.z);
 
-                }
+                }*/
                 function createPlayer(x,y,z,debug) {if (!debug){
-                    const playerBodyDesc = RAPIER.RigidBodyDesc
+                    /*const playerBodyDesc = RAPIER.RigidBodyDesc
                         .kinematicVelocityBased()
                         .setGravityScale(1.0)
                         .setTranslation(x,y,z);
                     playerBodyDesc.mass = 20;
                     playerBody = world.createRigidBody(playerBodyDesc);
                     const playerColliderDesc = RAPIER.ColliderDesc.capsule(1, 0.5);
-                    world.createCollider(playerColliderDesc, playerBody);
+                    world.createCollider(playerColliderDesc, playerBody);*/
+
+                    const cubeMaterial = new THREE.MeshStandardMaterial({ color: 'blue'})
+                    const cubeGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25)
+                    let playerbody = new THREE.Mesh();
+                    controls = new AvatarController(playerBody, camera)
+
 
                     //let {x, y, z} = playerBody.translation();
-                    moveDirection = new THREE.Vector3(x, y, z);                
+                    /*moveDirection = new THREE.Vector3(x, y, z);                
 
                     controls = new PointerLockControls( camera, document.body );
                     scene.add( controls.object );
@@ -643,10 +655,10 @@
                             case 'd': if (moveDirection.x < 0) {slowdown(moveDirection,'d',10,10);} break;
                         }
                     });
-   */
+   *
                     document.addEventListener( 'click', function () {
                         if (!debugmode) {controls.lock();}
-                    } );
+                    } );*/
                 } else {
                     controls = new OrbitControls( camera, renderer.domElement );                
                     controls.addEventListener( 'change', render );
@@ -695,13 +707,14 @@
 
                 camSetup()
                 levelSetup();
+                createPlayer();
                 function animationLoop() {
 
                     world.step();
                     UPDATE();
                     render();
                     stats.update();
-                    updatePlayerMovement(playerBody, camera);
+                    //updatePlayerMovement(playerBody, camera);
           
                 }
 		</script>
