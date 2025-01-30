@@ -546,6 +546,7 @@
 			let moveLeft = false;
 			let moveRight = false;
 			let canJump = false;  
+			let lockedin = false
 			let prevTime = performance.now();
 			const velocity = new THREE.Vector3();
 			const direction = new THREE.Vector3();
@@ -560,15 +561,12 @@
 
 				controls.addEventListener( 'lock', function () {
 
-					instructions.style.display = 'none';
-					blocker.style.display = 'none';
-
+					lockedin = true;
 				} );
 
 				controls.addEventListener( 'unlock', function () {
 
-					blocker.style.display = 'block';
-					instructions.style.display = '';
+					lockedin = false;
 
 				} );
 				scene.add( controls.object );
