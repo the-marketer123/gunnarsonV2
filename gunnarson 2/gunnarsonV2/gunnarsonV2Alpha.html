@@ -216,6 +216,13 @@
                     onGround: false
 
                 };
+                let curlevel = {
+                    hasEnem: false,
+                    hasCube: false,
+                    hasGuns: false,
+                    hasMvTl: false,
+                    hasExpl: false
+                };
 
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
                 renderer.setSize( innerWidth, innerHeight );
@@ -429,8 +436,9 @@
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-                let plats = [];
-                let cubes = [];
+                
+                let plats = [], cubes = [];
+
                 function addPlatform (pos, rot, size, shape, color) {
 
                     let rttx = rot.x * pi/180
@@ -488,7 +496,9 @@
                     world.createCollider(colliderDesc, rigid);
                 
                     //Mesh
+                    
                     const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+
                     const material = new THREE.MeshStandardMaterial({
                     color: 0x0000ff,
                     flatShading: true
@@ -497,7 +507,7 @@
                     const mesh = new THREE.Mesh(geometry, material);
 
                     
-                    function update () {
+                function update () {
                     rigid.resetForces(true); 
                     let { x, y, z } = rigid.translation();
                     let rot = rigid.rotation();
@@ -511,6 +521,7 @@
                     scene.add(mesh);
                     return { mesh, rigid, update };
                 }
+
                 function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
@@ -528,6 +539,12 @@
             /*Levels*/
                 let curLevel = 'test';
                 function testLevel1() {
+                    curlevel.hasCube = true;
+                    curlevel.hasEnem = false;
+                    curlevel.hasGuns = false;
+                    curlevel.hasMvTl = false;
+                    curlevel.hasExpl = false;
+
                     camera.position.y = 5;
                     camera.position.z = 10;
                     
@@ -565,7 +582,7 @@
 			const direction = new THREE.Vector3();
 			let controls = new PointerLockControls( camera, document.body );
 			let raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-            let playerbody;
+            let playerBody;
 
 				document.addEventListener( 'click', function () {
 
@@ -646,14 +663,20 @@
 
 				document.addEventListener( 'keydown', onKeyDown );
 				document.addEventListener( 'keyup', onKeyUp );
-                function playersetup() {
-                    
+                function playerbodysetup() {
+                    let playerbodydesc = RAPIER.RigidBodyDesc.dynamic()
+                            .setTranslation(x, y, z)
+                    playerBody = world.createRigidBody(rigidBodyDesc);
+                    let playerbodycollider = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
+                    world.createCollider(playerbodycollider, plbd);
                 }
+
 				function updatecontrols() {
 
                     time = performance.now();
 
                     if ( controls.isLocked === true ) {
+                        playerBody.setTranslation(camera.position);
 
                         raycaster.ray.origin.copy( controls.object.position );
                         raycaster.ray.origin.y -= 10;
