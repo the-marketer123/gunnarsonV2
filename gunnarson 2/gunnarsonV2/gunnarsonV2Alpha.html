@@ -663,7 +663,7 @@
 
 				document.addEventListener( 'keydown', onKeyDown );
 				document.addEventListener( 'keyup', onKeyUp );
-                function playerbodysetup() {
+                function playerbodysetup(x,y,z) {
                     let playerbodydesc = RAPIER.RigidBodyDesc.dynamic()
                             .setTranslation(x, y, z)
                     playerBody = world.createRigidBody(rigidBodyDesc);
