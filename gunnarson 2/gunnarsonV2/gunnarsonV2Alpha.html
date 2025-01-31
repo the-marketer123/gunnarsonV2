@@ -565,6 +565,7 @@
 			const direction = new THREE.Vector3();
 			let controls = new PointerLockControls( camera, document.body );
 			let raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+            let playerbody;
 
 				document.addEventListener( 'click', function () {
 
@@ -645,6 +646,9 @@
 
 				document.addEventListener( 'keydown', onKeyDown );
 				document.addEventListener( 'keyup', onKeyUp );
+                function playersetup() {
+                    
+                }
 				function updatecontrols() {
 
                     time = performance.now();
