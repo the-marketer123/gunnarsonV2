@@ -205,6 +205,18 @@
                 scene = new THREE.Scene();
                 scene.background = new THREE.Color().setRGB( 100, 100, 100 );
 
+                let game = {
+                    paused: true
+
+                };
+                let player = {
+                    health: 1,
+                    speed: 5,
+                    dead: false,
+                    onGround: false
+
+                };
+
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
                 renderer.setSize( innerWidth, innerHeight );
                 renderer.setAnimationLoop( animationLoop );
@@ -548,6 +560,7 @@
 			let canJump = false;  
 			let lockedin = false
 			let prevTime = performance.now();
+            let time;
 			const velocity = new THREE.Vector3();
 			const direction = new THREE.Vector3();
 			let controls = new PointerLockControls( camera, document.body );
@@ -558,20 +571,19 @@
 					controls.lock();
 
 				} );
-
 				controls.addEventListener( 'lock', function () {
 
 					lockedin = true;
 				} );
-
 				controls.addEventListener( 'unlock', function () {
 
 					lockedin = false;
+                    pause = true;
 
 				} );
 				scene.add( controls.object );
 
-			const onKeyDown = function ( event ) {
+			    const onKeyDown = function ( event ) {
 
 					switch ( event.code ) {
 
@@ -603,7 +615,6 @@
 					}
 
 				};
-
 				const onKeyUp = function ( event ) {
 
 					switch ( event.code ) {
@@ -635,44 +646,52 @@
 				document.addEventListener( 'keydown', onKeyDown );
 				document.addEventListener( 'keyup', onKeyUp );
 				function updatecontrols() {
-							const delta = ( time - prevTime ) / 1000;
 
-					velocity.x -= velocity.x * 10.0 * delta;
-					velocity.z -= velocity.z * 10.0 * delta;
+                    time = performance.now();
 
-					velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+                    if ( controls.isLocked === true ) {
 
-					direction.z = Number( moveForward ) - Number( moveBackward );
-					direction.x = Number( moveRight ) - Number( moveLeft );
-					direction.normalize(); // this ensures consistent movements in all directions
+                        raycaster.ray.origin.copy( controls.object.position );
+                        raycaster.ray.origin.y -= 10;
 
-					if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
-					if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
 
-					if ( onObject === true ) {
+                        const delta = ( time - prevTime ) / 1000;
 
-						velocity.y = Math.max( 0, velocity.y );
-						canJump = true;
+                        velocity.x -= velocity.x * 10.0 * delta;
+                        velocity.z -= velocity.z * 10.0 * delta;
 
-					}
+                        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
 
-					controls.moveRight( - velocity.x * delta );
-					controls.moveForward( - velocity.z * delta );
+                        direction.z = Number( moveForward ) - Number( moveBackward );
+                        direction.x = Number( moveRight ) - Number( moveLeft );
+                        direction.normalize(); // this ensures consistent movements in all directions
 
-					controls.object.position.y += ( velocity.y * delta ); // new behavior
+                        if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+                        if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+        
+                        controls.moveRight( - velocity.x * delta );
+                        controls.moveForward( - velocity.z * delta );
 
-					if ( controls.object.position.y < 10 ) {
+                        controls.object.position.y += ( velocity.y * delta ); // new behavior
 
-						velocity.y = 0;
-						controls.object.position.y = 10;
+                        if ( player.onGround === true ) {
 
-						canJump = true;
+                            velocity.y = 0;
+                            controls.object.position.y = 10;
 
-					}
+                            canJump = true;
 
-				}
+                        }
 
-				}
+                    }
+
+                    prevTime = time;
+
+                    renderer.render( scene, camera );
+
+                    }
+
+				
 
 
 
@@ -686,7 +705,7 @@
                         controls.addEventListener( 'change', render );
                         controls.update();
                     } else {
-                        createPlayer(camera.position.x,camera.position.y,camera.position.z, debugmode);
+                        prevTime = time;
                     }
                 }
                 function levelSetup() {
@@ -694,9 +713,16 @@
                         case 'test': testLevel1();
                     } 
                 }
+
+                let startup = true
                 function UPDATE() {
+                    if (startup) {
+                        camSetup();
+                        levelSetup();
+                    }
+			        updatecontrols();
                     cubes.forEach(b => b.update());
-			updatecontrols();
+                    startup = false;
                 }
 
                 /*nessecities*/
@@ -716,16 +742,13 @@
 
                 }
 
-                camSetup()
-                levelSetup();
-                //createPlayer();
+     
                 function animationLoop() {
 
                     world.step();
                     UPDATE();
                     render();
                     stats.update();
-                    //updatePlayerMovement(playerBody, camera);
           
                 }
 		</script>
