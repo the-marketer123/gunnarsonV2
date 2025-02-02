@@ -674,6 +674,18 @@
                     world.createCollider(playerbodycollider, plbd);
                  }
 
+
+                 //test
+                 const testgeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+
+                    const testmaterial = new THREE.MeshStandardMaterial({
+                    color: 0x0000ff,
+                    flatShading: true
+                    });
+
+                    const testmesh = new THREE.Mesh(geometry, material);
+
+                 //end test
 				function updatecontrols() {
 
                     time = performance.now();
@@ -702,7 +714,9 @@
                         controls.moveRight( - velocity.x * delta );
                         controls.moveForward( - velocity.z * delta );
 
-                        controls.object.position.y += ( velocity.y * delta ); // new behavior
+                        //controls.object.position.y += ( velocity.y * delta ); // new behavior
+                        testmesh.position
+
 
                         if ( player.onGround === true ) {
 
