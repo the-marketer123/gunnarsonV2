@@ -6,9 +6,6 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
-        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js'></script> <!--Cannon.js-->
-        <!--<script src="https://unpkg.com/rapier@1.0.5/build/rapier.min.js"></script> <!--Rapier.js-->
-
         <style>
         body {
             margin: 0;
@@ -156,17 +153,20 @@
 
 		<script type="module"> // imports
 
-            import { CharacterControls, CONTROLLER_BODY_RADIUS } from './utils/characterControls';
-	        import * as THREE from 'three';
-	        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-	        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+	    import * as THREE from 'three';
+            //import {addPass,useCamera,useControls,useGui,useLoader,useRenderSize,useScene,useTick,} from './render/init'
+	    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+	    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             import { Sky } from 'three/addons/objects/Sky.js';
             import  Stats  from 'three/addons/libs/stats.module.js'
             const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
+            //import { addPhysics } from './render/physics/physics'
+            //import AvatarController from './render/controllers/character-controller.js'
+            //import { TickData } from './render/controllers/tick-manager'
             await RAPIER.init();
 
 
-	    let camera, scene, renderer, plat1, prototype5x5G;
+	    let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
             const pi = Math.PI;
             const debugmode = false;
 
@@ -218,7 +218,8 @@
                     hasCube: false,
                     hasGuns: false,
                     hasMvTl: false,
-                    hasExpl: false
+                    hasExpl: false,
+                    paused: false
                 };
 
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
@@ -280,18 +281,11 @@
 
                /*Camera*/
                 
-                function setupOrbCam() {
-                    camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
-                    const orbitControls = new OrbitControls(camera, renderer.domElement);
-                    orbitControls.enableDamping = true
-                    orbitControls.enablePan = true
-                    orbitControls.minDistance = 5
-                    orbitControls.maxDistance = 20
-                    orbitControls.maxPolarAngle = Math.PI / 2 - 0.05 // prevent camera below ground
-                    orbitControls.minPolarAngle = Math.PI / 4        // prevent top down view
-                    orbitControls.update();
-                    scene.add( camera );
-                }
+               fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+               bupcamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+
+               scene.add( fpscamera );
+               scene.add( bupcamera );
                 
 
 
@@ -554,8 +548,8 @@
                     curlevel.hasMvTl = false;
                     curlevel.hasExpl = false;
 
-                    camera.position.y = 5;
-                    camera.position.z = 10;
+                    fpscamera.position.y = 5;
+                    fpscamera.position.z = 10;
                     
                     addSkybox(90);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
@@ -579,48 +573,174 @@
                
             /*Controls*/
 
-            setupOrbCam();
-            let bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(-1, 3, 1)
-            let rigidBody = world.createRigidBody(bodyDesc);
-            let dynamicCollider = RAPIER.ColliderDesc.ball(0.5);
-            world.createCollider(dynamicCollider, rigidBody.handle);
+  			let moveForward = false;
+			let moveBackward = false;
+			let moveLeft = false;
+			let moveRight = false;
+			let canJump = false;  
+			let lockedin = false
+			let prevTime = performance.now();
+            let time;
+			const velocity = new THREE.Vector3();
+			const direction = new THREE.Vector3();
+			let controls = new PointerLockControls( bupcamera, document.body );
+			let fpsControls = new PointerLockControls( fpscamera, document.body );
+			let raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+            let playerBody;
 
-            characterControls = new CharacterControls(model, mixer, 
-                    animationsMap, orbitControls, 
-                    camera,  'Idle',
-                    new RAPIER.Ray( 
-                        { x: 0, y: 0, z: 0 },
-                        { x: 0, y: -1, z: 0} 
-                    ), rigidBody);
+				document.addEventListener( 'click', function () {
 
-            const keysPressed = {};
-            const keyDisplayQueue = new KeyDisplay();
+					fpsControls.lock();
 
-            document.addEventListener('keydown', (event) => {
-                keyDisplayQueue.down(event.key)
-                if (event.shiftKey && characterControls) {
-                    characterControls.switchRunToggle()
-                }
-                keysPressed[event.key.toLowerCase()] = true
-            }, false);
+				 } );
+				controls.addEventListener( 'lock', function () {
 
-            document.addEventListener('keyup', (event) => {
-                keyDisplayQueue.up(event.key);
-                keysPressed[event.key.toLowerCase()] = false
-            }, false);
+					lockedin = true;
+				 } );
+				controls.addEventListener( 'unlock', function () {
 
-            function charUpdate() {
-                let deltaTime = clock.getDelta();
-                if (characterControls) {
-                    characterControls.update(world, deltaTime, keysPressed);
-                }
+					lockedin = false;
 
-            }
+				 } );
+				scene.add( controls.object );
+
+			    const onKeyDown = function ( event ) {
+
+					switch ( event.code ) {
+
+						case 'ArrowUp':
+						case 'KeyW':
+							moveForward = true;
+							break;
+
+						case 'ArrowLeft':
+						case 'KeyA':
+							moveLeft = true;
+							break;
+
+						case 'ArrowDown':
+						case 'KeyS':
+							moveBackward = true;
+							break;
+
+						case 'ArrowRight':
+						case 'KeyD':
+							moveRight = true;
+							break;
+
+						case 'Space':
+							if ( canJump === true ) velocity.y += 350;
+							canJump = false;
+							break;
+
+					}
+
+				 };
+				const onKeyUp = function ( event ) {
+
+					switch ( event.code ) {
+
+						case 'ArrowUp':
+						case 'KeyW':
+							moveForward = false;
+							break;
+
+						case 'ArrowLeft':
+						case 'KeyA':
+							moveLeft = false;
+							break;
+
+						case 'ArrowDown':
+						case 'KeyS':
+							moveBackward = false;
+							break;
+
+						case 'ArrowRight':
+						case 'KeyD':
+							moveRight = false;
+							break;
+
+					}
+
+				 };
+
+				document.addEventListener( 'keydown', onKeyDown );
+				document.addEventListener( 'keyup', onKeyUp );
+                function playerbodysetup(x,y,z) {
+                    let playerbodydesc = RAPIER.RigidBodyDesc.dynamic()
+                            .setTranslation(x, y, z)
+                    playerBody = world.createRigidBody(playerBodyDesc);
+                    let playerbodycollider = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
+                    world.createCollider(playerbodycollider, plbd);
+                 }
+
+
+                 //test
+                let playerBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased()
+                playerBody = world.createRigidBody(playerBodyDesc);
+                let playerBodyColl = RAPIER.ColliderDesc.cuboid(0.25,1,0.25)
+                world.createCollider(playerBodyColl, playerBody);
+
+                 //end test
+				function updatecontrols() {
+
+                    time = performance.now();
+
+                    if ( fpsControls.isLocked === true ) {
+
+
+                        console.log(playerBody.translation());
+                        playerBody.setNextKinematicTranslation(controls.object.position);
+                        raycaster.ray.origin.copy( controls.object.position );
+                        raycaster.ray.origin.y -= 10;
+
+
+                        const delta = ( time - prevTime ) / 1000;
+
+                        velocity.x -= velocity.x * 10.0 * delta;
+                        velocity.z -= velocity.z * 10.0 * delta;
+
+                        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+                        direction.z = Number( moveForward ) - Number( moveBackward );
+                        direction.x = Number( moveRight ) - Number( moveLeft );
+                        direction.normalize(); // this ensures consistent movements in all directions
+
+                        if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+                        if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+        
+                        controls.moveRight( - velocity.x * delta );
+                        controls.moveForward( - velocity.z * delta );
+
+                        if ( player.onGround === true ) {
+
+                            velocity.y = 0;
+                            controls.object.position.y = 10;
+
+                            canJump = true;
+
+                        }
+                        if (controls.object.position.y < -10) {
+                            player.dead = true;
+                        }
+                        fpsControls.object.position.copy(playerBody.translation());
+
+
+                    }
+
+                    prevTime = time;
+
+                   // renderer.render( scene, fpscamera );
+
+                    }
+
+				
+
+
 
             /*Events*/
                                 
                 window.addEventListener( 'resize', onWindowResize );
-                
                 
                 function levelSetup() {
                     switch (curLevel) {
@@ -631,8 +751,10 @@
                 let startup = true
                 function UPDATE() {
                     if (startup) {
+                        prevTime = time;
                         levelSetup();
                     }
+			        updatecontrols();
                     cubes.forEach(b => b.update());
                     startup = false;
                  }
@@ -640,8 +762,8 @@
                 /*nessecities*/
                 function onWindowResize() {
 
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
+                    fpscamera.aspect = window.innerWidth / window.innerHeight;
+                    fpscamera.updateProjectionMatrix();
 
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -650,7 +772,7 @@
                  }
                 function render() {
 
-                    renderer.render( scene, camera );
+                    renderer.render( scene, fpscamera );
 
                  }
 

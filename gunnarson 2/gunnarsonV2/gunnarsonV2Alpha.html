@@ -166,7 +166,7 @@
             await RAPIER.init();
 
 
-	    let camera, scene, renderer, plat1, prototype5x5G;
+	    let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
             const pi = Math.PI;
             const debugmode = false;
 
@@ -218,7 +218,8 @@
                     hasCube: false,
                     hasGuns: false,
                     hasMvTl: false,
-                    hasExpl: false
+                    hasExpl: false,
+                    paused: false
                 };
 
                 renderer = new THREE.WebGLRenderer( {antialias: true} );
@@ -280,9 +281,9 @@
 
                /*Camera*/
                 
-                camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
 
-                scene.add( camera );
+                scene.add( fpscamera );
                 
 
 
@@ -545,8 +546,8 @@
                     curlevel.hasMvTl = false;
                     curlevel.hasExpl = false;
 
-                    camera.position.y = 5;
-                    camera.position.z = 10;
+                    fpscamera.position.y = 5;
+                    fpscamera.position.z = 10;
                     
                     addSkybox(90);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
@@ -580,7 +581,7 @@
             let time;
 			const velocity = new THREE.Vector3();
 			const direction = new THREE.Vector3();
-			let controls = new PointerLockControls( camera, document.body );
+			let controls = new PointerLockControls( fpscamera, document.body );
 			let raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
             let playerBody;
 
@@ -596,7 +597,6 @@
 				controls.addEventListener( 'unlock', function () {
 
 					lockedin = false;
-                    pause = true;
 
 				 } );
 				scene.add( controls.object );
@@ -680,7 +680,8 @@
                     flatShading: true
                     });
 
-                    const testmesh = new THREE.Mesh(geometry, material);
+                    playerBody = new THREE.Mesh(testgeometry, testmaterial);
+                    scene.add(playerBody);
 
                  //end test
 				function updatecontrols() {
@@ -688,7 +689,9 @@
                     time = performance.now();
 
                     if ( controls.isLocked === true ) {
-                        playerBody.setTranslation(camera.position);
+
+                        playerBody.position.copy(fpscamera.position);
+                        playerBody.position.x += 5;
 
                         raycaster.ray.origin.copy( controls.object.position );
                         raycaster.ray.origin.y -= 10;
@@ -711,10 +714,6 @@
                         controls.moveRight( - velocity.x * delta );
                         controls.moveForward( - velocity.z * delta );
 
-                        //controls.object.position.y += ( velocity.y * delta ); // new behavior
-                        testmesh.position
-
-
                         if ( player.onGround === true ) {
 
                             velocity.y = 0;
@@ -728,7 +727,7 @@
 
                     prevTime = time;
 
-                    renderer.render( scene, camera );
+                   // renderer.render( scene, fpscamera );
 
                     }
 
@@ -740,15 +739,6 @@
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
-                function camSetup() {
-                    if (debugmode === true){
-                        controls = new OrbitControls( camera, renderer.domElement );                
-                        controls.addEventListener( 'change', render );
-                        controls.update();
-                    } else {
-                        prevTime = time;
-                    }
-                 }
                 function levelSetup() {
                     switch (curLevel) {
                         case 'test': testLevel1();
@@ -758,7 +748,7 @@
                 let startup = true
                 function UPDATE() {
                     if (startup) {
-                        camSetup();
+                        prevTime = time;
                         levelSetup();
                     }
 			        updatecontrols();
@@ -769,8 +759,8 @@
                 /*nessecities*/
                 function onWindowResize() {
 
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
+                    fpscamera.aspect = window.innerWidth / window.innerHeight;
+                    fpscamera.updateProjectionMatrix();
 
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -779,7 +769,7 @@
                  }
                 function render() {
 
-                    renderer.render( scene, camera );
+                    renderer.render( scene, fpscamera );
 
                  }
 
