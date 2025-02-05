@@ -149,6 +149,15 @@
 
 		</script>
 
+        <script> 
+            function windowWidth() {
+                return window.innerWidth
+            }
+            function windowHeight() {
+                return window.innerHeight
+            }
+        </script>
+
         <canvas id='gl-canvas' width='600' height='600'></canvas>
         <canvas id='ui-canvas' width='600' height='600'></canvas>
 
@@ -597,6 +606,8 @@
 
                 let uiCanvas=document.getElementById('ui-canvas')
                 let ctx=uiCanvas.getContext('2d')
+                //uiCanvas.style.display='none'
+
 
                 let FIXED_PHYSICS_TIMESTEP=0.5/60
                 let MAX_PHYSICS_TIMESTEPS=3
@@ -651,6 +662,7 @@
                         
                         out.lookEuler.set(out.pitch,out.yaw,0)
                         out.camera.quaternion.setFromEuler(out.lookEuler)
+                        console.log(out.camera.position.x);
                     }
                     
                     out.updatePhysics=function(dt){
@@ -658,6 +670,8 @@
                         let sdir=Math.sin(out.yaw)
                         let cdir=Math.cos(out.yaw)
                         let s=(out.walkSpeed/(out.grounded?out.fric:out.airFric))*dt*0.6
+                        const maxSpeed = 10; // Adjust this value as needed
+                        s = Math.min(s, maxSpeed);
                         
                         if(user.keys.d){
                             
@@ -745,6 +759,7 @@
                     
                     uiCanvas.onmousedown=function(){
                         
+                        console.log('check');
                         out.mousePressed=true
                         out.mouseClicked=true
                         uiCanvas.requestPointerLock()
@@ -1062,7 +1077,7 @@
                     dt=0.01*(Date.now()-dt)
                     player.updatePhysics(dt)
                     player.updateCamera()
-                        cubes.forEach(b => b.update());
+                    cubes.forEach(b => b.update());
                     startup = false;
                  }
 
@@ -1071,6 +1086,8 @@
 
                     fpscamera.aspect = window.innerWidth / window.innerHeight;
                     fpscamera.updateProjectionMatrix();
+                    uiCanvas.width = window.innerWidth
+                    uiCanvas.height = window.innerHeight
 
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -1079,7 +1096,7 @@
                  }
                 function render() {
 
-                    renderer.render( scene, fpscamera );
+                    renderer.render( scene, player.camera );
 
                  }
 
