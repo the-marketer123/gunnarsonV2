@@ -277,10 +277,21 @@
 				dirLight.shadow.camera.far =   3500;
 				dirLight.shadow.bias =     - 0.0001;
 
-               /*Camera*/
+            /*Camera*/
                 
-               fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
-               bupcamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+
+                bupcamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+
+                function addOrbit (camera, element) {
+                    const orbitControls = new OrbitControls(camera, element);// originally renderer.domElement
+                    orbitControls.enableDamping = true
+                    orbitControls.minDistance = 5
+                    orbitControls.maxDistance = 15
+                    orbitControls.enablePan = false
+                    orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
+                    orbitControls.update();
+                }
 
                scene.add( fpscamera );
                scene.add( bupcamera );
@@ -400,7 +411,7 @@
 
                 
                 const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
-                //scene.add( grid );
+                scene.add( grid );
                 
 
                 renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -507,7 +518,7 @@
                     const mesh = new THREE.Mesh(geometry, material);
 
                     
-                function update () {
+                 function update () {
                     rigid.resetForces(true); 
                     let { x, y, z } = rigid.translation();
                     let rot = rigid.rotation();
@@ -568,9 +579,67 @@
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
                  }
-               
+
+
             /*Controls*/
 
+            /*
+                function possiblecontrols(){
+                    const W = 'w'
+                    const A = 'a'
+                    const S = 's'
+                    const D = 'd'
+                    const SHIFT = 'shift'
+                    const DIRECTIONS = [W, A, S, D]
+
+                    let walkDirection = new THREE.Vector3()
+                    let rotateAngle = new THREE.Vector3(0, 1, 0)
+                    let rotateQuarternion = new THREE.Quaternion()
+                    let cameraTarget = new THREE.Vector3()
+
+                    let fadeDuration = 0.2
+                    let runVelocity = 5
+                    let walkVelocity = 2
+                    let keyPressed = {};
+
+                    document.addEventListener('keydown', (event) => {
+                        //keyDisplayQueue.down(event.key)
+                        keysPressed[event.key.toLowerCase()] = true
+                    }, false);
+                    document.addEventListener('keyup', (event) => {
+                        //keyDisplayQueue.up(event.key);
+                        keysPressed[event.key.toLowerCase()] = false
+                    }, false);
+
+                    function directionOffset(keysPressed) {
+                        var directionOffset = 0 // w
+
+                        if (keysPressed[W]) {
+                            if (keysPressed[A]) {
+                                directionOffset = Math.PI / 4 // w+a
+                            } else if (keysPressed[D]) {
+                                directionOffset = - Math.PI / 4 // w+d
+                            }
+                        } else if (keysPressed[S]) {
+                            if (keysPressed[A]) {
+                                directionOffset = Math.PI / 4 + Math.PI / 2 // s+a
+                            } else if (keysPressed[D]) {
+                                directionOffset = -Math.PI / 4 - Math.PI / 2 // s+d
+                            } else {
+                                directionOffset = Math.PI // s
+                            }
+                        } else if (keysPressed[A]) {
+                            directionOffset = Math.PI / 2 // a
+                        } else if (keysPressed[D]) {
+                            directionOffset = - Math.PI / 2 // d
+                        }
+
+                        return directionOffset
+                    }
+                }*/
+
+                
+            /*
   			let moveForward = false;
 			let moveBackward = false;
 			let moveLeft = false;
@@ -679,7 +748,7 @@
                     time = performance.now();
 
                     if ( fpsControls.isLocked === true ) {
-                        playerBody.setNextKinematicTranslation(controls.object.position);
+
                         raycaster.ray.origin.copy( controls.object.position );
                         raycaster.ray.origin.y -= 10;
 
@@ -698,10 +767,7 @@
                         if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
                         if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
         
-                        controls.moveRight( - velocity.x * delta );
-                        controls.moveForward( - velocity.z * delta );
-                        controls.object.position.y += ( velocity.y * delta ); // new behavior
-
+                     
 
                         let ray = new RAPIER.Ray( 
                             { x: 0, y: 0, z: 0 },
@@ -713,7 +779,7 @@
                         ray.origin.z = raytranslation.z;
 
                         let hit = world.castRay(ray, 0.5, true);
-                        console.log(hit === true);
+                        //console.log(hit === true);
 
                         const translation = playerBody.translation();
 
@@ -723,11 +789,11 @@
                             let diff = translation.y - ( point.y + 0.5);
                             if (diff < 0.0) {
                                 let storedFall = 0
-                                velocity.y = MathUtils.lerp(0, Math.abs(diff), 0.5)
+                                velocity.y = THREE.MathUtils.lerp(0, Math.abs(diff), 0.5)
                                 canJump = true;
+                                //console.log('check 2');
                             }
-                            //velocity.y = 0;
-                            //canJump = true;
+                            console.log(controls.object.position);
                         }
                         if (controls.object.position.y < -10) {
                             player.dead = true;
@@ -737,7 +803,21 @@
                             player.dead = false;
                         }
 
-                        fpsControls.object.position.copy(playerBody.translation());
+                        controls.moveRight( - velocity.x * delta );
+                        controls.moveForward( - velocity.z * delta );
+                        controls.object.position.y += ( velocity.y * delta ); // new behavior
+
+                        playerBody.setNextKinematicTranslation(controls.object.position);
+
+                        let geometry = new THREE.BoxGeometry(1,1,10);
+                        let material = new THREE.MeshStandardMaterial( {
+                            color: 0x0000ff,
+                            flatShading: true
+                        } );
+                        let box = new THREE.Mesh(geometry,material);
+                        box.position.copy(playerBody.translation())
+
+                        //fpsControls.object.position.copy(playerBody.translation());
 
 
                     }
@@ -765,10 +845,10 @@
                 let startup = true
                 function UPDATE() {
                     if (startup) {
-                        prevTime = time;
+                        //prevTime = time;
                         levelSetup();
                     }
-			        updatecontrols();
+			       // updatecontrols();
                     cubes.forEach(b => b.update());
                     startup = false;
                  }
