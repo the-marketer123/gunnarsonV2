@@ -149,7 +149,9 @@
 
 		</script>
 
-        
+        <canvas id='gl-canvas' width='600' height='600'></canvas>
+        <canvas id='ui-canvas' width='600' height='600'></canvas>
+
 		<script type="module"> // imports
 
 	        import * as THREE from 'three';
@@ -201,7 +203,7 @@
                     paused: true
 
                 };
-                let player = {
+                let player2 = {
                     health: 1,
                     speed: 5,
                     dead: false,
@@ -583,6 +585,212 @@
 
             /*Controls*/
 
+
+
+
+                let width=window.innerWidth
+                let height=window.innerHeight
+                let aspect=width/height
+
+                let glCanvas=document.getElementById('gl-canvas')
+                glCanvas.style.display='none'
+
+                let uiCanvas=document.getElementById('ui-canvas')
+                let ctx=uiCanvas.getContext('2d')
+
+                let FIXED_PHYSICS_TIMESTEP=0.5/60
+                let MAX_PHYSICS_TIMESTEPS=3
+                let EULER_ANGLE_ORDER='YXZ'
+
+                let webrenderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,canvas:glCanvas})
+                webrenderer.setSize(width,height)
+
+                let F=(function(out){
+                    
+                    out.constrain=function(x,a,b){
+                        
+                        return x<a?a:x>b?b:x
+                    }
+                    
+                    out.deg=function(x){
+                        
+                        return x*57.29577951
+                    }
+                    
+                    out.rad=function(x){
+                        
+                        return a*0.01745329252
+                    }
+                    
+                    return out
+                    
+                })({})
+
+                let player=(function(out){
+                    
+                    out.walkSpeed=1
+                    out.fric=0.7
+                    out.airFric=0.85
+                    out.jumpPower=2
+                    out.gravity=0.05
+                    
+                    out.x=0
+                    out.y=-5
+                    out.z=7
+                    out.vx=out.vy=out.vz=out.yaw=out.pitch=0
+                    out.sensitivity=0.005
+                    out.fov=55
+                    out.camera=new THREE.PerspectiveCamera(out.fov,aspect,0.1,1000)
+                    out.grounded=false
+                    
+                    out.lookEuler=new THREE.Euler(out.pitch,out.yaw,0,EULER_ANGLE_ORDER)
+                    
+                    out.updateCamera=function(){
+                        
+                        out.camera.position.set(out.x,out.y,out.z)
+                        
+                        out.lookEuler.set(out.pitch,out.yaw,0)
+                        out.camera.quaternion.setFromEuler(out.lookEuler)
+                    }
+                    
+                    out.updatePhysics=function(dt){
+                        
+                        let sdir=Math.sin(out.yaw)
+                        let cdir=Math.cos(out.yaw)
+                        let s=(out.walkSpeed/(out.grounded?out.fric:out.airFric))*dt*0.6
+                        
+                        if(user.keys.d){
+                            
+                            out.vx+=cdir*s
+                            out.vz-=sdir*s
+                        }
+                        
+                        if(user.keys.w){
+                            
+                            out.vx-=sdir*s
+                            out.vz-=cdir*s
+                        }
+                        
+                        if(user.keys.a){
+                            
+                            out.vx-=cdir*s
+                            out.vz+=sdir*s
+                        }
+                        
+                        if(user.keys.s){
+                            
+                            out.vx+=sdir*s
+                            out.vz+=cdir*s
+                        }
+                        
+                        let m=Math.sqrt(out.vx*out.vx+out.vz*out.vz)
+                        
+                        if(m>out.walkSpeed){
+                            
+                            m=out.walkSpeed/m
+                            out.vx*=m
+                            out.vz*=m
+                        }
+                        
+                        if(out.grounded){
+                            
+                            out.vx*=out.fric
+                            out.vz*=out.fric
+                            
+                            if(user.keys[' ']){
+                                
+                                out.vy+=out.jumpPower*dt
+                                out.grounded=false
+                            }
+                            
+                        } else {
+                            
+                            out.vx*=out.airFric
+                            out.vz*=out.airFric
+                        }
+                        
+                        out.vy-=out.gravity*dt
+                        
+                        out.x+=out.vx*dt
+                        out.y+=out.vy*dt
+                        out.z+=out.vz*dt
+                        
+                        if(out.y<-1){
+                            
+                            out.y=-1
+                            out.vy=0
+                            out.grounded=true
+                        }
+                        
+                    }
+                    
+                    return out
+                    
+                })({})
+                    
+                let user=(function(out){
+                    
+                    out.mouseX=out.mouseY=0
+                    out.mousePressed=out.mouseClicked=false
+                    out.keys={}
+                    
+                    uiCanvas.onmousemove=function(e){
+                        
+                        out.mouseX+=e.movementX
+                        out.mouseY+=e.movementY
+                        
+                        player.yaw-=e.movementX*player.sensitivity
+                        player.pitch=F.constrain(player.pitch-e.movementY*player.sensitivity,-1.57,1.57)
+                    }
+                    
+                    uiCanvas.onmousedown=function(){
+                        
+                        out.mousePressed=true
+                        out.mouseClicked=true
+                        uiCanvas.requestPointerLock()
+                    }
+                    
+                    uiCanvas.onmouseup=function(){
+                        
+                        out.mousePressed=false
+                    }
+                    
+                    document.onkeydown=function(e){
+                        
+                        out.keys[e.key.toString()]=true
+                    }
+                    
+                    document.onkeyup=function(e){
+                        
+                        out.keys[e.key.toString()]=false
+                    }
+                    
+                    return out
+                    
+                })({})
+
+
+            /*
+			    let fpsControls = new PointerLockControls( fpscamera, document.body );
+
+                document.addEventListener( 'click', function () {
+
+                    fpsControls.lock();
+
+                } );
+
+                let geometry = new THREE.BoxGeometry(1,1,10);
+                let material = new THREE.MeshStandardMaterial( {
+                    color: 0x0000ff,
+                    flatShading: true
+                } );
+                let box = new THREE.Mesh(geometry,material);
+                function test() {
+                    let dir = new THREE.Vector3(1,1,1);
+                    let lookDir = fpsControls.getDirection(dir).x;
+                    box.position.set( lookDir.x + 2, box.position.y, lookDir.z + 2 );
+                    console.log(lookDir);
+                }
             /*
                 function possiblecontrols(){
                     const W = 'w'
@@ -843,13 +1051,18 @@
                  }
 
                 let startup = true
+                let dt=Date.now()-1
+
                 function UPDATE() {
                     if (startup) {
                         //prevTime = time;
                         levelSetup();
                     }
-			       // updatecontrols();
-                    cubes.forEach(b => b.update());
+
+                    dt=0.01*(Date.now()-dt)
+                    player.updatePhysics(dt)
+                    player.updateCamera()
+                        cubes.forEach(b => b.update());
                     startup = false;
                  }
 
