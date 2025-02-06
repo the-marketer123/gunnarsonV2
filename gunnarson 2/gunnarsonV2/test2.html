@@ -206,6 +206,8 @@ function main(){
 
     uiCanvas.width = window.innerWidth
     uiCanvas.height = window.innerHeight
+    glCanvas.width = window.innerWidth
+    glCanvas.height = window.innerHeight
     
     if(!gl){
         
@@ -674,38 +676,37 @@ function main(){
 
     //the cool texture
     ctx.fillStyle='rgb(0,0,0)'
-    ctx.fillRect(0,0,256,256)
-    ctx.filter='blur(0.9px)'
-    ctx.lineWidth=1
-    ctx.beginPath();
-    ctx.moveTo(103,0)
-    ctx.lineTo(103,256)
-    ctx.moveTo(118,0);
-    ctx.lineTo(118,256);
-    ctx.moveTo(128,0);
-    ctx.lineTo(128,256);
-    ctx.moveTo(138,0);
-    ctx.lineTo(138,256);
-    ctx.moveTo(153,0)
-    ctx.lineTo(153,256)
-    ctx.moveTo(0,103)
-    ctx.lineTo(256,103)
-    ctx.moveTo(0,118)
-    ctx.lineTo(256,118)
-    ctx.moveTo(0,128)
-    ctx.lineTo(256,128)
-    ctx.moveTo(0,138)
-    ctx.lineTo(256,138)
-    ctx.moveTo(0,153)
-    ctx.lineTo(256,153)
-    ctx.moveTo(0,0)
-    ctx.closePath();
+    ctx.fillRect(0,0,512,512)
+    ctx.lineWidth=3
+    ctx.beginPath()
+    ctx.moveTo(256,0)
+    ctx.lineTo(256,512)
+    ctx.closePath()
+    ctx.strokeStyle='rgb(255,255,255)'
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(0,256)
+    ctx.lineTo(512,256)
+    ctx.closePath()
+    ctx.strokeStyle='rgb(255,255,255)'
+    ctx.stroke()
+    
+    ctx.fillStyle='rgb(255,255,255)'
+    ctx.font='bold 40px arial'
+    ctx.fillText('Prototype',20,50)
+    ctx.fillText('5 x 5 ft.',20,100)
+    ctx.fillRect(0,0,7,512)
+    ctx.fillRect(512,0,-7,512)
+    ctx.fillRect(0,0,512,7)
+    ctx.fillRect(0,512,512,-7)
+    ctx.fillStyle='rgb(0,0,0)'
     
     ctx.strokeStyle='rgb(255,255,255)'
     ctx.stroke();
     
     //for some reason teh texture format is set to LUMINANCE but normal imageData still works
-    let textureData=ctx.getImageData(0,0,256,256)
+    let textureData=ctx.getImageData(0,0,512,512)
     
     //basically when webgl fails it doesnt render anything but anything below the canvas is still rendered
     ctx.filter='none'
@@ -1565,10 +1566,12 @@ function main(){
         runDebug(dt)
         
 		ctx.beginPath()
-		ctx.moveTo(290,300)
-	    ctx.lineTo(310,300)
-		ctx.moveTo(300,290)
-		ctx.lineTo(300,310)
+        let width = window.innerWidth/2;
+        let height = window.innerHeight/2;
+		ctx.moveTo(width - 10,height)
+	    ctx.lineTo(width + 10,height)
+		ctx.moveTo(width,height - 10)
+		ctx.lineTo(width,height + 10)
 		ctx.stroke()
         
         if(showLevelMessage && levels[currentLevel].message){
