@@ -736,7 +736,14 @@
 
 
             /*Events*/
-                                
+                function onWindowResize() {
+
+                    fpscamera.aspect = window.innerWidth / window.innerHeight;
+                    fpscamera.updateProjectionMatrix();
+
+                    renderer.setSize( window.innerWidth, window.innerHeight );
+
+                    render();                
                 window.addEventListener( 'resize', onWindowResize );
                 
                 function levelSetup() {
@@ -757,14 +764,7 @@
                  }
 
                 /*nessecities*/
-                function onWindowResize() {
-
-                    fpscamera.aspect = window.innerWidth / window.innerHeight;
-                    fpscamera.updateProjectionMatrix();
-
-                    renderer.setSize( window.innerWidth, window.innerHeight );
-
-                    render();
+                
 
                  }
                 function render() {

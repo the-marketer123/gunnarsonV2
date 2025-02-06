@@ -7,100 +7,100 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
         <style>
-        body {
-            margin: 0;
-            background-color: #000;
-            color: #fff;
-            font-family: Monospace;
-            font-size: 13px;
-            line-height: 24px;
-            overscroll-behavior: none;
-        }
-        
-        #board-canvas {
-            display: none; 
-        }
-        a {
-            color: #ff0;
-            text-decoration: none;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        button {
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        
-        #info {
-            position: absolute;
-            top: 0px;
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            text-align: center;
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            pointer-events: none;
-            z-index: 1; /* TODO Solve this in HTML */
-        }
-        
-        a, button, input, select {
-            pointer-events: auto;
-        }
-        
-        .lil-gui {
-            z-index: 2 !important; /* TODO Solve this in HTML */
-        }
-        
-        @media all and ( max-width: 640px ) {
-            .lil-gui.root { 
-                right: auto;
-                top: auto;
-                max-height: 50%;
-                max-width: 80%;
-                bottom: 0;
-                left: 0;
+            body {
+                margin: 0;
+                background-color: #000;
+                color: #fff;
+                font-family: Monospace;
+                font-size: 13px;
+                line-height: 24px;
+                overscroll-behavior: none;
             }
-        }
-        
-        #overlay {
-            position: absolute;
-            font-size: 16px;
-            z-index: 2;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            background: rgba(0,0,0,0.7);
-        }
-        
-            #overlay button {
-                background: transparent;
-                border: 0;
-                border: 1px solid rgb(255, 255, 255);
-                border-radius: 4px;
-                color: #ffffff;
-                padding: 12px 18px;
-                text-transform: uppercase;
+            
+            #board-canvas {
+                display: none; 
+            }
+            a {
+                color: #ff0;
+                text-decoration: none;
+            }
+            
+            a:hover {
+                text-decoration: underline;
+            }
+            
+            button {
                 cursor: pointer;
+                text-transform: uppercase;
             }
-        
-        #notSupported {
-            width: 50%;
-            margin: auto;
-            background-color: #f00;
-            margin-top: 20px;
-            padding: 10px;
-        }
+            
+            #info {
+                position: absolute;
+                top: 0px;
+                width: 100%;
+                padding: 10px;
+                box-sizing: border-box;
+                text-align: center;
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                pointer-events: none;
+                z-index: 1; /* TODO Solve this in HTML */
+            }
+            
+            a, button, input, select {
+                pointer-events: auto;
+            }
+            
+            .lil-gui {
+                z-index: 2 !important; /* TODO Solve this in HTML */
+            }
+            
+            @media all and ( max-width: 640px ) {
+                .lil-gui.root { 
+                    right: auto;
+                    top: auto;
+                    max-height: 50%;
+                    max-width: 80%;
+                    bottom: 0;
+                    left: 0;
+                }
+            }
+            
+            #overlay {
+                position: absolute;
+                font-size: 16px;
+                z-index: 2;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                background: rgba(0,0,0,0.7);
+            }
+            
+                #overlay button {
+                    background: transparent;
+                    border: 0;
+                    border: 1px solid rgb(255, 255, 255);
+                    border-radius: 4px;
+                    color: #ffffff;
+                    padding: 12px 18px;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                }
+            
+            #notSupported {
+                width: 50%;
+                margin: auto;
+                background-color: #f00;
+                margin-top: 20px;
+                padding: 10px;
+            }
         </style>
         
     </head>
@@ -149,20 +149,14 @@
 
 		</script>
 
-        <script> 
-            function windowWidth() {
-                return window.innerWidth
-            }
-            function windowHeight() {
-                return window.innerHeight
-            }
-        </script>
+      
 
         <canvas id='gl-canvas' width='600' height='600'></canvas>
         <canvas id='ui-canvas' width='600' height='600'></canvas>
 
-		<script type="module"> // imports
+		<script type="module">
 
+            /*basics*/
 	        import * as THREE from 'three';
 	        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 	        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -172,13 +166,12 @@
             await RAPIER.init();
 
 
-	    let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
+	        let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
             const pi = Math.PI;
-            const debugmode = false;
+            let debugmode = false;
 
 
-            function resize( object, scaleX, scaleY, scaleZ, updateUV )
-            {
+            function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
                 object.scale.set( scaleX, scaleY, scaleZ );
             
                 if( updateUV )
@@ -200,9 +193,8 @@
                 }
             }           
 			
-            //function init() {
 
-                /*Scene*/
+            /*Scene*/
                 
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
                 scene = new THREE.Scene();
@@ -212,16 +204,7 @@
                     paused: true
 
                 };
-                let player2 = {
-                    health: 1,
-                    speed: 5,
-                    dead: false,
-                    onGround: false,
-                    ballW: 0.5,
-                    ballH: 0.5,
-                    ballL: 0.5
-
-                };
+                
                 let curlevel = {
                     hasEnem: false,
                     hasCube: false,
@@ -258,7 +241,7 @@
                 const clock = new THREE.Clock()
                 let delta
 
-                /*Lights*/
+            /*Lights*/
                 
  
                 scene.fog = new THREE.Fog( scene.background, 1, 5000 );
@@ -297,127 +280,132 @@
                 function addOrbit (camera, element) {
                     const orbitControls = new OrbitControls(camera, element);// originally renderer.domElement
                     orbitControls.enableDamping = true
-                    orbitControls.minDistance = 5
-                    orbitControls.maxDistance = 15
+                    orbitControls.minDistance = 0.1
+                    orbitControls.maxDistance = 1500
                     orbitControls.enablePan = false
                     orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
                     orbitControls.update();
                 }
 
+                function addPointerLock ( camera, element ) {
+                    let controls = new PointerLockControls( camera, element );
+                }
+
+                addOrbit(fpscamera, document.body);
                scene.add( fpscamera );
                scene.add( bupcamera );
                 
 
 
-                /*Textures*/
+            /*Textures*/
                 
-                //old texture     
-                function initTextures() {
-                    // Prepare the board canvas
-                    board_ctx.fillStyle = 'rgb(0,0,0)';
-                    board_ctx.fillRect(0, 0, 512, 512);
-                    board_ctx.lineWidth = 3;
+                    //old texture     
+                    function initTextures() {
+                        // Prepare the board canvas
+                        board_ctx.fillStyle = 'rgb(0,0,0)';
+                        board_ctx.fillRect(0, 0, 512, 512);
+                        board_ctx.lineWidth = 3;
 
-                    // Draw the cross lines
-                    board_ctx.beginPath();
-                    board_ctx.moveTo(256, 0);
-                    board_ctx.lineTo(256, 512);
-                    board_ctx.closePath();
-                    board_ctx.strokeStyle = 'rgb(255,255,255)';
-                    board_ctx.stroke();
+                        // Draw the cross lines
+                        board_ctx.beginPath();
+                        board_ctx.moveTo(256, 0);
+                        board_ctx.lineTo(256, 512);
+                        board_ctx.closePath();
+                        board_ctx.strokeStyle = 'rgb(255,255,255)';
+                        board_ctx.stroke();
 
-                    board_ctx.beginPath();
-                    board_ctx.moveTo(0, 256);
-                    board_ctx.lineTo(512, 256);
-                    board_ctx.closePath();
-                    board_ctx.strokeStyle = 'rgb(255,255,255)';
-                    board_ctx.stroke();
+                        board_ctx.beginPath();
+                        board_ctx.moveTo(0, 256);
+                        board_ctx.lineTo(512, 256);
+                        board_ctx.closePath();
+                        board_ctx.strokeStyle = 'rgb(255,255,255)';
+                        board_ctx.stroke();
 
-                    // Draw text and borders
-                    board_ctx.fillStyle = 'rgb(255,255,255)';
-                    board_ctx.font = 'bold 40px arial';
-                    board_ctx.fillText('Prototype', 20, 50);
-                    board_ctx.fillText('5 x 5 ft.', 20, 100);
-                    board_ctx.fillRect(0, 0, 7, 512);
-                    board_ctx.fillRect(512, 0, -7, 512);
-                    board_ctx.fillRect(0, 0, 512, 7);
-                    board_ctx.fillRect(0, 512, 512, -7);
+                        // Draw text and borders
+                        board_ctx.fillStyle = 'rgb(255,255,255)';
+                        board_ctx.font = 'bold 40px arial';
+                        board_ctx.fillText('Prototype', 20, 50);
+                        board_ctx.fillText('5 x 5 ft.', 20, 100);
+                        board_ctx.fillRect(0, 0, 7, 512);
+                        board_ctx.fillRect(512, 0, -7, 512);
+                        board_ctx.fillRect(0, 0, 512, 7);
+                        board_ctx.fillRect(0, 512, 512, -7);
 
-                    // Create the first texture
-                    const boxTexture = new THREE.Texture(boardCanvas);
-                    boxTexture.needsUpdate = true;
+                        // Create the first texture
+                        const boxTexture = new THREE.Texture(boardCanvas);
+                        boxTexture.needsUpdate = true;
 
-                    // Clear and draw the second texture
-                    board_ctx.clearRect(0, 0, 1500, 1500);
-                    board_ctx.font = 'bold 30px arial';
-                    board_ctx.fillStyle = 'rgb(0,0,0)';
-                    board_ctx.fillText('WASD to move', 10, 30);
-                    board_ctx.fillText('SPACE to jump', 10, 65);
-                    board_ctx.fillText('Shoot the enemy!', 10, 125);
-                    board_ctx.fillText('Drop your weapon', 10, 190);
-                    board_ctx.fillText('& hold down your', 12, 220);
-                    board_ctx.fillText('mouse to move the', 7, 250);
-                    board_ctx.fillText('boxes and spheres!', 5, 280);
-                    board_ctx.fillText('SHIFT to crouch', 20, 340);
-                    board_ctx.fillText('Hold jump while', 20, 400);
-                    board_ctx.fillText('touching a wall', 20, 430);
-                    board_ctx.fillText('to walljump!', 50, 460);
-                    board_ctx.fillText('Use the cube to', 20, 500);
-                    board_ctx.fillText('break the glass', 20, 530);
-                    board_ctx.fillText('& kill the enemy', 20, 560);
-                    board_ctx.fillText('Press E to drop', 20, 605);
-                    board_ctx.fillText('your weapon!', 35, 640);
-                    board_ctx.fillText('OWO', 90, 700);
-                    board_ctx.fillText('whta r u doign hre?', 3, 730);
-                    board_ctx.fillText('Congratulations!', 20, 780);
-                    board_ctx.fillText('You are now an', 27, 810);
-                    board_ctx.fillText('EPIC GAMER!!!!', 27, 845);
-                    board_ctx.fillText('Thx 4 playing!!!', 30, 900);
-                    board_ctx.fillText('More games to come!', 4, 1012);
-                    board_ctx.font = 'bold 20px arial';
-                    board_ctx.fillText('The end of a game...', 40, 949);
-                    board_ctx.font = 'bold 15px arial';
-                    board_ctx.fillText('The beginning of the best games on KA', 10, 969);
+                        // Clear and draw the second texture
+                        board_ctx.clearRect(0, 0, 1500, 1500);
+                        board_ctx.font = 'bold 30px arial';
+                        board_ctx.fillStyle = 'rgb(0,0,0)';
+                        board_ctx.fillText('WASD to move', 10, 30);
+                        board_ctx.fillText('SPACE to jump', 10, 65);
+                        board_ctx.fillText('Shoot the enemy!', 10, 125);
+                        board_ctx.fillText('Drop your weapon', 10, 190);
+                        board_ctx.fillText('& hold down your', 12, 220);
+                        board_ctx.fillText('mouse to move the', 7, 250);
+                        board_ctx.fillText('boxes and spheres!', 5, 280);
+                        board_ctx.fillText('SHIFT to crouch', 20, 340);
+                        board_ctx.fillText('Hold jump while', 20, 400);
+                        board_ctx.fillText('touching a wall', 20, 430);
+                        board_ctx.fillText('to walljump!', 50, 460);
+                        board_ctx.fillText('Use the cube to', 20, 500);
+                        board_ctx.fillText('break the glass', 20, 530);
+                        board_ctx.fillText('& kill the enemy', 20, 560);
+                        board_ctx.fillText('Press E to drop', 20, 605);
+                        board_ctx.fillText('your weapon!', 35, 640);
+                        board_ctx.fillText('OWO', 90, 700);
+                        board_ctx.fillText('whta r u doign hre?', 3, 730);
+                        board_ctx.fillText('Congratulations!', 20, 780);
+                        board_ctx.fillText('You are now an', 27, 810);
+                        board_ctx.fillText('EPIC GAMER!!!!', 27, 845);
+                        board_ctx.fillText('Thx 4 playing!!!', 30, 900);
+                        board_ctx.fillText('More games to come!', 4, 1012);
+                        board_ctx.font = 'bold 20px arial';
+                        board_ctx.fillText('The end of a game...', 40, 949);
+                        board_ctx.font = 'bold 15px arial';
+                        board_ctx.fillText('The beginning of the best games on KA', 10, 969);
 
-                    // Create the second texture
-                    const messagesTexture = new THREE.Texture(boardCanvas);
-                    messagesTexture.needsUpdate = true;
+                        // Create the second texture
+                        const messagesTexture = new THREE.Texture(boardCanvas);
+                        messagesTexture.needsUpdate = true;
 
-                    // Define texture bounds
-                    const bounds = [
-                        [0, 0, 235, 90],
-                        [0, 95, 275, 50],
-                        [0, 160, 295, 140],
-                        [0, 370, 275, 100],
-                        [0, 470, 275, 110],
-                        [0, 580, 275, 80],
-                        [0, 310, 275, 35],
-                        [0, 671, 285, 75],
-                        [0, 750, 319, 280],
-                    ];
+                        // Define texture bounds
+                        const bounds = [
+                            [0, 0, 235, 90],
+                            [0, 95, 275, 50],
+                            [0, 160, 295, 140],
+                            [0, 370, 275, 100],
+                            [0, 470, 275, 110],
+                            [0, 580, 275, 80],
+                            [0, 310, 275, 35],
+                            [0, 671, 285, 75],
+                            [0, 750, 319, 280],
+                        ];
 
-                    bounds.forEach(bound => {
-                        bound[0] /= 1500;
-                        bound[1] /= 1500;
-                        bound[2] /= 1500;
-                        bound[3] /= 1500;
-                    });
+                        bounds.forEach(bound => {
+                            bound[0] /= 1500;
+                            bound[1] /= 1500;
+                            bound[2] /= 1500;
+                            bound[3] /= 1500;
+                        });
 
-                    boxTexture.needsUpdate = true;
-                    boxTexture.wrapS = THREE.RepeatWrapping;
-                    boxTexture.wrapT = THREE.RepeatWrapping;
- 
-                    return {
-                        boxTexture,
-                        messagesTexture,
-                        bounds,
-                    };
-                }
+                        boxTexture.needsUpdate = true;
+                        boxTexture.wrapS = THREE.RepeatWrapping;
+                        boxTexture.wrapT = THREE.RepeatWrapping;
+    
+                        return {
+                            boxTexture,
+                            messagesTexture,
+                            bounds,
+                        };
+                    }
 
-                const textures = initTextures();
+                    const textures = initTextures();
                 
 
-                /*Assets*/
+            /*Assets*/
                 
 
                 
@@ -453,6 +441,7 @@
                 const cubeGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25)
  
         
+            
             /*Main Functions*/
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
@@ -606,6 +595,9 @@
 
                 let uiCanvas=document.getElementById('ui-canvas')
                 let ctx=uiCanvas.getContext('2d')
+
+                uiCanvas.width = window.innerWidth
+                uiCanvas.height = window.innerHeight
                 //uiCanvas.style.display='none'
 
 
@@ -651,18 +643,31 @@
                     out.vx=out.vy=out.vz=out.yaw=out.pitch=0
                     out.sensitivity=0.005
                     out.fov=55
+
                     out.camera=new THREE.PerspectiveCamera(out.fov,aspect,0.1,1000)
+                    out.geometry = new THREE.BoxGeometry(0.5,1,0.5); //l
+                    out.material = new THREE.MeshStandardMaterial({color: '#FFFFFF'});
+                    out.mesh=new THREE.Mesh(out.geometry, out.material)
+                    scene.add(out.mesh);
+                    out.playerBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+                    .setTranslation(0, 100, 0)
+                    out.body = world.createRigidBody( out.playerBodyDesc );
+                    out.playerBodyColl = RAPIER.ColliderDesc.cuboid( 0.5,1,0.5 );
+                    world.createCollider( out.playerBodyColl, out.playerBody );
+
                     out.grounded=false
                     
                     out.lookEuler=new THREE.Euler(out.pitch,out.yaw,0,EULER_ANGLE_ORDER)
                     
                     out.updateCamera=function(){
                         
-                        out.camera.position.set(out.x,out.y,out.z)
+                        out.body.setTranslation({x: out.x, y: out.y, z: out.z})
                         
                         out.lookEuler.set(out.pitch,out.yaw,0)
-                        out.camera.quaternion.setFromEuler(out.lookEuler)
-                        console.log(out.camera.position.x);
+                        out.quaternion = new THREE.Quaternion().setFromEuler(out.lookEuler);
+                        out.body.setRotation(out.quaternion)
+                        out.mesh.position.copy(out.body.translation());
+                        //console.log(out.x);
                     }
                     
                     out.updatePhysics=function(dt){
@@ -759,7 +764,7 @@
                     
                     uiCanvas.onmousedown=function(){
                         
-                        console.log('check');
+                       // console.log('check');
                         out.mousePressed=true
                         out.mouseClicked=true
                         uiCanvas.requestPointerLock()
@@ -1066,7 +1071,7 @@
                  }
 
                 let startup = true
-                let dt=Date.now()-1
+				let dt = Math.min( 0.05, clock.getDelta() ) * 35;
 
                 function UPDATE() {
                     if (startup) {
@@ -1074,7 +1079,7 @@
                         levelSetup();
                     }
 
-                    dt=0.01*(Date.now()-dt)
+                    dt = Math.min( 0.05, clock.getDelta() ) * 35;
                     player.updatePhysics(dt)
                     player.updateCamera()
                     cubes.forEach(b => b.update());

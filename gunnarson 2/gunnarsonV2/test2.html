@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+
+<html>
+    
+<title>test 2</title>
+
+<canvas id='gl-canvas' width='600' height='600'></canvas>
+<canvas id='ui-canvas' width='600' height='600'></canvas>
+
+<style>
+    
+    body{
+        
+        overflow:hidden;
+        margin:0;
+    }
+    
+    #gl-canvas{
+        
+        display:none;
+	}
+    
+</style>
+
+<script id='geometry_vsh' type='GLSL3D'>#version 300 es
+
+    precision lowp float;
+    
+    uniform mat4 modelView;
+    
+    in vec3 vertPosition;
+    in vec3 vertColor;
+    in vec2 vertTexCoord;
+    
+    out vec3 pixColor;
+    out vec2 pixTexCoord;
+    
+    void main(){
+        
+        vec4 pos=modelView*vec4(vertPosition,1.0);
+        pixColor=vertColor;
+        pixTexCoord=vertTexCoord;
+        gl_Position=pos;
+    }
+    
+</script>
+
+<script id='geometry_fsh' type='GLSL3D'>#version 300 es
+    
+    precision lowp float;
+    
+    uniform sampler2D tex;
+    
+    in vec3 pixColor;
+    in vec2 pixTexCoord;
+    
+    out vec4 fragColor;
+    
+    void main(){
+        
+        fragColor=vec4(pixColor,1.0)+texture(tex,pixTexCoord);
+    }
+    
+</script>
+
+
+<script id='filter_vsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 vertPos;
+    
+    out vec2 pixTexCoord;
+    
+    void main(){
+        
+        pixTexCoord=vertPos*0.5+0.5;
+        gl_Position=vec4(vertPos,1.0,1.0);
+    }
+    
+</script>
+
+<script id='filter_fsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 pixTexCoord;
+    
+    uniform sampler2D inputTex;
+    
+    out vec4 fragColor;
+    
+    void main(){
+        
+        vec3 col=texture(inputTex,pixTexCoord).rgb;
+        //basically filters out he brightest white pixels
+        //eleminates bright yellow pixels
+        if(dot(col,col)>((col.x>col.y)?1.675:1.)){
+            
+            fragColor=vec4(col*55.,1);
+            
+        } else {
+            
+            fragColor=vec4(0,0,0,1);
+        }
+    }
+    
+</script>
+
+<script id='pprocessing_vsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 vertPos;
+    
+    out vec2 pixTexCoord;
+    
+    void main(){
+        
+        pixTexCoord=vertPos*0.5+0.5;
+        gl_Position=vec4(vertPos,1.0,1.0);
+    }
+    
+</script>
+
+<script id='pprocessing_fsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 pixTexCoord;
+    
+    uniform sampler2D inputTex;
+    
+    out vec4 fragColor;
+    
+    void main(){
+        
+        vec3 c=vec3(0);
+        
+        int blurAmount=4;
+        float blurSpread=0.006;
+        
+        for(int i=-blurAmount;i<=blurAmount;i++){
+            
+            c+=texture(inputTex,vec2(i,0)*blurSpread+pixTexCoord).rgb;
+        }
+        
+        for(int i=-blurAmount;i<=blurAmount;i++){
+            
+            c+=texture(inputTex,vec2(0,i)*blurSpread+pixTexCoord).rgb;
+        }
+        
+        c*=0.03;
+        
+		fragColor = vec4(c,1);
+    }
+    
+</script>
+
+<script id='combine_vsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 vertPos;
+    
+    out vec2 pixTexCoord;
+    
+    void main(){
+        
+        pixTexCoord=vertPos*0.5+0.5;
+        gl_Position=vec4(vertPos,1.0,1.0);
+    }
+    
+</script>
+
+<script id='combine_fsh' type='3d'>#version 300 es
+    
+    precision lowp float;
+    
+    in vec2 pixTexCoord;
+    
+    uniform sampler2D ogTex;
+    uniform sampler2D inputTex;
+    
+    out vec4 fragColor;
+    
+    void main(){
+        
+        fragColor=vec4((texture(ogTex,pixTexCoord).rgb+texture(inputTex,pixTexCoord).rgb)*0.9,1);
+    }
+    
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+
+<script type='application/javascript'>
+    
+function main(){
+    
+    const glCanvas=document.getElementById('gl-canvas')
+    const gl=glCanvas.getContext('webgl2',{preserveDrawingBuffer:true})
+    
+    let uiCanvas=document.getElementById('ui-canvas')
+    const ctx=uiCanvas.getContext('2d')
+
+    uiCanvas.width = window.innerWidth
+    uiCanvas.height = window.innerHeight
+    
+    if(!gl){
+        
+        alert('No WebGL')
+        return
+    }
+    
+    const width=window.innerWidth
+    const height=window.innerHeight
+    
+    gl.viewport(0,0,width,height)
+    
+    const m4={
+        
+        identity:function(){
+            
+            return [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+        },
+        
+        perspective:function(fov,aspect,zn,zf){
+            
+            let f=Math.tan(Math.PI*0.5-0.5*rad(fov))
+            let rangeInv=1.0/(zn-zf)
+            return [f/aspect,0,0,0,0,f,0,0,0,0,(zn+zf)*rangeInv,-1,0,0,zn*zf*rangeInv*2,0]
+            
+        },
+        
+        getViewMatrix:function(x,y,z,ax,ay,proj){
+            
+			let c1=Math.cos(ax)
+			let s1=Math.sin(ax)
+			let c2=Math.cos(ay)
+            let s2=Math.sin(ay)
+            
+			let b=[
+			    
+                c2,
+                s2*s1,
+                -s2*c1,
+                0,
+                0,
+                c1,
+                s1,
+                0,
+                s2,
+                c2*-s1,
+                c2*c1,
+                0,
+                x*c2+z*s2,
+                x*s2*s1+y*c1+z*c2*-s1,
+                x*-s2*c1+y*s1+z*c2*c1,
+                1,
+            ]
+            
+            let a=proj
+            
+            return [
+                b[0]*a[0],
+                b[1]*a[5],
+                b[2]*a[10],
+                -b[2],
+                0,
+                b[5]*a[5],
+                b[6]*a[10],
+                -b[6],
+                b[8]*a[0],
+                b[9]*a[5],
+                b[10]*a[10],
+                -b[10],
+                b[12]*a[0],
+                b[13]*a[5],
+                b[12]*a[2]+b[13]*a[6]+b[14]*a[10]+a[14],
+                -b[14]+a[15],
+            ]
+            
+            
+        },
+    }
+    
+    let player={
+        
+        x:0,
+        y:0,
+        z:-2.75,
+        vx:0,
+        vy:0,
+        vz:0,
+        fric:0.85,
+        airFric:0.9,
+        walkSpeed:0.3,
+        jumpPower:0.3,
+        gravity:0.065,
+        yaw:0,
+        pitch:0,
+        sensitivity:0.005,
+        fov:70,
+        radius:0.5,
+    };
+    
+    const user=(function(controls){
+        
+        controls.mouseX=controls.mouseY=0
+        controls.mousePressed=controls.mouseClicked=false
+        controls.keys={}
+        
+        uiCanvas.onmousemove=function(e){
+            
+            controls.mouseX+=e.movementX
+            controls.mouseY+=e.movementY
+            
+            player.yaw+=e.movementX*player.sensitivity
+            player.pitch=constrain(player.pitch+e.movementY*player.sensitivity,-1.5,1.5)
+            
+        }
+        
+        uiCanvas.onmousedown=function(){
+            
+            controls.mousePressed=true
+            controls.mouseClicked=true
+            uiCanvas.requestPointerLock()
+        }
+        
+        uiCanvas.onmouseup=function(){
+            
+            controls.mousePressed=false
+        }
+        
+        document.onkeydown=function(e){
+            
+            controls.keys[e.key.toString()]=true
+            showDebug=controls.keys.f?!showDebug:showDebug
+            
+            if(e.key.toString()==='t'){
+                
+                enemies.push(new Enemy(player.x,player.y,player.z))
+            }
+        }
+        
+        document.onkeyup=function(e){
+            
+            controls.keys[e.key.toString()]=false
+        }
+        
+        return controls
+        
+    })({})
+    
+    function rad(a){
+        //0.01745329252=pi/180
+        return a*0.01745329252
+    }
+    
+    function deg(a){
+        //57.29577951=180/pi
+        return a*57.29577951
+    }
+    
+    function constrain(x,a,b){
+        
+        return x<a?a:x>b?b:x
+    }
+    
+    function random(a,b){
+        
+        return Math.random()*(b-a)+a
+    }
+    
+    function pointInBox(_x,_y,_z,x,y,z,w,h,l){
+        
+        return _x>x-w&&_x<x+h&&_y>y-h&&_y<y+h&&_z>z-l&&_z<z+l
+    }
+    
+    function pointInBounds(x,y,z,minX,maxX,minY,maxY,minZ,maxZ){
+        
+        return x>=minX&&x<=maxX&&y>=minY&&y<=maxY&&z>=minZ&&z<=maxZ
+    }
+    
+    //for some reason theres no Math.lerp
+    function lerp(a,b,x){
+        
+        return x*(b-a)+a
+    }
+    
+    let timers={};
+    let timerNames=[];
+    
+    function addTimer(name,start,end,speed,func,doneFunc){
+        
+        timers[name]={
+            
+            start:start,
+            end:end,
+            speed:speed,
+            doneFunc:doneFunc||function(){},
+            value:start,
+            graph:func,
+            x:0,
+        }
+        
+        timerNames.push(name)
+    }
+    
+    function deleteTimer(name){
+        
+        timers[name]=undefined
+        timerNames.splice(timerNames.indexOf(name))
+        
+    }
+    
+    function updateTimers(dt){
+        
+        let deleteQ=[]
+        
+        for(let i in timerNames){
+            
+            let t=timers[timerNames[i]]
+            
+            t.x+=dt*t.speed
+            
+            t.value=lerp(t.start,t.end,t.graph(t.x))
+            
+            if(t.x>=1){
+                
+                t.doneFunc()
+                deleteQ.push(timerNames[i])
+            }
+        }
+        
+        for(let i in deleteQ){
+            
+            deleteTimer(deleteQ[i])
+        }
+    }
+    //computes intersections between lines and planes
+    //to be used in raycasting
+    function lineToPlane(ld,lo,pd,po,dotDirAndNorm){
+        
+        let d=vec3.dot(vec3.sub(vec3.create(),po,lo),pd)/dotDirAndNorm
+        return vec3.add(vec3.create(),lo,[ld[0]*d,ld[1]*d,ld[2]*d])
+    }
+    
+    function createBoxMesh(x,y,z,w,h,l,color,rx,ry,vl){
+        
+        const rotation=quat.fromEuler(quat.create(),rx,ry,0)
+        
+        let model=mat4.create()
+        
+        mat4.fromRotationTranslation(model,rotation,[x,y,z,1])
+        
+        let v=[
+            
+            vec4.fromValues(-w,h,-l,1),
+            vec4.fromValues(-w,h,l,1),
+            vec4.fromValues(w,h,l,1),
+            vec4.fromValues(w,h,-l,1),
+            vec4.fromValues(-w,-h,-l,1),
+            vec4.fromValues(-w,-h,l,1),
+            vec4.fromValues(w,-h,l,1),
+            vec4.fromValues(w,-h,-l,1),
+        ]
+        //normals are rotated along with the verts then dot products are computed for shading
+        let shade=[]
+        
+        let normals=[
+            
+            vec4.fromValues(0,1,0,1),
+            vec4.fromValues(0,0,1,1),
+            vec4.fromValues(0,0,-1,1),
+            vec4.fromValues(1,0,0,1),
+            vec4.fromValues(-1,0,0,1),
+            vec4.fromValues(0,-1,0,1),
+        ]
+        
+        const ld=lightDir
+        
+        for(let i in v){
+            
+            vec4.transformMat4(v[i],v[i],model)
+            
+            if(i<6){
+                
+                vec4.transformQuat(normals[i],normals[i],rotation)
+                let n=normals[i]
+                let d=n[0]*ld[0]+n[1]*ld[1]+n[2]*ld[2]
+                shade[i]=d*0.3+0.65
+                
+            }
+        }
+        
+        const vLen=vl
+        const r=color[0],g=color[1],b=color[2],
+            r0=r*shade[0],
+            g0=g*shade[0],
+            b0=b*shade[0],
+            r1=r*shade[1],
+            g1=g*shade[1],
+            b1=b*shade[1],
+            r2=r*shade[2],
+            g2=g*shade[2],
+            b2=b*shade[2],
+            r3=r*shade[3],
+            g3=g*shade[3],
+            b3=b*shade[3],
+            r4=r*shade[4],
+            g4=g*shade[4],
+            b4=b*shade[4],
+            r5=r*shade[5],
+            g5=g*shade[5],
+            b5=b*shade[5]
+        
+        return {
+            
+            verts:[
+                
+                v[0][0],v[0][1],v[0][2],r0,g0,b0,0,0,
+                v[1][0],v[1][1],v[1][2],r0,g0,b0,0,0,
+                v[2][0],v[2][1],v[2][2],r0,g0,b0,0,0,
+                v[3][0],v[3][1],v[3][2],r0,g0,b0,0,0,
+                
+                v[1][0],v[1][1],v[1][2],r1,g1,b1,0,0,
+                v[2][0],v[2][1],v[2][2],r1,g1,b1,0,0,
+                v[5][0],v[5][1],v[5][2],r1,g1,b1,0,0,
+                v[6][0],v[6][1],v[6][2],r1,g1,b1,0,0,
+                
+                v[0][0],v[0][1],v[0][2],r2,g2,b2,0,0,
+                v[3][0],v[3][1],v[3][2],r2,g2,b2,0,0,
+                v[4][0],v[4][1],v[4][2],r2,g2,b2,0,0,
+                v[7][0],v[7][1],v[7][2],r2,g2,b2,0,0,
+                
+                v[2][0],v[2][1],v[2][2],r3,g3,b3,0,0,
+                v[3][0],v[3][1],v[3][2],r3,g3,b3,0,0,
+                v[6][0],v[6][1],v[6][2],r3,g3,b3,0,0,
+                v[7][0],v[7][1],v[7][2],r3,g3,b3,0,0,
+                
+                v[0][0],v[0][1],v[0][2],r4,g4,b4,0,0,
+                v[1][0],v[1][1],v[1][2],r4,g4,b4,0,0,
+                v[4][0],v[4][1],v[4][2],r4,g4,b4,0,0,
+                v[5][0],v[5][1],v[5][2],r4,g4,b4,0,0,
+                
+                v[4][0],v[4][1],v[4][2],r5,g5,b5,0,0,
+                v[5][0],v[5][1],v[5][2],r5,g5,b5,0,0,
+                v[6][0],v[6][1],v[6][2],r5,g5,b5,0,0,
+                v[7][0],v[7][1],v[7][2],r5,g5,b5,0,0,
+            
+        ],
+        
+            index:[
+                
+                vLen,1+vLen,2+vLen,
+                vLen,2+vLen,3+vLen,
+                5+vLen,6+vLen,7+vLen,
+                6+vLen,5+vLen,4+vLen,
+                8+vLen,9+vLen,10+vLen,
+                11+vLen,10+vLen,9+vLen,
+                14+vLen,13+vLen,12+vLen,
+                13+vLen,14+vLen,15+vLen,
+                18+vLen,17+vLen,16+vLen,
+                17+vLen,18+vLen,19+vLen,
+                22+vLen,21+vLen,20+vLen,
+                23+vLen,22+vLen,20+vLen
+            ]
+            
+        }
+    }
+    
+    function createProgram(vsh,fsh){
+        
+        let vshText=document.getElementById(vsh).text
+        let fshText=document.getElementById(fsh).text
+        
+        vsh=gl.createShader(gl.VERTEX_SHADER)
+        fsh=gl.createShader(gl.FRAGMENT_SHADER)
+        gl.shaderSource(vsh,vshText)
+        gl.shaderSource(fsh,fshText)
+        gl.compileShader(vsh)
+        gl.compileShader(fsh)
+        
+        let p=gl.createProgram()
+        gl.attachShader(p,vsh)
+        gl.attachShader(p,fsh)
+        gl.linkProgram(p)
+        
+        return p
+    }
+    
+    const geometryProgaram=createProgram('geometry_vsh','geometry_fsh')
+    const filterProgram=createProgram('filter_vsh','filter_fsh')
+    const pprocessingProgram=createProgram('pprocessing_vsh','pprocessing_fsh')
+    const combineProgram=createProgram('combine_vsh','combine_fsh')
+    
+    let screenVerts=[
+        
+        -1,-1,1,-1,1,1,-1,1
+    ]
+    
+    let screenIndex=[
+        
+        0,1,2,0,2,3
+        
+    ]
+    
+    let screenVertBuffer=gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER,screenVertBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(screenVerts),gl.STATIC_DRAW)
+    
+    let screenIndexBuffer=gl.createBuffer()
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,screenIndexBuffer)
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(screenIndex),gl.STATIC_DRAW)
+    
+    function createNullTexture(){
+        
+        let t=gl.createTexture()
+        gl.bindTexture(gl.TEXTURE_2D,t)
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null)
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR)
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)
+        
+        return t
+    }
+    
+    function createFramebufferTexture(target){
+        
+        let f=gl.createFramebuffer()
+        gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,target,0);
+        //attaches a depth buffer to the framebuffer
+        //might be inefficient but idk and idc
+         let depthBuffer = gl.createRenderbuffer()
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer)
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16,width,height)
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer)
+        
+        return f
+    }
+    
+    let filteredtexture=createNullTexture()
+    
+    let processedtexture=createNullTexture()
+    
+    let ogtexture=createNullTexture()
+    
+    let filteredfb=createFramebufferTexture(filteredtexture)
+    
+    let processedfb=createFramebufferTexture(processedtexture)
+    
+    let ogfb=createFramebufferTexture(ogtexture)
+    
+    const filterPosLoc=gl.getAttribLocation(filterProgram,'vertPos')
+    
+    const ogLoc=gl.getUniformLocation(combineProgram,'ogTex')
+    const inputLoc=gl.getUniformLocation(combineProgram,'inputTex')
+    
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+    gl.enable(gl.CULL_FACE)
+    gl.cullFace(gl.BACK)
+    
+    const positionAttribLocation=gl.getAttribLocation(geometryProgaram,"vertPosition")
+    const colorAttribLocation=gl.getAttribLocation(geometryProgaram,"vertColor")
+    const texCoordAttribLocation=gl.getAttribLocation(geometryProgaram,'vertTexCoord')
+    
+    gl.enableVertexAttribArray(positionAttribLocation)
+    gl.enableVertexAttribArray(colorAttribLocation)
+    gl.enableVertexAttribArray(texCoordAttribLocation)
+
+    //the cool texture
+    ctx.fillStyle='rgb(0,0,0)'
+    ctx.fillRect(0,0,256,256)
+    ctx.filter='blur(0.9px)'
+    ctx.lineWidth=1
+    ctx.beginPath();
+    ctx.moveTo(103,0)
+    ctx.lineTo(103,256)
+    ctx.moveTo(118,0);
+    ctx.lineTo(118,256);
+    ctx.moveTo(128,0);
+    ctx.lineTo(128,256);
+    ctx.moveTo(138,0);
+    ctx.lineTo(138,256);
+    ctx.moveTo(153,0)
+    ctx.lineTo(153,256)
+    ctx.moveTo(0,103)
+    ctx.lineTo(256,103)
+    ctx.moveTo(0,118)
+    ctx.lineTo(256,118)
+    ctx.moveTo(0,128)
+    ctx.lineTo(256,128)
+    ctx.moveTo(0,138)
+    ctx.lineTo(256,138)
+    ctx.moveTo(0,153)
+    ctx.lineTo(256,153)
+    ctx.moveTo(0,0)
+    ctx.closePath();
+    
+    ctx.strokeStyle='rgb(255,255,255)'
+    ctx.stroke();
+    
+    //for some reason teh texture format is set to LUMINANCE but normal imageData still works
+    let textureData=ctx.getImageData(0,0,256,256)
+    
+    //basically when webgl fails it doesnt render anything but anything below the canvas is still rendered
+    ctx.filter='none'
+    ctx.clearRect(0,0,600,600)
+    ctx.fillStyle='rgb(0,0,0)'
+    ctx.font='90px fantasy'
+    ctx.fillText('Oh Noes!',150,100)
+    ctx.font='30px fantasy'
+    ctx.fillText('If you are seeing this message then something',20,250)
+    ctx.fillText('is wrong with this program =( maybe an error',20,315)
+    ctx.strokeStyle = "white"
+    
+    let texture=gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D,texture)
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,256,256,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,textureData)
+    
+    gl.generateMipmap(gl.TEXTURE_2D)
+    
+    
+    //light dir for all objects
+    let lightDir=[-2,3,1]
+    
+    //normalize lightDir
+    let m=1/(lightDir[0]*lightDir[0]+lightDir[1]*lightDir[1]+lightDir[2]*lightDir[2])
+    
+    lightDir[0]*=m
+    lightDir[1]*=m
+    lightDir[2]*=m
+    
+    class MeshCollider {
+        
+        constructor(data){
+            
+            this.setData(data||[])
+        }
+        
+        setData(data){
+            
+            this.data=data
+        }
+        
+        addData(){
+            
+            this.data.push(...arguments)
+        }
+        
+        initModelMatrix(){
+            
+            for(let i in this.data){
+                
+                let m=this.data[i]
+                
+                m.model=mat4.create()
+                m.inverseModel=mat4.create()
+                mat4.fromRotationTranslation(m.model,m.rotQuat,[m.x,m.y,m.z,1]);
+                let inverseRotation=quat.create();
+                
+                quat.invert(inverseRotation,m.rotQuat);
+                mat4.fromQuat(m.inverseModel,inverseRotation);
+            }
+        }
+        
+        rayCast(lineOrigin,lineDir,filter){
+            
+            vec3.negate(lineDir,lineDir)
+            let intersections=[]
+            
+            for(let i in this.data){
+                
+                let m=this.data[i]
+                
+                if(m[filter]){
+                    
+                    for(let j in m.planes){
+                        
+                        //the intersection on the infinite plane
+                        let intersection=lineToPlane(lineDir,lineOrigin,m.planes[j].normal,m.planes[j].points[0],vec3.dot(m.planes[j].normal,lineDir))
+                        
+                        let isBehind=vec3.dot(vec3.sub(vec3.create(),intersection,lineOrigin),lineDir)>0
+                        
+                        if(!isBehind){
+                            
+                            //checks if the intersection lies within the constrained plane of the geometry
+                            
+                            if(pointInBounds(intersection[0],intersection[1],intersection[2],m.minX,m.maxX,m.minY,m.maxY,m.minZ,m.maxZ)){
+                                
+                                intersections.push({pos:intersection,data:m})
+                            }
+                        }
+                    }
+                }
+            }
+            
+            let closestDist=Infinity
+            let partInt;
+            let closestInt;
+            
+            for(let i in intersections){
+                
+                let _i=intersections[i]
+                
+                let dx=(_i.pos[0]-lineOrigin[0]),
+                    dy=(_i.pos[1]-lineOrigin[1]),
+                    dz=(_i.pos[2]-lineOrigin[2]),
+                    d=dx*dx+dy*dy+dz*dz;
+                    
+                if(d<closestDist){
+                    
+                    closestDist=d
+                    closestInt=_i.pos
+                    partInt=_i.data
+                }
+            }
+            
+            if(!closestInt){
+                
+                return false
+            }
+            
+            return {dist:closestDist,int:closestInt}
+            
+        }
+        
+        isColliding(x,y,z){
+            
+            for(let i in this.data){
+                
+                let m=this.data[i]
+                
+                let size=[m.w*0.5,m.h*0.5,m.l*0.5]
+                
+				let closestPoint=vec4.fromValues(x-m.x,y-m.y,z-m.z,0.0)
+				vec4.transformMat4(closestPoint,closestPoint,m.inverseModel)
+				
+				if(pointInBox(x,y,z,m.x,m.y,m.z,...size)){
+				    
+				    return true
+				}
+            }
+            
+            return false
+        }
+        
+        collideWithEntity(entity){
+            
+            let rad=entity.radius,
+                sqRad=rad*rad,
+                x=entity.x,
+                y=entity.y,
+                z=entity.z,
+                vx=entity.vx,
+                vy=entity.vy,
+                vz=entity.vz
+            
+            for(let i in this.data){
+                
+                let m=this.data[i]
+                
+				let closestPoint=vec4.fromValues(x-m.x,y-m.y,z-m.z,0)
+				
+				vec4.transformMat4(closestPoint,closestPoint,m.inverseModel);
+				
+				closestPoint=[constrain(closestPoint[0],-m.w,m.w),constrain(closestPoint[1],-m.h,m.h),constrain(closestPoint[2],-m.l,m.l),1]
+				
+				vec4.transformMat4(closestPoint,closestPoint,m.model)
+				let [dx,dy,dz]=[
+					x-closestPoint[0],
+					y-closestPoint[1],
+					z-closestPoint[2]
+				];
+				
+				let dm=dx*dx+dy*dy+dz*dz
+				
+				if(dm<sqRad){
+					
+					let bounciness=1.15
+					
+                    switch(m.func){
+                        
+                        case 'win':
+                            
+                            setLevel(currentLevel+1)
+                            return
+                            
+                       break
+                       
+                       case 'lose':
+                           
+                           setLevel(currentLevel)
+                           return
+                           
+                       break
+                       
+                       case 'bounce':
+                           
+                           bounciness=2
+                           
+                       break
+                    }
+					
+					dm=Math.sqrt(dm);
+					let _dm=1/dm,
+					    r_dm=(rad-dm)*_dm
+					
+					entity.x+=dx*r_dm
+					entity.y+=dy*r_dm
+					entity.z+=dz*r_dm
+					
+					dx*=_dm
+					dy*=_dm
+					dz*=_dm
+					
+					let t=(dx*vx+dy*vy+dz*vz)*bounciness
+					
+					entity.vx-=t*dx
+					entity.vy-=t*dy
+					entity.vz-=t*dz
+					
+					if(dy<-0.5){
+					    
+						entity.grounded=true
+						
+						if(bounciness===2){entity.vy=constrain(entity.vy,-0.6,0.6)}
+					}
+				}
+            }
+        }
+    }
+    
+    class Mesh {
+        
+        constructor(verts,index,meshCollider){
+            
+            this.mesh={
+                data:{
+                    verts:verts||[],
+                    index:index||[]
+                },
+                buffers:{
+                    verts:gl.createBuffer(),
+                    index:gl.createBuffer()
+                },
+                collider:new MeshCollider(meshCollider),
+                indexAmount:(index||[]).length,
+            }
+        }
+        
+        setMesh(verts,index,meshCollider){
+            
+            this.mesh.collider.setData(meshCollider),
+            
+            this.mesh.data={
+                
+                verts:verts,
+                index:index
+            }
+            
+            this.mesh.indexAmount=this.mesh.data.index.length
+        }
+        
+        setMeshFromFunction(func){
+            
+            let verts=[],index=[],meshCollider=[]
+            
+            function addPlatform(x,y,z,w,h,l,rot,col,useTex,collideFunc,grappleable){
+                
+                rot=rot||[0,0,0]
+                
+                //if dont use texture, useTex=0 and is multiplied by the uv texCoords to get a single solid black pixel in the texture, which will do nothing
+                //undefined arg will automatically be true
+                
+                useTex=([undefined,true].indexOf(useTex)>-1)?1:0
+                
+                let rotation=quat.fromEuler(quat.create(),rot[0],rot[1],rot[2])
+                let model=mat4.create()
+                
+                mat4.fromRotationTranslation(model,rotation,[x,y,z,1])
+                
+                let v=[
+                    
+                    vec4.fromValues(-0.5*w,0.5*h,-0.5*l,1),
+                    vec4.fromValues(-0.5*w,0.5*h,0.5*l,1),
+                    vec4.fromValues(0.5*w,0.5*h,0.5*l,1),
+                    vec4.fromValues(0.5*w,0.5*h,-0.5*l,1),
+                    vec4.fromValues(-0.5*w,-0.5*h,-0.5*l,1),
+                    vec4.fromValues(-0.5*w,-0.5*h,0.5*l,1),
+                    vec4.fromValues(0.5*w,-0.5*h,0.5*l,1),
+                    vec4.fromValues(0.5*w,-0.5*h,-0.5*l,1),
+                ]
+                //normals are rotated along with the verts then dot products are computed for shading
+                let shade=[]
+                
+                let normals=[
+                    
+                    vec4.fromValues(0,1,0,1),
+                    vec4.fromValues(0,0,1,1),
+                    vec4.fromValues(0,0,-1,1),
+                    vec4.fromValues(1,0,0,1),
+                    vec4.fromValues(-1,0,0,1),
+                    vec4.fromValues(0,-1,0,1),
+                ]
+                
+                for(let i in v){
+                    
+                    vec4.transformMat4(v[i],v[i],model)
+                    
+                    if(i<6){
+                        
+                        vec4.transformQuat(normals[i],normals[i],rotation)
+                        let n=normals[i]
+                        let d=n[0]*lightDir[0]+n[1]*lightDir[1]+n[2]*lightDir[2]
+                        shade[i]=d*0.8+0.65
+                        
+                    }
+                }
+                
+                let planePoints=[
+                    
+                    [v[0],v[1],v[2],v[3]],
+                    [v[1],v[2],v[5],v[6]],
+                    [v[0],v[3],v[4],v[7]],
+                    [v[2],v[3],v[6],v[7]],
+                    [v[0],v[1],v[4],v[5]],
+                    [v[4],v[5],v[6],v[7]]
+                    
+                ]
+                
+                let planes=[]
+                
+                for(let i=0;i<6;i++){
+                    
+                    planes[i]={normal:normals[i],points:planePoints[i]}
+                }
+                
+                let minX=Infinity
+                let maxX=-Infinity
+                let minY=Infinity
+                let maxY=-Infinity
+                let minZ=Infinity
+                let maxZ=-Infinity
+                //find minimum and maximum coords of each point
+                for(let i in v){
+                    
+                    let p=v[i]
+                    minX=Math.min(minX,p[0])
+                    maxX=Math.max(maxX,p[0])
+                    minY=Math.min(minY,p[1])
+                    maxY=Math.max(maxY,p[1])
+                    minZ=Math.min(minZ,p[2])
+                    maxZ=Math.max(maxZ,p[2])
+                }
+                
+                meshCollider.push({x:-x,y:-y,z:-z,w:w*0.5,h:h*0.5,l:l*0.5,rot:rot,func:collideFunc,planes:planes,rotQuat:rotation,minX:minX,maxX:maxX,minY:minY,maxY:maxY,minZ:minZ,maxZ:maxZ,grappleable:grappleable})
+                
+                let vl=verts.length*0.125
+                
+                verts.push(
+                    
+                    v[0][0],v[0][1],v[0][2],col[0]*shade[0],col[1]*shade[0],col[2]*shade[0],0,0,
+                    v[1][0],v[1][1],v[1][2],col[0]*shade[0],col[1]*shade[0],col[2]*shade[0],w*useTex,0,
+                    v[2][0],v[2][1],v[2][2],col[0]*shade[0],col[1]*shade[0],col[2]*shade[0],w*useTex,l*useTex,
+                    v[3][0],v[3][1],v[3][2],col[0]*shade[0],col[1]*shade[0],col[2]*shade[0],0,l*useTex,
+                    
+                    v[1][0],v[1][1],v[1][2],col[0]*shade[1],col[1]*shade[1],col[2]*shade[1],w*useTex,h*useTex,
+                    v[2][0],v[2][1],v[2][2],col[0]*shade[1],col[1]*shade[1],col[2]*shade[1],0,h*useTex,
+                    v[5][0],v[5][1],v[5][2],col[0]*shade[1],col[1]*shade[1],col[2]*shade[1],w*useTex,0,
+                    v[6][0],v[6][1],v[6][2],col[0]*shade[1],col[1]*shade[1],col[2]*shade[1],0,0,
+                    
+                    v[0][0],v[0][1],v[0][2],col[0]*shade[2],col[1]*shade[2],col[2]*shade[2],0,0,
+                    v[3][0],v[3][1],v[3][2],col[0]*shade[2],col[1]*shade[2],col[2]*shade[2],w*useTex,0,
+                    v[4][0],v[4][1],v[4][2],col[0]*shade[2],col[1]*shade[2],col[2]*shade[2],0,h*useTex,
+                    v[7][0],v[7][1],v[7][2],col[0]*shade[2],col[1]*shade[2],col[2]*shade[2],w*useTex,h*useTex,
+                    
+                    v[2][0],v[2][1],v[2][2],col[0]*shade[3],col[1]*shade[3],col[2]*shade[3],l*useTex,h*useTex,
+                    v[3][0],v[3][1],v[3][2],col[0]*shade[3],col[1]*shade[3],col[2]*shade[3],0,h*useTex,
+                    v[6][0],v[6][1],v[6][2],col[0]*shade[3],col[1]*shade[3],col[2]*shade[3],l*useTex,0,
+                    v[7][0],v[7][1],v[7][2],col[0]*shade[3],col[1]*shade[3],col[2]*shade[3],0,0,
+                    
+                    v[0][0],v[0][1],v[0][2],col[0]*shade[4],col[1]*shade[4],col[2]*shade[4],0,0,
+                    v[1][0],v[1][1],v[1][2],col[0]*shade[4],col[1]*shade[4],col[2]*shade[4],l*useTex,0,
+                    v[4][0],v[4][1],v[4][2],col[0]*shade[4],col[1]*shade[4],col[2]*shade[4],0,h*useTex,
+                    v[5][0],v[5][1],v[5][2],col[0]*shade[4],col[1]*shade[4],col[2]*shade[4],l*useTex,h*useTex,
+                    
+                    v[4][0],v[4][1],v[4][2],col[0]*shade[5],col[1]*shade[5],col[2]*shade[5],0,l*useTex,
+                    v[5][0],v[5][1],v[5][2],col[0]*shade[5],col[1]*shade[5],col[2]*shade[5],0,0,
+                    v[6][0],v[6][1],v[6][2],col[0]*shade[5],col[1]*shade[5],col[2]*shade[5],w*useTex,0,
+                    v[7][0],v[7][1],v[7][2],col[0]*shade[5],col[1]*shade[5],col[2]*shade[5],w*useTex,l*useTex,
+                    
+                )
+                
+                index.push(
+                    
+                    0+vl,1+vl,2+vl,
+                    0+vl,2+vl,3+vl,
+                    5+vl,6+vl,7+vl,
+                    6+vl,5+vl,4+vl,
+                    8+vl,9+vl,10+vl,
+                    11+vl,10+vl,9+vl,
+                    14+vl,13+vl,12+vl,
+                    13+vl,14+vl,15+vl,
+                    18+vl,17+vl,16+vl,
+                    17+vl,18+vl,19+vl,
+                    22+vl,21+vl,20+vl,
+                    23+vl,22+vl,20+vl
+                )
+            }
+            
+            
+            func(addPlatform)
+            
+            this.setMesh(verts,index,meshCollider)
+        }
+        
+        setBuffers(){
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER,this.mesh.buffers.verts)
+            gl.bufferData(gl.ARRAY_BUFFER,Float32Array.from(this.mesh.data.verts),gl.STATIC_DRAW)
+            
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.mesh.buffers.index)
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,Uint16Array.from(this.mesh.data.index),gl.STATIC_DRAW)
+            
+        }
+        
+        render(){
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER,this.mesh.buffers.verts)
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.mesh.buffers.index)
+            
+            gl.vertexAttribPointer(positionAttribLocation,3,gl.FLOAT,gl.FALSE,32,0)
+            gl.vertexAttribPointer(colorAttribLocation,3,gl.FLOAT,gl.FALSE,32,12)
+            gl.vertexAttribPointer(texCoordAttribLocation,2,gl.FLOAT,gl.FALSE,32,24)
+            
+            gl.drawElements(gl.TRIANGLES,this.mesh.indexAmount,gl.UNSIGNED_SHORT,0)
+            
+        }
+        
+        setDataAndRender(){
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER,this.mesh.buffers.verts)
+            gl.bufferData(gl.ARRAY_BUFFER,Float32Array.from(this.mesh.data.verts),gl.STREAM_DRAW)
+            
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.mesh.buffers.index)
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,Uint16Array.from(this.mesh.data.index),gl.STREAM_DRAW)
+            
+            gl.vertexAttribPointer(positionAttribLocation,3,gl.FLOAT,gl.FALSE,32,0)
+            gl.vertexAttribPointer(colorAttribLocation,3,gl.FLOAT,gl.FALSE,32,12)
+            gl.vertexAttribPointer(texCoordAttribLocation,2,gl.FLOAT,gl.FALSE,32,24)
+            
+            gl.drawElements(gl.TRIANGLES,this.mesh.indexAmount,gl.UNSIGNED_SHORT,0)
+            
+        }
+        
+        initMeshCollider(){
+            
+            this.mesh.collider.initModelMatrix()
+        }
+        
+        runCollider(entity){
+            
+            this.mesh.collider.collideWithEntity(entity)
+        }
+    }
+    
+    let mesh=new Mesh()
+    let entityMesh=new Mesh()
+    let entityMeshData={
+        
+        verts:[],
+        index:[],
+        meshCollider:[]
+    }
+    
+    class GrapplingHook {
+        
+        constructor(x,y,z,vx,vy,vz){
+            
+            this.attached=false
+            this.active=false
+        }
+        
+        cast(x,y,z,vx,vy,vz){
+            
+            this.x=x
+            this.y=y
+            this.z=z
+            
+            let h=mesh.mesh.collider.rayCast([x,y,z],[vx,vy,vz],'grappleable').int
+            
+            if(h){
+                
+                this.x=h[0]
+                this.y=h[1]
+                this.z=h[2]
+                this.attached=true
+            }
+        }
+        
+        update(){
+            
+            if(user.mouseClicked || user.keys.j){
+                
+                user.keys.j=false
+                
+                if(this.attached){
+                    
+                    this.attached=false
+                    return
+                    
+                } else {
+                    
+                    let d=quat.fromEuler(quat.create(),-deg(player.pitch),-deg(player.yaw),0)
+                    vec4.transformQuat(d,vec4.fromValues(0,0,-1,0),d)
+                    this.cast(-player.x,-player.y,-player.z,d[0],d[1],d[2])
+                    
+                    
+                }
+            }
+            
+            if(this.attached){
+                
+                let a=[-this.x,-this.y,-this.z].slice()
+                let force=[a[0]-player.x,a[1]-player.y,a[2]-player.z]
+                vec3.normalize(force,force)
+                
+                let st=0.026
+                
+                force[0]*=st
+                force[1]*=st
+                force[2]*=st
+                
+                player.vx+=force[0]
+                player.vy+=force[1]
+                player.vz+=force[2]
+                
+                this.render()
+            }
+        }
+        
+        render(){
+            
+            entityMeshData.verts.push(this.x,this.y,this.z,0,0,0,0,0,-player.x-0.06,-player.y-1,-player.z,0,0,0,0,0,-player.x+0.06,-player.y-1,-player.z,0,0,0,0,0)
+            
+            entityMeshData.index.push(0,1,2,2,1,0)
+            
+        }
+    }
+    
+    class Enemy {
+        
+        constructor(x,y,z){
+            
+            this.x=x
+            this.y=y
+            this.z=z
+            this.vx=this.vy=this.vz=0
+            this.radius=0.3
+        }
+        //runs physics and renders enemy
+        update(dt){
+            
+            if(this.grounded){
+                
+                this.vx*=player.fric
+                this.vz*=player.fric
+                
+            } else {
+                
+                this.vx*=player.airFric
+                this.vz*=player.airFric
+            }
+            
+            this.vy+=player.gravity*dt
+            
+            this.x+=this.vx*dt
+            this.y+=this.vy*dt
+            this.z+=this.vz*dt
+            
+            mesh.runCollider(this)
+            
+            
+            if(this.vx*this.vy*this.vz===0){
+                
+                
+                let vl=entityMeshData.verts.length*0.125
+                
+                this.mesh=createBoxMesh(-this.x,-this.y,-this.z,0.3,0.3,0.3,[0,1,0],0,0,vl)
+            }
+            
+            entityMeshData.verts.push(...(this.mesh.verts))
+            entityMeshData.index.push(...(this.mesh.index))
+        }
+    }
+    
+    let enemies=[]
+    
+    // enemies.push(new Enemy(0,-25,0.5))
+    
+    let g=new GrapplingHook()
+    
+    //the diffrent part colors
+    const colorPallete=[
+        
+        [1.4,1,0],
+        [0.6,0.6,0.8],
+        [0,0.85,0],
+        [0,0.2,0.8],
+    ]
+    
+    let currentLevel=0
+    let showLevelMessage=true
+    
+    const levels=[
+        
+        {
+            spawnPos:[0,-21.5,-3],
+            rot:[0,0],
+            message:'',
+            meshFunction:function(box){
+                
+                box(0,20,1,3,2,5,false,colorPallete[0])
+                box(0,20,-5,3,2,3,false,colorPallete[1])
+                box(-4,22.5,-5,3,1,5,[45,45,0],colorPallete[0])
+                box(0,24,-7,4,0.6,4,false,colorPallete[1])
+                box(4,26,-5,3,1,3,[0,0,45],colorPallete[0])
+                box(6,24,-5,3,1,10,[60,-40,0],colorPallete[1])
+                box(0,25,-11,4,5,1,[0,-30,0],colorPallete[0])
+                box(-4,26,-12,4,5,1,[-50,30,0],colorPallete[1])
+                box(0,28,-15,5,1,5,[0,50,30],colorPallete[0])
+                box(3,31,-17,5,1,1,[40,-30,50],colorPallete[1])
+                box(8,29,-15,3,1,10,[40,0,30],colorPallete[0])
+                box(6,32,-22.5,5,1,5,[0,0,0],colorPallete[1])
+                box(6,32.5,-22.5,1.5,1,1.5,[0,0,0],colorPallete[2],false,'win')
+                
+            },
+        },
+        
+        {
+            spawnPos:[0,-20,0],
+            rot:[0,0],
+            message:'test',
+            meshFunction:function(box){
+                
+                box(0,19,0,5,1,5,false,colorPallete[0])
+                box(0,19,-5.5,4,1,4,[0,45,0],colorPallete[1])
+                box(0,19.5,-5.5,2,0.25,2,false,colorPallete[3],false,'bounce')
+                box(-3,21,-7,2,0.25,2,false,colorPallete[3],false,'bounce')
+                box(-1,22,-8.5,3,0.25,2,[0,0,-20],colorPallete[3],false,'bounce')
+                box(1,23,-11,3,0.25,3,[30,0,20],colorPallete[3],false,'bounce')
+                box(0,25.5,-9,1,1,1,false,colorPallete[2],false,'win')
+                
+            },
+        },
+        
+        {
+            spawnPos:[0,-21.5,-3],
+            rot:[0,0],
+            message:'u can grapple on the big block',
+            meshFunction:function(box){
+                
+                box(0,20,1,3,2,5,false,colorPallete[0],true,false,true)
+                
+                
+            },
+        }
+    ]
+    
+    function setLevel(n){
+        
+        currentLevel=n
+        showLevelMessage=true
+        player.x=levels[currentLevel].spawnPos[0]
+        player.y=levels[currentLevel].spawnPos[1]
+        player.z=levels[currentLevel].spawnPos[2]
+        player.yaw=levels[currentLevel].rot[0]
+        player.pitch=levels[currentLevel].rot[1]
+        player.vx=player.vy=player.vz=0
+        mesh.setMeshFromFunction(levels[currentLevel].meshFunction)
+        mesh.setBuffers()
+        mesh.initMeshCollider()
+        g.active=false
+        g.attached=false
+    }
+    
+    setLevel(currentLevel)
+    
+    let gradientBackground=ctx.createLinearGradient(0,0,0,600)
+    gradientBackground.addColorStop(0.3,'rgb(0,0,0,0)')
+    gradientBackground.addColorStop(0.9,'rgb(0,0,0)')
+    ctx.fillStyle='white'
+    
+    
+    const modelViewUniformLocation=gl.getUniformLocation(geometryProgaram,'modelView')
+    
+    let projectionMatrix=new Float32Array(m4.perspective(player.fov,width/height,0.1,1000.0))
+    
+    ctx.font='15px cursive'
+    let showDebug=false
+    let programStart=Date.now()
+    let dt=Date.now()
+    let scenes={}
+    let currentScene='game'
+    
+    function runDebug(dt){
+        
+        if(!showDebug){return;}
+        
+        ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+        ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
+        ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
+        ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
+        ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
+        ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
+        ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
+        ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+        ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
+        ctx.fillText('Grounded: '+player.grounded,10,150)
+        ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
+        ctx.fillText('Grappling: '+g.active,10,180)
+        ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
+        ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
+        ctx.fillText('Grapple Z: '+enemies.length,10,225)
+        
+    }
+    
+    function runPhysics(dt){
+        
+        let sdir=Math.sin(-player.yaw)
+        let cdir=Math.cos(-player.yaw)
+        let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
+        
+        if(user.keys.d){
+            
+            player.vx-=cdir*s
+            player.vz+=sdir*s
+        }
+        
+        if(user.keys.w){
+            
+            player.vx+=sdir*s
+            player.vz+=cdir*s
+        }
+        
+        if(user.keys.a){
+            
+            player.vx+=cdir*s
+            player.vz-=sdir*s
+        }
+        
+        if(user.keys.s){
+            
+            player.vx-=sdir*s
+            player.vz-=cdir*s
+        }
+        
+        if(player.grounded){
+            
+            player.vx*=player.fric
+            player.vz*=player.fric
+            
+            if(user.keys[' ']){
+                
+                player.vy-=player.jumpPower
+                player.grounded=false
+            }
+            
+        } else {
+            
+            player.vx*=player.airFric
+            player.vz*=player.airFric
+        }
+        
+        
+        player.vy+=player.gravity*dt
+        
+        player.x+=player.vx*dt
+        player.y+=player.vy*dt
+        player.z+=player.vz*dt
+        
+        mesh.runCollider(player)
+        
+        if(player.y>25){
+            //basically a restart
+            setLevel(currentLevel)
+        }
+        
+    }
+    
+    function updateEntities(dt){
+        
+        entityMeshData={
+            
+            verts:[],
+            index:[],
+            meshCollider:[]
+        }
+        
+        g.update()
+        
+        for(let i in enemies){
+            
+            enemies[i].update(dt)
+        }
+        
+    }
+    
+    scenes.game=function(){
+        
+        gl.useProgram(geometryProgaram)
+        gl.bindFramebuffer(gl.FRAMEBUFFER,ogfb);
+        gl.bindTexture(gl.TEXTURE_2D,texture)
+        
+        dt=(Date.now()-dt)*0.01
+        
+        updateTimers(dt)
+        
+        runPhysics(dt)
+        
+        updateEntities(dt)
+        
+        gl.clearColor(0.1,0.4,0.93,1)
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        
+        gl.uniformMatrix4fv(modelViewUniformLocation,gl.FALSE,m4.getViewMatrix(player.x,player.y,player.z,player.pitch,player.yaw,projectionMatrix))
+        
+        entityMesh.setMesh(entityMeshData.verts,entityMeshData.index,entityMeshData.meshCollider)
+        
+        mesh.render()
+        entityMesh.setDataAndRender()
+        
+        gl.bindTexture(gl.TEXTURE_2D,ogtexture)
+        gl.bindFramebuffer(gl.FRAMEBUFFER,filteredfb)
+        gl.useProgram(filterProgram)
+        gl.bindBuffer(gl.ARRAY_BUFFER,screenVertBuffer)
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,screenIndexBuffer)
+        gl.vertexAttribPointer(filterPosLoc,2,gl.FLOAT,gl.FALSE,8,0)
+        gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0)
+        
+        
+       // gl.bindFramebuffer(gl.FRAMEBUFFER,processedfb)
+        gl.useProgram(pprocessingProgram)
+        gl.bindTexture(gl.TEXTURE_2D,filteredtexture)
+        gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0)
+        
+        gl.bindFramebuffer(gl.FRAMEBUFFER,null)
+        gl.useProgram(combineProgram)
+        gl.activeTexture(gl.TEXTURE1)
+        gl.bindTexture(gl.TEXTURE_2D,ogtexture)
+        gl.activeTexture(gl.TEXTURE0)
+        gl.bindTexture(gl.TEXTURE_2D,processedtexture)
+        gl.uniform1i(ogLoc,1)
+        gl.uniform1i(inputLoc,0)
+        gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0)
+        
+        
+        ctx.drawImage(gl.canvas,0,0)
+        
+        runDebug(dt)
+        
+		ctx.beginPath()
+		ctx.moveTo(290,300)
+	    ctx.lineTo(310,300)
+		ctx.moveTo(300,290)
+		ctx.lineTo(300,310)
+		ctx.stroke()
+        
+        if(showLevelMessage && levels[currentLevel].message){
+            
+            ctx.setTransform(1,0,0,1,0,timers['levelMessageDisappear']?timers['levelMessageDisappear'].value:0)
+            ctx.fillStyle=gradientBackground
+            ctx.fillRect(0,0,600,600)
+            ctx.fillStyle='white'
+            ctx.font='25px cursive'
+            ctx.textAlign='center'
+            ctx.fillText(levels[currentLevel].message,300,550)
+            ctx.font='15px cursive'
+            ctx.textAlign='start'
+            ctx.fillStyle='black'
+            ctx.setTransform(1,0,0,1,0,0)
+            
+            if(user.keys.x){
+                //smoothstep function
+                 addTimer('levelMessageDisappear',0,600,0.03,function(x){x=x*x*(3-2*x);return x*x;},function(){showLevelMessage=false})
+            }
+        }
+        runDebug(dt);
+        dt=Date.now()
+    }
+   
+    
+
+    function loop(){
+        
+        scenes[currentScene]()
+        window.requestAnimationFrame(loop)
+        user.mouseClicked=false
+    }
+    
+    loop()
+    
+}
+
+main()
+
+</script>
+
+<!--For restart button-->
+<script></script>
+
+</html>
