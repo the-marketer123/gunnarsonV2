@@ -844,7 +844,7 @@
                     //console.log('pxyz: '+player.pitch +' '+player.yaw )//+' '+player.z);
                     box.position.set(player.x * -1,player.y,player.z * -1);
 
-                    player.body.setTranslation({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
+                    player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
 
                     let thecam = pointerLocks[fpscamera.pointerLockNum].object
                     thecam.position.set(player.x * -1,player.y,player.z * -1);
