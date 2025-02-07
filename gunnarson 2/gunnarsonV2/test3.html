@@ -728,9 +728,9 @@
                     rigid: new RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 0, -2.75),
                     body: world.createRigidBody(body),
                     colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
-      
-                    world.createCollider(colliderDesc, body);
                 };
+		world.createCollider(player.colliderDesc, player.body);
+
                 
                 const user=(function(controls){
                     
