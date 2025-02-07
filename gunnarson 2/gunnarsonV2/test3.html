@@ -719,6 +719,7 @@
                     walkSpeed:0.3,
                     jumpPower:0.3,
                     gravity:0.065,
+		    //density:40,
                     yaw:0,
                     pitch:0,
                     sensitivity:0.005,
@@ -726,8 +727,8 @@
                     radius:0.5,
                     dead: false,
                     rigid: new RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 0, -2.75),
-                    body: world.createRigidBody(body),
-                    colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
+                    body: world.createRigidBody(rigid),
+                    colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(40)
                 };
 		world.createCollider(player.colliderDesc, player.body);
 
