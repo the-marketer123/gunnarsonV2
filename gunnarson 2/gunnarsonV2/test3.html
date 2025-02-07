@@ -791,7 +791,7 @@
 
                 function runPlayerPhysics(dt){
                     
-                    console.log(player.yaw);
+                    //console.log(player.yaw);
                     let sdir=Math.sin(-player.yaw)
                     let cdir=Math.cos(-player.yaw)
                     let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
@@ -840,7 +840,7 @@
                     player.vy-=player.gravity*dt
                     
                     player.x+=player.vx*dt
-                   // player.y+=player.vy*dt
+                   // player.y+=player.vy*dt // gravity kinda
                     player.z+=player.vz*dt
                     //console.log('pxyz: '+player.pitch +' '+player.yaw )//+' '+player.z);
                     box.position.set(player.x * -1,player.y,player.z * -1);
@@ -850,15 +850,10 @@
                     let thecam = pointerLocks[fpscamera.pointerLockNum].object
                     thecam.position.set(player.x * -1,player.y,player.z * -1);
                     let q = thecam.quaternion;
-                    //player.yaw = Math.atan2(2.0*(q.y*q.z + q.w*q.x), q.w*q.w - q.x*q.x - q.y*q.y + q.z*q.z);
                     
                     let newYaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
                     player.yaw = THREE.MathUtils.lerp(player.yaw, newYaw, 0.1);
-                    
                     player.pitch = Math.asin(-2.0*(q.x*q.z - q.w*q.y));
-                    //player.yaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
-                    //player.pitch =  Math.asin(-2.0 * (q.x * q.z - q.w * q.y));
-                    //player.pitch *= -1;
 
                     if (player.y < -20) {
                         player.dead = true;
