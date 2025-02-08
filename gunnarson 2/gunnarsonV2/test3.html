@@ -742,7 +742,7 @@
                         world: world,
                         playerIsExistent: true,
                         restart: 1,
-                        eventQueue:  new RAPIER.EventQueue(true)
+                        eventQueue: new RAPIER.EventQueue(true)
 
                     };
                     player.body = player.world.createRigidBody(player.rigid);
@@ -965,7 +965,7 @@
      
                 function animationLoop() {
 
-                    world.step(player.player.eventQueue);
+                    world.step( player.player.eventQueue);
                     UPDATE();
                     render();
                     stats.update();
