@@ -216,6 +216,7 @@
                 };
                 
                 let curlevel = {
+                    num: 1,
                     hasEnem: false,
                     hasCube: false,
                     hasGuns: false,
@@ -240,7 +241,7 @@
                 let board_ctx=boardCanvas.getContext('2d');
 
                 const gravity = { x: 0.0, y: 0, z: 0.0 };
-                const world = new RAPIER.World(gravity);
+                let world = new RAPIER.World(gravity);
 
                 let rigidBodies = [];
                 let pcolliders = [];
@@ -597,15 +598,19 @@
 
             /*Levels*/
                 let curLevel = 'test';
+                let player, restart;
                 function testLevel1() {
+                    player = addPlayer(0,10,0,fpscamera,world);
+                    player.player.restart = world.takeSnapshot();
+
                     curlevel.hasCube = true;
                     curlevel.hasEnem = false;
                     curlevel.hasGuns = false;
                     curlevel.hasMvTl = false;
                     curlevel.hasExpl = false;
 
-                    bupcamera.position.y = 10;
-                    bupcamera.position.z = 0;
+                    //bupcamera.position.y = 10;
+                    //bupcamera.position.z = 0;
                     
                     addSkybox(90);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
@@ -650,6 +655,7 @@
                 let webrenderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,canvas:glCanvas})
                 webrenderer.setSize(width,height)
 
+            /*math*/
                 let F=(function(out){
                     
                     out.constrain=function(x,a,b){
@@ -706,31 +712,43 @@
                     
                     return x*(b-a)+a
                 }
-   
-                let player={
-                    x:0,
-                    y:0,
-                    z:-2.75,
-                    vx:0,
-                    vy:0,
-                    vz:0,
-                    fric:0.85,
-                    airFric:0.9,
-                    walkSpeed:0.3,
-                    jumpPower:0.3,
-                    gravity:0.065,
-		    //density:40,
-                    yaw:0,
-                    pitch:0,
-                    sensitivity:0.005,
-                    fov:70,
-                    radius:0.5,
-                    dead: false,
-                    rigid: new RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 0, -2.75),
-                    body: world.createRigidBody(rigid),
-                    colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(40)
-                };
-		world.createCollider(player.colliderDesc, player.body);
+            /*player*/
+                function addPlayer (x,y,z,camera,world) {
+                    let player={
+                        sx:x,
+                        sy:y,
+                        sz:z,
+                        x:x,
+                        y:y,
+                        z:z,
+                        vx:0,
+                        vy:0,
+                        vz:0,
+                        fric:0.85,
+                        airFric:0.9,
+                        walkSpeed:0.3,
+                        jumpPower:0.3,
+                        gravity:0.065,
+                        yaw:0,
+                        pitch:0,
+                        sensitivity:0.005,
+                        fov:70,
+                        radius:0.5,
+                        dead: false,
+                        rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z),
+                        body: 1,
+                        colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(40),
+                        camera: camera,
+                        world: world,
+                        playerIsExistent: true,
+                        restart: 1,
+                        eventQueue:  new RAPIER.EventQueue(true)
+
+                    };
+                    player.body = player.world.createRigidBody(player.rigid);
+                    world.createCollider(player.colliderDesc, player.body);
+                    return ({player});
+            }
 
                 
                 const user=(function(controls){
@@ -781,90 +799,119 @@
                     
                 })({})
 
-                let geometry = new THREE.BoxGeometry(1,1,10);
+                /*let geometry = new THREE.BoxGeometry(0.5,1,0.5);
                 let material = new THREE.MeshStandardMaterial( {
                     color: 0x0000ff,
                     flatShading: true
                 } );
                 let box = new THREE.Mesh(geometry,material);
-                scene.add(box);
+                scene.add(box);*/
 
-                function runPlayerPhysics(dt){
+                function runPlayerPhysics(dt,player){
+                    if (player.playerIsExistent) {
                     
-                    //console.log(player.yaw);
-                    let sdir=Math.sin(-player.yaw)
-                    let cdir=Math.cos(-player.yaw)
-                    let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
-                    
-                    if(user.keys.d){
+                        let sdir=Math.sin(-player.yaw)
+                        let cdir=Math.cos(-player.yaw)
+                        let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
                         
-                        player.vx-=cdir*s
-                        player.vz+=sdir*s
-                    }
-                    
-                    if(user.keys.w){
-                        
-                        player.vx+=sdir*s
-                        player.vz+=cdir*s
-                    }
-                    
-                    if(user.keys.a){
-                        
-                        player.vx+=cdir*s
-                        player.vz-=sdir*s
-                    }
-                    
-                    if(user.keys.s){
-                        
-                        player.vx-=sdir*s
-                        player.vz-=cdir*s
-                    }
-                    
-                    if(player.grounded){
-                        
-                        player.vx*=player.fric
-                        player.vz*=player.fric
-                        
-                        if(user.keys[' ']){
+                        if(user.keys.d){
                             
-                            player.vy-=player.jumpPower
-                            player.grounded=false
+                            player.vx-=cdir*s
+                            player.vz+=sdir*s
                         }
                         
-                    } else {
+                        if(user.keys.w){
+                            
+                            player.vx+=sdir*s
+                            player.vz+=cdir*s
+                        }
                         
-                        player.vx*=player.airFric
-                        player.vz*=player.airFric
+                        if(user.keys.a){
+                            
+                            player.vx+=cdir*s
+                            player.vz-=sdir*s
+                        }
+                        
+                        if(user.keys.s){
+                            
+                            player.vx-=sdir*s
+                            player.vz-=cdir*s
+                        }
+                        
+                        if(player.grounded){
+                            
+                            player.vx*=player.fric
+                            player.vz*=player.fric
+                            
+                            if(user.keys[' ']){
+                                
+                                player.vy-=player.jumpPower
+                                player.grounded=false
+                            }
+                            
+                        } else {
+                            
+                            player.vx*=player.airFric
+                            player.vz*=player.airFric
+                        }
+                        
+                        player.vy-=player.gravity*dt
+                        
+                    // player.x+=player.vx*dt
+                    // player.y+=player.vy*dt // gravity kinda
+                        //player.z+=player.vz*dt
+                        //box.position.set(player.x * -1,player.y,player.z * -1);
+
+                        player.body.setLinvel({x: player.vx*dt*100, y: player.vy*dt*5, z: player.vz*dt*100});
+                        //console.log(player.vy);
+
+                        let thecam = pointerLocks[player.camera.pointerLockNum].object
+                        thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
+                        let q = thecam.quaternion;
+                        
+                        let newYaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+                        player.yaw = THREE.MathUtils.lerp(player.yaw, newYaw, 0.1);
+                        player.pitch = Math.asin(-2.0*(q.x*q.z - q.w*q.y));
+
+                        if (player.body.translation().y < -20) {
+                            player.dead = true;
+                        }
+
+                        let isGrounded = false;
+
+                        player.eventQueue.drainCollisionEvents((handle1, handle2, started) => {
+                            let playerHandle = player.body.handle;
+                            let otherHandle = (handle1 === playerHandle) ? handle2 : (handle2 === playerHandle ? handle1 : null);
+
+                            if (otherHandle !== null && started) {
+                                let otherBody = world.getRigidBody(otherHandle);
+                                if (otherBody) {
+                                    let playerPos = player.body.translation();
+                                    let otherPos = otherBody.translation();
+
+                                    // Check if the other object is below the player
+                                    if (otherPos.y < playerPos.y - 0.5) {  // Adjust threshold as needed
+                                        isGrounded = true;
+                                    }
+                                }
+                            }
+                        });
+
+                        player.grounded = isGrounded;
+
+                        if (player.dead === true) {
+                            //console.log(RAPIER.World.restoreSnapshot);
+                            //world = RAPIER.World.restoreSnapshot(player.restart);
+
+                            player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
+                            player.vy = 0;
+                            player.dead = false;
+                            
+                        }
+
                     }
-                    
-                    player.vy-=player.gravity*dt
-                    
-                    player.x+=player.vx*dt
-                   // player.y+=player.vy*dt // gravity kinda
-                    player.z+=player.vz*dt
-                    //console.log('pxyz: '+player.pitch +' '+player.yaw )//+' '+player.z);
-                    box.position.set(player.x * -1,player.y,player.z * -1);
-
-                    player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
-
-                    let thecam = pointerLocks[fpscamera.pointerLockNum].object
-                    thecam.position.set(player.x * -1,player.y,player.z * -1);
-                    let q = thecam.quaternion;
-                    
-                    let newYaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
-                    player.yaw = THREE.MathUtils.lerp(player.yaw, newYaw, 0.1);
-                    player.pitch = Math.asin(-2.0*(q.x*q.z - q.w*q.y));
-
-                    if (player.y < -20) {
-                        player.dead = true;
-                    }
-                    if (player.dead === true) {
-                        player.y = 10;
-                        player.vy = 0;
-                        player.dead = false;
-                    }
-
                 }
+            
                 
 
 				
@@ -891,10 +938,7 @@
                     }
 
                     dt = Math.min( 0.05, clock.getDelta() ) * 35;
-                    //console.log('skibidi');
-                    runPlayerPhysics(dt);
-                    //player.updatePhysics(dt)
-                    //player.updateCamera()
+                    runPlayerPhysics(dt, player.player);
                     cubes.forEach(b => b.update());
                     startup = false;
                  }
@@ -921,7 +965,7 @@
      
                 function animationLoop() {
 
-                    world.step();
+                    world.step(player.player.eventQueue);
                     UPDATE();
                     render();
                     stats.update();
