@@ -284,7 +284,7 @@
 
             /*Camera*/
                 
-                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 0.1, 5000 );
 
                 bupcamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
 
@@ -323,7 +323,7 @@
 
             /*Textures*/
                 
-                    //old texture     
+                    //OUTDATED     
                     function initTextures() {
                         // Prepare the board canvas
                         board_ctx.fillStyle = 'rgb(0,0,0)';
@@ -601,7 +601,7 @@
                 let player, restart;
                 function testLevel1() {
                     player = addPlayer(0,10,0,fpscamera,world);
-                    player.player.restart = world.takeSnapshot();
+                    player.restart = world.takeSnapshot();
 
                     curlevel.hasCube = true;
                     curlevel.hasEnem = false;
@@ -613,17 +613,17 @@
                     //bupcamera.position.z = 0;
                     
                     addSkybox(90);
-                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     
-                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
-                    addPlatform({x: 0, y:0, z: 0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
                     addPCube(0,20,0);
                     addPCube( 10, 20, 10);
@@ -713,6 +713,7 @@
                     return x*(b-a)+a
                 }
             /*player*/
+               // let playerEventQueues = [];
                 function addPlayer (x,y,z,camera,world) {
                     let player={
                         sx:x,
@@ -735,19 +736,21 @@
                         fov:70,
                         radius:0.5,
                         dead: false,
-                        rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z),
+                        rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.0).enabledRotations(false, true,false),
                         body: 1,
-                        colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(40),
+                        colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,1,0.25).setDensity(40),
                         camera: camera,
                         world: world,
                         playerIsExistent: true,
-                        restart: 1,
-                        eventQueue: new RAPIER.EventQueue(true)
-
+                        restart: 1
+                        //eventQueue: new RAPIER.EventQueue(true),
+                        //eventQueueNum: 1,
                     };
                     player.body = player.world.createRigidBody(player.rigid);
                     world.createCollider(player.colliderDesc, player.body);
-                    return ({player});
+                    //playerEventQueues.push(player.eventQueue);
+                    //player.EventQueueNum = playerEventQueues.length - 1;
+                    return (player);
             }
 
                 
@@ -842,26 +845,66 @@
                             
                             player.vx*=player.fric
                             player.vz*=player.fric
+                            player.vy = 0
                             
                             if(user.keys[' ']){
                                 
-                                player.vy-=player.jumpPower
+                                player.vy = player.jumpPower * 25
                                 player.grounded=false
                             }
                             
                         } else {
                             
                             player.vx*=player.airFric
-                            player.vz*=player.airFric
+                            player.vz*=player.airFric                        
+                            player.vy-=player.gravity*dt*4
+
                         }
                         
-                        player.vy-=player.gravity*dt
                         
-                    // player.x+=player.vx*dt
-                    // player.y+=player.vy*dt // gravity kinda
+              
+
+                        if (player.body.translation().y < -20) {
+                            player.dead = true;
+                        }
+
+                        let rayOrigin = player.body.translation();
+                        rayOrigin.y -= 0.5;  // Move the ray origin much higher
+
+                        let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
+                        let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
+
+                        if (hit && hit.collider && hit.toi > 0.001) {
+                            player.grounded = true;
+                        } else {
+                            player.grounded = false;
+                        }
+
+
+                        //console.log(hit);
+                        //console.log(player.grounded);
+                        //console.log("Ray Origin:", rayOrigin);
+                        //console.log("Raycast Hit:", hit ? hit.toi : "No hit");
+                        //console.log("Hit Collider:", hit?.collider);
+                        
+
+                        /*if (player.grounded === true) {
+                            player.vy = 0;
+                        }*/
+                        if (player.dead === true) {
+                            player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
+                            player.vy = 0;
+                            player.vx = 0;
+                            player.vz = 0;
+                            player.dead = false;
+                            
+                        }
+                        //player.x+=player.vx*dt
+                        //player.y+=player.vy*dt // gravity kinda
                         //player.z+=player.vz*dt
                         //box.position.set(player.x * -1,player.y,player.z * -1);
 
+                        console.log(player.vx + '  ' + player.vy + '  ' + player.vz);
                         player.body.setLinvel({x: player.vx*dt*100, y: player.vy*dt*5, z: player.vz*dt*100});
                         //console.log(player.vy);
 
@@ -872,43 +915,6 @@
                         let newYaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
                         player.yaw = THREE.MathUtils.lerp(player.yaw, newYaw, 0.1);
                         player.pitch = Math.asin(-2.0*(q.x*q.z - q.w*q.y));
-
-                        if (player.body.translation().y < -20) {
-                            player.dead = true;
-                        }
-
-                        let isGrounded = false;
-
-                        player.eventQueue.drainCollisionEvents((handle1, handle2, started) => {
-                            let playerHandle = player.body.handle;
-                            let otherHandle = (handle1 === playerHandle) ? handle2 : (handle2 === playerHandle ? handle1 : null);
-
-                            if (otherHandle !== null && started) {
-                                let otherBody = world.getRigidBody(otherHandle);
-                                if (otherBody) {
-                                    let playerPos = player.body.translation();
-                                    let otherPos = otherBody.translation();
-
-                                    // Check if the other object is below the player
-                                    if (otherPos.y < playerPos.y - 0.5) {  // Adjust threshold as needed
-                                        isGrounded = true;
-                                    }
-                                }
-                            }
-                        });
-
-                        player.grounded = isGrounded;
-
-                        if (player.dead === true) {
-                            //console.log(RAPIER.World.restoreSnapshot);
-                            //world = RAPIER.World.restoreSnapshot(player.restart);
-
-                            player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
-                            player.vy = 0;
-                            player.dead = false;
-                            
-                        }
-
                     }
                 }
             
@@ -938,7 +944,7 @@
                     }
 
                     dt = Math.min( 0.05, clock.getDelta() ) * 35;
-                    runPlayerPhysics(dt, player.player);
+                    runPlayerPhysics(dt, player);
                     cubes.forEach(b => b.update());
                     startup = false;
                  }
@@ -965,11 +971,11 @@
      
                 function animationLoop() {
 
-                    world.step( player.player.eventQueue);
                     UPDATE();
                     render();
                     stats.update();
-          
+                    world.step( );//playerEventQueues[player.EventQueueNum]);
+
                  }
 		</script>
 	</body>
