@@ -284,9 +284,9 @@
 
             /*Camera*/
                 
-                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 0.1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 5000 );
 
-                bupcamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                bupcamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
 
                 let orbits = [];
                 function addOrbit (camera, element) {
@@ -736,21 +736,17 @@
                         fov:70,
                         radius:0.5,
                         dead: false,
-                        rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.0).enabledRotations(false, true,false),
+                        rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.0),//.enabledRotations(false, true,false),
                         body: 1,
                         colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,1,0.25).setDensity(40),
                         camera: camera,
                         world: world,
                         playerIsExistent: true,
                         restart: 1
-                        //eventQueue: new RAPIER.EventQueue(true),
-                        //eventQueueNum: 1,
                     };
                     player.body = player.world.createRigidBody(player.rigid);
                     world.createCollider(player.colliderDesc, player.body);
-                    //playerEventQueues.push(player.eventQueue);
-                    //player.EventQueueNum = playerEventQueues.length - 1;
-                    return (player);
+                   return (player);
             }
 
                 
@@ -813,34 +809,46 @@
                 function runPlayerPhysics(dt,player){
                     if (player.playerIsExistent) {
                     
-                        let sdir=Math.sin(-player.yaw)
-                        let cdir=Math.cos(-player.yaw)
+                        let sdir=Math.sin(player.yaw)
+                        let cdir=Math.cos(player.yaw)
                         let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
                         
                         if(user.keys.d){
-                            
-                            player.vx-=cdir*s
-                            player.vz+=sdir*s
-                        }
-                        
-                        if(user.keys.w){
-                            
-                            player.vx+=sdir*s
-                            player.vz+=cdir*s
-                        }
-                        
-                        if(user.keys.a){
                             
                             player.vx+=cdir*s
                             player.vz-=sdir*s
                         }
                         
-                        if(user.keys.s){
+                        if(user.keys.w){
                             
                             player.vx-=sdir*s
                             player.vz-=cdir*s
                         }
                         
+                        if(user.keys.a){
+                            
+                            player.vx-=cdir*s
+                            player.vz+=sdir*s
+                        }
+                        
+                        if(user.keys.s){
+                            
+                            player.vx+=sdir*s
+                            player.vz+=cdir*s
+                        }
+                        
+                        let rayOrigin = player.body.translation();
+                        rayOrigin.y -= 0.5;  // Move the ray origin much higher
+
+                        let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
+                        let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
+
+                        if (hit && hit.collider && hit.toi > 0.001) {
+                            player.grounded = true;
+                        } else {
+                            player.grounded = false;
+                        }
+
                         if(player.grounded){
                             
                             player.vx*=player.fric
@@ -857,7 +865,7 @@
                             
                             player.vx*=player.airFric
                             player.vz*=player.airFric                        
-                            player.vy-=player.gravity*dt*4
+                            player.vy-=player.gravity*dt*5
 
                         }
                         
@@ -868,17 +876,7 @@
                             player.dead = true;
                         }
 
-                        let rayOrigin = player.body.translation();
-                        rayOrigin.y -= 0.5;  // Move the ray origin much higher
-
-                        let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
-                        let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
-
-                        if (hit && hit.collider && hit.toi > 0.001) {
-                            player.grounded = true;
-                        } else {
-                            player.grounded = false;
-                        }
+                       
 
 
                         //console.log(hit);
@@ -888,9 +886,7 @@
                         //console.log("Hit Collider:", hit?.collider);
                         
 
-                        /*if (player.grounded === true) {
-                            player.vy = 0;
-                        }*/
+                      
                         if (player.dead === true) {
                             player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
                             player.vy = 0;
@@ -899,22 +895,21 @@
                             player.dead = false;
                             
                         }
-                        //player.x+=player.vx*dt
-                        //player.y+=player.vy*dt // gravity kinda
-                        //player.z+=player.vz*dt
-                        //box.position.set(player.x * -1,player.y,player.z * -1);
-
-                        console.log(player.vx + '  ' + player.vy + '  ' + player.vz);
-                        player.body.setLinvel({x: player.vx*dt*100, y: player.vy*dt*5, z: player.vz*dt*100});
-                        //console.log(player.vy);
+      
+                        //console.log(player.vx + '  ' + player.vy + '  ' + player.vz);
+                        player.body.setLinvel({x: player.vx*dt*25, y: player.vy*dt*2.5, z: player.vz*dt*25});
 
                         let thecam = pointerLocks[player.camera.pointerLockNum].object
                         thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
                         let q = thecam.quaternion;
                         
-                        let newYaw = Math.atan2(2.0 * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
-                        player.yaw = THREE.MathUtils.lerp(player.yaw, newYaw, 0.1);
-                        player.pitch = Math.asin(-2.0*(q.x*q.z - q.w*q.y));
+                        let euler = new THREE.Euler();
+                        euler.setFromQuaternion(q, 'YXZ');
+                        player.yaw = euler.y;  
+                        player.pitch = euler.x; 
+                                                
+                        console.log('Y Velocity: ' + player.vy);
+
                     }
                 }
             
