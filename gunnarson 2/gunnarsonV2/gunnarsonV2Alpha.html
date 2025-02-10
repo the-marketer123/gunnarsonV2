@@ -575,8 +575,8 @@
                         rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
                         mesh.position.set(x, y, z);
                         mesh.quaternion.set(xr, yr, zr, wr);
-                        if (y < -20) {
-                                world.removeRigidBody(rigid);
+                        if (y < -100) {
+                                //world.removeRigidBody(rigid);
                                 scene.remove(mesh);
                         }
                         }
@@ -585,12 +585,11 @@
                     return { mesh, rigid, update };
                  }
                  function updateCubes(){
-                    cubes.forEach(cube => {
-                        if (cube !== undefined) {
-                            cube.update();
+                    for (var i = 0; i < cubes.length; i++) {
+                        if (cubes[i] !== null) {
+                            cubes[i].update();
                         }
-                        //cube.update();
-                    });
+                    }
                  }
                 function addSkybox(angle) {
                     const sky = new Sky();
@@ -609,7 +608,7 @@
 
             /*Levels*/
 
-                let curLevel = 'test';
+                let curLevel = 'menu';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -931,7 +930,7 @@
 
 
 
-            /*Events*/
+            /*Main*/
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
@@ -961,7 +960,7 @@
                     startup = false;
                  }
 
-                /*nessecities*/
+            /*nessecities*/
                 function onWindowResize() {
 
                     fpscamera.aspect = window.innerWidth / window.innerHeight;
