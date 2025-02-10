@@ -908,7 +908,7 @@
                             }
         
                             //console.log('Velocity;  ' + player.vx + '  ' + player.vy + '  ' + player.vz);
-                            player.body.setLinvel({x: player.vx*dt*25, y: player.vy*dt*2.5, z: player.vz*dt*25});
+                            player.body.setLinvel({x: player.vx*dt*10, y: player.vy*dt*2.5, z: player.vz*dt*10});
 
                             let thecam = pointerLocks[player.camera.pointerLockNum].object
                             thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
