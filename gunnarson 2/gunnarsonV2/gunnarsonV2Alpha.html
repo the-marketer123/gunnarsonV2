@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -7,104 +8,104 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script><!--J Query-->
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
         <style>
-        body {
-            margin: 0;
-            background-color: #000;
-            color: #fff;
-            font-family: Monospace;
-            font-size: 13px;
-            line-height: 24px;
-            overscroll-behavior: none;
-        }
-        
-        #board-canvas {
-            display: none; 
-        }
-        a {
-            color: #ff0;
-            text-decoration: none;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        button {
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        
-        #info {
-            position: absolute;
-            top: 0px;
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            text-align: center;
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            pointer-events: none;
-            z-index: 1; /* TODO Solve this in HTML */
-        }
-        
-        a, button, input, select {
-            pointer-events: auto;
-        }
-        
-        .lil-gui {
-            z-index: 2 !important; /* TODO Solve this in HTML */
-        }
-        
-        @media all and ( max-width: 640px ) {
-            .lil-gui.root { 
-                right: auto;
-                top: auto;
-                max-height: 50%;
-                max-width: 80%;
-                bottom: 0;
-                left: 0;
+            body {
+                margin: 0;
+                background-color: #000;
+                color: #fff;
+                font-family: Monospace;
+                font-size: 13px;
+                line-height: 24px;
+                overscroll-behavior: none;
             }
-        }
-        
-        #overlay {
-            position: absolute;
-            font-size: 16px;
-            z-index: 2;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            background: rgba(0,0,0,0.7);
-        }
-        
-            #overlay button {
-                background: transparent;
-                border: 0;
-                border: 1px solid rgb(255, 255, 255);
-                border-radius: 4px;
-                color: #ffffff;
-                padding: 12px 18px;
-                text-transform: uppercase;
+            
+            #board-canvas {
+                display: none; 
+            }
+            a {
+                color: #ff0;
+                text-decoration: none;
+            }
+            
+            a:hover {
+                text-decoration: underline;
+            }
+            
+            button {
                 cursor: pointer;
+                text-transform: uppercase;
             }
-        
-        #notSupported {
-            width: 50%;
-            margin: auto;
-            background-color: #f00;
-            margin-top: 20px;
-            padding: 10px;
-        }
+            
+            #info {
+                position: absolute;
+                top: 0px;
+                width: 100%;
+                padding: 10px;
+                box-sizing: border-box;
+                text-align: center;
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                pointer-events: none;
+                z-index: 1; /* TODO Solve this in HTML */
+            }
+            
+            a, button, input, select {
+                pointer-events: auto;
+            }
+            
+            .lil-gui {
+                z-index: 2 !important; /* TODO Solve this in HTML */
+            }
+            
+            @media all and ( max-width: 640px ) {
+                .lil-gui.root { 
+                    right: auto;
+                    top: auto;
+                    max-height: 50%;
+                    max-width: 80%;
+                    bottom: 0;
+                    left: 0;
+                }
+            }
+            
+            #overlay {
+                position: absolute;
+                font-size: 16px;
+                z-index: 2;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                background: rgba(0,0,0,0.7);
+            }
+            
+                #overlay button {
+                    background: transparent;
+                    border: 0;
+                    border: 1px solid rgb(255, 255, 255);
+                    border-radius: 4px;
+                    color: #ffffff;
+                    padding: 12px 18px;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                }
+            
+            #notSupported {
+                width: 50%;
+                margin: auto;
+                background-color: #f00;
+                margin-top: 20px;
+                padding: 10px;
+            }
         </style>
         
     </head>
-	<body>
+	<body id="body">
         <canvas id='board-canvas' width='800' height='1500'></canvas>
 		<script type="importmap">
             {
@@ -149,30 +150,38 @@
 
 		</script>
 
- 
+      
 
-        <script type="module"> // imports
+        <canvas id='gl-canvas' width='600' height='600'></canvas>
+        <canvas id='ui-canvas' width='600' height='600'></canvas>
 
-	    import * as THREE from 'three';
-            //import {addPass,useCamera,useControls,useGui,useLoader,useRenderSize,useScene,useTick,} from './render/init'
-	    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-	    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		<script type="module">
+
+            /*basics*/
+	        import * as THREE from 'three';
+	        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+	        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             import { Sky } from 'three/addons/objects/Sky.js';
             import  Stats  from 'three/addons/libs/stats.module.js'
             const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
-            //import { addPhysics } from './render/physics/physics'
-            //import AvatarController from './render/controllers/character-controller.js'
-            //import { TickData } from './render/controllers/tick-manager'
             await RAPIER.init();
 
 
-	    let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
+	        let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
             const pi = Math.PI;
-            const debugmode = false;
+            let debugmode = false;
+
+            let glCanvas=document.getElementById('gl-canvas')
+            glCanvas.style.display='none'
+
+            let uiCanvas=document.getElementById('ui-canvas')
+            let ctx=uiCanvas.getContext('2d')
+            uiCanvas.style.display='none'
+            uiCanvas=document.body
 
 
-            function resize( object, scaleX, scaleY, scaleZ, updateUV )
-            {
+
+            function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
                 object.scale.set( scaleX, scaleY, scaleZ );
             
                 if( updateUV )
@@ -194,9 +203,8 @@
                 }
             }           
 			
-            //function init() {
 
-                /*Scene*/
+            /*Scene*/
                 
                 const pmremgen = new THREE.PMREMGenerator(new THREE.WebGLRenderer());
                 scene = new THREE.Scene();
@@ -206,14 +214,9 @@
                     paused: true
 
                 };
-                let player = {
-                    health: 1,
-                    speed: 5,
-                    dead: false,
-                    onGround: false
-
-                };
+                
                 let curlevel = {
+                    num: 1,
                     hasEnem: false,
                     hasCube: false,
                     hasGuns: false,
@@ -222,7 +225,7 @@
                     paused: false
                 };
 
-                renderer = new THREE.WebGLRenderer( {antialias: true} );
+                renderer = new THREE.WebGLRenderer( {antialias: true, canvas: glCanvas} );
                 renderer.setSize( innerWidth, innerHeight );
                 renderer.setAnimationLoop( animationLoop );
 
@@ -238,7 +241,7 @@
                 let board_ctx=boardCanvas.getContext('2d');
 
                 const gravity = { x: 0.0, y: 0, z: 0.0 };
-                const world = new RAPIER.World(gravity);
+                let world = new RAPIER.World(gravity);
 
                 let rigidBodies = [];
                 let pcolliders = [];
@@ -249,7 +252,7 @@
                 const clock = new THREE.Clock()
                 let delta
 
-                /*Lights*/
+            /*Lights*/
                 
  
                 scene.fog = new THREE.Fog( scene.background, 1, 5000 );
@@ -279,128 +282,159 @@
 				dirLight.shadow.camera.far =   3500;
 				dirLight.shadow.bias =     - 0.0001;
 
-               /*Camera*/
+            /*Camera*/
                 
-                fpscamera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 5000 );
 
-                scene.add( fpscamera );
-                
+                bupcamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
 
+                let orbits = [];
+                function addOrbit (camera, element) {
+                    const orbitControls = new OrbitControls(camera, element);// originally renderer.domElement
+                    orbitControls.enableDamping = true
+                    orbitControls.minDistance = 0.1
+                    orbitControls.maxDistance = 1500
+                    orbitControls.enablePan = false
+                    orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
+                    orbitControls.update();
+                    orbits.push(orbitControls);
+                    camera.orbitNum = orbits.length - 1;
 
-                /*Textures*/
-                
-                //old texture     
-                function initTextures() {
-                    // Prepare the board canvas
-                    board_ctx.fillStyle = 'rgb(0,0,0)';
-                    board_ctx.fillRect(0, 0, 512, 512);
-                    board_ctx.lineWidth = 3;
-
-                    // Draw the cross lines
-                    board_ctx.beginPath();
-                    board_ctx.moveTo(256, 0);
-                    board_ctx.lineTo(256, 512);
-                    board_ctx.closePath();
-                    board_ctx.strokeStyle = 'rgb(255,255,255)';
-                    board_ctx.stroke();
-
-                    board_ctx.beginPath();
-                    board_ctx.moveTo(0, 256);
-                    board_ctx.lineTo(512, 256);
-                    board_ctx.closePath();
-                    board_ctx.strokeStyle = 'rgb(255,255,255)';
-                    board_ctx.stroke();
-
-                    // Draw text and borders
-                    board_ctx.fillStyle = 'rgb(255,255,255)';
-                    board_ctx.font = 'bold 40px arial';
-                    board_ctx.fillText('Prototype', 20, 50);
-                    board_ctx.fillText('5 x 5 ft.', 20, 100);
-                    board_ctx.fillRect(0, 0, 7, 512);
-                    board_ctx.fillRect(512, 0, -7, 512);
-                    board_ctx.fillRect(0, 0, 512, 7);
-                    board_ctx.fillRect(0, 512, 512, -7);
-
-                    // Create the first texture
-                    const boxTexture = new THREE.Texture(boardCanvas);
-                    boxTexture.needsUpdate = true;
-
-                    // Clear and draw the second texture
-                    board_ctx.clearRect(0, 0, 1500, 1500);
-                    board_ctx.font = 'bold 30px arial';
-                    board_ctx.fillStyle = 'rgb(0,0,0)';
-                    board_ctx.fillText('WASD to move', 10, 30);
-                    board_ctx.fillText('SPACE to jump', 10, 65);
-                    board_ctx.fillText('Shoot the enemy!', 10, 125);
-                    board_ctx.fillText('Drop your weapon', 10, 190);
-                    board_ctx.fillText('& hold down your', 12, 220);
-                    board_ctx.fillText('mouse to move the', 7, 250);
-                    board_ctx.fillText('boxes and spheres!', 5, 280);
-                    board_ctx.fillText('SHIFT to crouch', 20, 340);
-                    board_ctx.fillText('Hold jump while', 20, 400);
-                    board_ctx.fillText('touching a wall', 20, 430);
-                    board_ctx.fillText('to walljump!', 50, 460);
-                    board_ctx.fillText('Use the cube to', 20, 500);
-                    board_ctx.fillText('break the glass', 20, 530);
-                    board_ctx.fillText('& kill the enemy', 20, 560);
-                    board_ctx.fillText('Press E to drop', 20, 605);
-                    board_ctx.fillText('your weapon!', 35, 640);
-                    board_ctx.fillText('OWO', 90, 700);
-                    board_ctx.fillText('whta r u doign hre?', 3, 730);
-                    board_ctx.fillText('Congratulations!', 20, 780);
-                    board_ctx.fillText('You are now an', 27, 810);
-                    board_ctx.fillText('EPIC GAMER!!!!', 27, 845);
-                    board_ctx.fillText('Thx 4 playing!!!', 30, 900);
-                    board_ctx.fillText('More games to come!', 4, 1012);
-                    board_ctx.font = 'bold 20px arial';
-                    board_ctx.fillText('The end of a game...', 40, 949);
-                    board_ctx.font = 'bold 15px arial';
-                    board_ctx.fillText('The beginning of the best games on KA', 10, 969);
-
-                    // Create the second texture
-                    const messagesTexture = new THREE.Texture(boardCanvas);
-                    messagesTexture.needsUpdate = true;
-
-                    // Define texture bounds
-                    const bounds = [
-                        [0, 0, 235, 90],
-                        [0, 95, 275, 50],
-                        [0, 160, 295, 140],
-                        [0, 370, 275, 100],
-                        [0, 470, 275, 110],
-                        [0, 580, 275, 80],
-                        [0, 310, 275, 35],
-                        [0, 671, 285, 75],
-                        [0, 750, 319, 280],
-                    ];
-
-                    bounds.forEach(bound => {
-                        bound[0] /= 1500;
-                        bound[1] /= 1500;
-                        bound[2] /= 1500;
-                        bound[3] /= 1500;
-                    });
-
-                    boxTexture.needsUpdate = true;
-                    boxTexture.wrapS = THREE.RepeatWrapping;
-                    boxTexture.wrapT = THREE.RepeatWrapping;
- 
-                    return {
-                        boxTexture,
-                        messagesTexture,
-                        bounds,
-                    };
                 }
 
-                const textures = initTextures();
+                let pointerLocks = [];
+                function addPointerLock ( camera, element ) {
+                    let controls = new PointerLockControls( camera, element );
+                    document.addEventListener( 'click', function () {
+                    controls.lock();
+                    } );                    
+                    pointerLocks.push(controls);
+                    camera.pointerLockNum = pointerLocks.length - 1;
+
+                }
+
+
+                addPointerLock(fpscamera, document.body);
+                //addOrbit( fpscamera, document.body );
+                scene.add( fpscamera );
+                scene.add( bupcamera );
                 
 
-                /*Assets*/
+
+            /*Textures*/
+                
+                    //OUTDATED     
+                    function initTextures() {
+                        // Prepare the board canvas
+                        board_ctx.fillStyle = 'rgb(0,0,0)';
+                        board_ctx.fillRect(0, 0, 512, 512);
+                        board_ctx.lineWidth = 3;
+
+                        // Draw the cross lines
+                        board_ctx.beginPath();
+                        board_ctx.moveTo(256, 0);
+                        board_ctx.lineTo(256, 512);
+                        board_ctx.closePath();
+                        board_ctx.strokeStyle = 'rgb(255,255,255)';
+                        board_ctx.stroke();
+
+                        board_ctx.beginPath();
+                        board_ctx.moveTo(0, 256);
+                        board_ctx.lineTo(512, 256);
+                        board_ctx.closePath();
+                        board_ctx.strokeStyle = 'rgb(255,255,255)';
+                        board_ctx.stroke();
+
+                        // Draw text and borders
+                        board_ctx.fillStyle = 'rgb(255,255,255)';
+                        board_ctx.font = 'bold 40px arial';
+                        board_ctx.fillText('Prototype', 20, 50);
+                        board_ctx.fillText('5 x 5 ft.', 20, 100);
+                        board_ctx.fillRect(0, 0, 7, 512);
+                        board_ctx.fillRect(512, 0, -7, 512);
+                        board_ctx.fillRect(0, 0, 512, 7);
+                        board_ctx.fillRect(0, 512, 512, -7);
+
+                        // Create the first texture
+                        const boxTexture = new THREE.Texture(boardCanvas);
+                        boxTexture.needsUpdate = true;
+
+                        // Clear and draw the second texture
+                        board_ctx.clearRect(0, 0, 1500, 1500);
+                        board_ctx.font = 'bold 30px arial';
+                        board_ctx.fillStyle = 'rgb(0,0,0)';
+                        board_ctx.fillText('WASD to move', 10, 30);
+                        board_ctx.fillText('SPACE to jump', 10, 65);
+                        board_ctx.fillText('Shoot the enemy!', 10, 125);
+                        board_ctx.fillText('Drop your weapon', 10, 190);
+                        board_ctx.fillText('& hold down your', 12, 220);
+                        board_ctx.fillText('mouse to move the', 7, 250);
+                        board_ctx.fillText('boxes and spheres!', 5, 280);
+                        board_ctx.fillText('SHIFT to crouch', 20, 340);
+                        board_ctx.fillText('Hold jump while', 20, 400);
+                        board_ctx.fillText('touching a wall', 20, 430);
+                        board_ctx.fillText('to walljump!', 50, 460);
+                        board_ctx.fillText('Use the cube to', 20, 500);
+                        board_ctx.fillText('break the glass', 20, 530);
+                        board_ctx.fillText('& kill the enemy', 20, 560);
+                        board_ctx.fillText('Press E to drop', 20, 605);
+                        board_ctx.fillText('your weapon!', 35, 640);
+                        board_ctx.fillText('OWO', 90, 700);
+                        board_ctx.fillText('whta r u doign hre?', 3, 730);
+                        board_ctx.fillText('Congratulations!', 20, 780);
+                        board_ctx.fillText('You are now an', 27, 810);
+                        board_ctx.fillText('EPIC GAMER!!!!', 27, 845);
+                        board_ctx.fillText('Thx 4 playing!!!', 30, 900);
+                        board_ctx.fillText('More games to come!', 4, 1012);
+                        board_ctx.font = 'bold 20px arial';
+                        board_ctx.fillText('The end of a game...', 40, 949);
+                        board_ctx.font = 'bold 15px arial';
+                        board_ctx.fillText('The beginning of the best games on KA', 10, 969);
+
+                        // Create the second texture
+                        const messagesTexture = new THREE.Texture(boardCanvas);
+                        messagesTexture.needsUpdate = true;
+
+                        // Define texture bounds
+                        const bounds = [
+                            [0, 0, 235, 90],
+                            [0, 95, 275, 50],
+                            [0, 160, 295, 140],
+                            [0, 370, 275, 100],
+                            [0, 470, 275, 110],
+                            [0, 580, 275, 80],
+                            [0, 310, 275, 35],
+                            [0, 671, 285, 75],
+                            [0, 750, 319, 280],
+                        ];
+
+                        bounds.forEach(bound => {
+                            bound[0] /= 1500;
+                            bound[1] /= 1500;
+                            bound[2] /= 1500;
+                            bound[3] /= 1500;
+                        });
+
+                        boxTexture.needsUpdate = true;
+                        boxTexture.wrapS = THREE.RepeatWrapping;
+                        boxTexture.wrapT = THREE.RepeatWrapping;
+    
+                        return {
+                            boxTexture,
+                            messagesTexture,
+                            bounds,
+                        };
+                    }
+
+                    const textures = initTextures();
+                
+
+            /*Assets*/
                 
 
                 
                 const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
-                //scene.add( grid );
+                scene.add( grid );
                 
 
                 renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -431,6 +465,31 @@
                 const cubeGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25)
  
         
+            
+            /*Debug*/
+                let showDebug=false
+                function runDebug(dt){
+                    
+                    if(!showDebug){return;}
+                    
+                    ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+                    ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
+                    ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
+                    ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
+                    ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
+                    ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
+                    ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
+                    ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                    ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
+                    ctx.fillText('Grounded: '+player.grounded,10,150)
+                    ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
+                    ctx.fillText('Grappling: '+g.active,10,180)
+                    ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
+                    ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
+                    ctx.fillText('Grapple Z: '+enemies.length,10,225)
+                    
+                }
+
             /*Main Functions*/
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
@@ -507,21 +566,32 @@
                     const mesh = new THREE.Mesh(geometry, material);
 
                     
-                function update () {
-                    rigid.resetForces(true); 
-                    let { x, y, z } = rigid.translation();
-                    let rot = rigid.rotation();
-                    let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
-                    let pos = new THREE.Vector3(x, y, z);
-                    rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
-                    mesh.position.set(x, y, z);
-                    mesh.quaternion.set(xr, yr, zr, wr);
-                    }
+                    function update () {
+                        rigid.resetForces(true); 
+                        let { x, y, z } = rigid.translation();
+                        let rot = rigid.rotation();
+                        let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+                        let pos = new THREE.Vector3(x, y, z);
+                        rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
+                        mesh.position.set(x, y, z);
+                        mesh.quaternion.set(xr, yr, zr, wr);
+                        if (y < -20) {
+                                world.removeRigidBody(rigid);
+                                scene.remove(mesh);
+                        }
+                        }
                     cubes.push({ mesh, rigid, update });
                     scene.add(mesh);
                     return { mesh, rigid, update };
                  }
-
+                 function updateCubes(){
+                    cubes.forEach(cube => {
+                        if (cube !== undefined) {
+                            cube.update();
+                        }
+                        //cube.update();
+                    });
+                 }
                 function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
@@ -538,249 +608,386 @@
 
 
             /*Levels*/
+
                 let curLevel = 'test';
+                let player, restart;
+                function clearWorld(world) {
+                    const handles = [];
+
+                    // Collect all rigid body handles
+                    world.forEachRigidBody(body => {
+                        handles.push(body.handle);
+                    });
+
+                    // Remove each rigid body using its handle
+                    handles.forEach(handle => {
+                        const body = world.getRigidBody(handle);
+                        if (body) {
+                            world.removeRigidBody(body);
+                        }
+                    });
+                }
+                function menuBack () {
+                    clearWorld(world);
+                }
                 function testLevel1() {
+                    clearWorld(world);
+                    player = addPlayer(0,10,0,fpscamera,world);
+                    player.restart = world.takeSnapshot();
+
                     curlevel.hasCube = true;
                     curlevel.hasEnem = false;
                     curlevel.hasGuns = false;
                     curlevel.hasMvTl = false;
                     curlevel.hasExpl = false;
-
-                    fpscamera.position.y = 5;
-                    fpscamera.position.z = 10;
                     
                     addSkybox(90);
-                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0},{x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     
-                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
-                    addPlatform({x: 0, y:0, z: 0},{x:0, y:45, z:0},{x:2 ,y:1,z:2},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
                     addPCube(0,20,0);
                     addPCube( 10, 20, 10);
                     addPCube(-10, 20, 10);
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
+                    for (var i = 0; i < 1000; i++) {
+                        addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                    }
                  }
-               
+
+
             /*Controls*/
 
-  			let moveForward = false;
-			let moveBackward = false;
-			let moveLeft = false;
-			let moveRight = false;
-			let canJump = false;  
-			let lockedin = false
-			let prevTime = performance.now();
-            let time;
-			const velocity = new THREE.Vector3();
-			const direction = new THREE.Vector3();
-			let controls = new PointerLockControls( fpscamera, document.body );
-			let raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-            let playerBody;
-
-				document.addEventListener( 'click', function () {
-
-					controls.lock();
-
-				 } );
-				controls.addEventListener( 'lock', function () {
-
-					lockedin = true;
-				 } );
-				controls.addEventListener( 'unlock', function () {
-
-					lockedin = false;
-
-				 } );
-				scene.add( controls.object );
-
-			    const onKeyDown = function ( event ) {
-
-					switch ( event.code ) {
-
-						case 'ArrowUp':
-						case 'KeyW':
-							moveForward = true;
-							break;
-
-						case 'ArrowLeft':
-						case 'KeyA':
-							moveLeft = true;
-							break;
-
-						case 'ArrowDown':
-						case 'KeyS':
-							moveBackward = true;
-							break;
-
-						case 'ArrowRight':
-						case 'KeyD':
-							moveRight = true;
-							break;
-
-						case 'Space':
-							if ( canJump === true ) velocity.y += 350;
-							canJump = false;
-							break;
-
-					}
-
-				 };
-				const onKeyUp = function ( event ) {
-
-					switch ( event.code ) {
-
-						case 'ArrowUp':
-						case 'KeyW':
-							moveForward = false;
-							break;
-
-						case 'ArrowLeft':
-						case 'KeyA':
-							moveLeft = false;
-							break;
-
-						case 'ArrowDown':
-						case 'KeyS':
-							moveBackward = false;
-							break;
-
-						case 'ArrowRight':
-						case 'KeyD':
-							moveRight = false;
-							break;
-
-					}
-
-				 };
-
-				document.addEventListener( 'keydown', onKeyDown );
-				document.addEventListener( 'keyup', onKeyUp );
-                function playerbodysetup(x,y,z) {
-                    let playerbodydesc = RAPIER.RigidBodyDesc.dynamic()
-                            .setTranslation(x, y, z)
-                    playerBody = world.createRigidBody(rigidBodyDesc);
-                    let playerbodycollider = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
-                    world.createCollider(playerbodycollider, plbd);
-                 }
+                let width=window.innerWidth
+                let height=window.innerHeight
+                let aspect=width/height
 
 
-                 //test
-                 const testgeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-
-                    const testmaterial = new THREE.MeshStandardMaterial({
-                    color: 0x0000ff,
-                    flatShading: true
-                    });
-
-                    playerBody = new THREE.Mesh(testgeometry, testmaterial);
-                    scene.add(playerBody);
-
-                 //end test
-				function updatecontrols() {
-
-                    time = performance.now();
-
-                    if ( controls.isLocked === true ) {
-
-                        playerBody.position.copy(fpscamera.position);
-                        playerBody.position.x += 5;
-
-                        raycaster.ray.origin.copy( controls.object.position );
-                        raycaster.ray.origin.y -= 10;
+                uiCanvas.width = window.innerWidth
+                uiCanvas.height = window.innerHeight
+                //uiCanvas.style.display='none'
 
 
-                        const delta = ( time - prevTime ) / 1000;
+                let FIXED_PHYSICS_TIMESTEP=0.5/60
+                let MAX_PHYSICS_TIMESTEPS=3
+                let EULER_ANGLE_ORDER='YXZ'
 
-                        velocity.x -= velocity.x * 10.0 * delta;
-                        velocity.z -= velocity.z * 10.0 * delta;
+                let webrenderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,canvas:glCanvas})
+                webrenderer.setSize(width,height)
 
-                        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+                /*math*/
+                    let F=(function(out){
+                        
+                        out.constrain=function(x,a,b){
+                            
+                            return x<a?a:x>b?b:x
+                        }
+                        
+                        out.deg=function(x){
+                            
+                            return x*57.29577951
+                        }
+                        
+                        out.rad=function(x){
+                            
+                            return a*0.01745329252
+                        }
+                        
+                        return out
+                        
+                    })({})
 
-                        direction.z = Number( moveForward ) - Number( moveBackward );
-                        direction.x = Number( moveRight ) - Number( moveLeft );
-                        direction.normalize(); // this ensures consistent movements in all directions
+                    function rad(a){
+                        //0.01745329252=pi/180
+                        return a*0.01745329252
+                    }
+                    
+                    function deg(a){
+                        //57.29577951=180/pi
+                        return a*57.29577951
+                    }
+                    
+                    function constrain(x,a,b){
+                        
+                        return x<a?a:x>b?b:x
+                    }
+                    
+                    function random(a,b){
+                        
+                        return Math.random()*(b-a)+a
+                    }
+                    
+                    function pointInBox(_x,_y,_z,x,y,z,w,h,l){
+                        
+                        return _x>x-w&&_x<x+h&&_y>y-h&&_y<y+h&&_z>z-l&&_z<z+l
+                    }
+                    
+                    function pointInBounds(x,y,z,minX,maxX,minY,maxY,minZ,maxZ){
+                        
+                        return x>=minX&&x<=maxX&&y>=minY&&y<=maxY&&z>=minZ&&z<=maxZ
+                    }
+                    
+                    //for some reason theres no Math.lerp
+                    function lerp(a,b,x){
+                        
+                        return x*(b-a)+a
+                    }
+                /*player*/
+                    function addPlayer (x,y,z,camera,world) {
+                        let player={
+                            sx:x,
+                            sy:y,
+                            sz:z,
+                            x:x,
+                            y:y,
+                            z:z,
+                            vx:0,
+                            vy:0,
+                            vz:0,
+                            fric:0.85,
+                            airFric:0.9,
+                            walkSpeed:0.3,
+                            jumpPower:0.3,
+                            gravity:0.065,
+                            yaw:0,
+                            pitch:0,
+                            sensitivity:0.005,
+                            fov:70,
+                            radius:0.5,
+                            dead: false,
+                            rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),//.enabledRotations(false, true,false),
+                            body: 1,
+                            colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,1,0.25).setDensity(40),
+                            camera: camera,
+                            world: world,
+                            playerIsExistent: true,
+                            restart: 1
+                        };
+                        player.body = player.world.createRigidBody(player.rigid);
+                        world.createCollider(player.colliderDesc, player.body);
+                    return (player);
+                    }
 
-                        if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
-                        if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+                    const user=(function(controls){
+                        
+                        controls.mouseX=controls.mouseY=0
+                        controls.mousePressed=controls.mouseClicked=false
+                        controls.keys={}
+                        
+                        uiCanvas.onmousemove=function(e){
+                            
+                            controls.mouseX+=e.movementX
+                            controls.mouseY+=e.movementY
+                            
+                            
+                        }
+                        
+                        uiCanvas.onmousedown=function(){
+                            
+                            controls.mousePressed=true
+                            controls.mouseClicked=true
+                            uiCanvas.requestPointerLock()
+                        }
+                        
+                        uiCanvas.onmouseup=function(){
+                            
+                            controls.mousePressed=false
+                        }
+                        
+                        document.onkeydown=function(e){
+                            
+                            controls.keys[e.key.toString()]=true
+                            showDebug=controls.keys.f?!showDebug:showDebug
+                            
+                        }
+                        
+                        document.onkeyup=function(e){
+                            
+                            controls.keys[e.key.toString()]=false
+                        }
+                        
+                        return controls
+                        
+                    })({})
+
+                    function runPlayerPhysics(dt,player){
+                        if (player.playerIsExistent) {
+                        
+                            let sdir=Math.sin(player.yaw)
+                            let cdir=Math.cos(player.yaw)
+                            let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
+                            
+                            if(user.keys.r){
+                                player.dead = true;
+                            }
+                            if(user.keys.d){
+                                
+                                player.vx+=cdir*s
+                                player.vz-=sdir*s
+                            }
+                            
+                            if(user.keys.w){
+                                
+                                player.vx-=sdir*s
+                                player.vz-=cdir*s
+                            }
+                            
+                            if(user.keys.a){
+                                
+                                player.vx-=cdir*s
+                                player.vz+=sdir*s
+                            }
+                            
+                            if(user.keys.s){
+                                
+                                player.vx+=sdir*s
+                                player.vz+=cdir*s
+                            }
+                            
+                            let rayOrigin = player.body.translation();
+                            rayOrigin.y -= 0.5;  // Move the ray origin much higher
+
+                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
+                            let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
+
+                            if (hit && hit.collider && hit.toi > 0.001) {
+                                player.grounded = true;
+                            } else {
+                                player.grounded = false;
+                            }
+
+                            if(player.grounded){
+                                
+                                player.vx*=player.fric
+                                player.vz*=player.fric
+                                player.vy = 0
+                                
+                                if(user.keys[' ']){
+                                    
+                                    player.vy = player.jumpPower * 25
+                                    player.grounded=false
+                                }
+                                
+                            } else {
+                                
+                                player.vx*=player.airFric
+                                player.vz*=player.airFric      
+                                if (player.vy > -100) {
+                                    player.vy-=player.gravity*dt*5
+                                }
+                                if (player.vx < 0.001 && player.vx > -0.001){
+                                    player.vx = 0;
+                                }
+                                if (player.vz < 0.001 && player.vz > -0.001){
+                                    player.vz = 0;
+                                }
+                            }
+                            
+                            
+                
+
+                            if (player.body.translation().y < -20) {
+                                player.dead = true;
+                            }
+                                                
+                            if (player.dead === true) {
+                                player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
+                                player.vy = 0;
+                                player.vx = 0;
+                                player.vz = 0;
+                                player.dead = false;
+                                
+                            }
         
-                        controls.moveRight( - velocity.x * delta );
-                        controls.moveForward( - velocity.z * delta );
+                            //console.log('Velocity;  ' + player.vx + '  ' + player.vy + '  ' + player.vz);
+                            player.body.setLinvel({x: player.vx*dt*25, y: player.vy*dt*2.5, z: player.vz*dt*25});
 
-                        if ( player.onGround === true ) {
-
-                            velocity.y = 0;
-                            controls.object.position.y = 10;
-
-                            canJump = true;
+                            let thecam = pointerLocks[player.camera.pointerLockNum].object
+                            thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
+                            let q = thecam.quaternion;
+                            
+                            let euler = new THREE.Euler();
+                            euler.setFromQuaternion(q, 'YXZ');
+                            player.yaw = euler.y;  
+                            player.pitch = euler.x; 
+                                                    
+                            //console.log('Y Velocity: ' + player.vy);
 
                         }
-
                     }
-
-                    prevTime = time;
-
-                   // renderer.render( scene, fpscamera );
-
-                    }
+                
+                
 
 				
 
 
 
             /*Events*/
-                function onWindowResize() {
-
-                    fpscamera.aspect = window.innerWidth / window.innerHeight;
-                    fpscamera.updateProjectionMatrix();
-
-                    renderer.setSize( window.innerWidth, window.innerHeight );
-
-                    render();                
+                                
                 window.addEventListener( 'resize', onWindowResize );
                 
                 function levelSetup() {
                     switch (curLevel) {
+                        case 'menu': menuBack();
+                        break;
                         case 'test': testLevel1();
                     } 
                  }
 
                 let startup = true
+				let dt = Math.min( 0.05, clock.getDelta() ) * 35;
+
                 function UPDATE() {
                     if (startup) {
-                        prevTime = time;
+                        //prevTime = time;
                         levelSetup();
                     }
-			        updatecontrols();
-                    cubes.forEach(b => b.update());
+
+                    dt = Math.min( 0.05, clock.getDelta() ) * 35;
+                    if (player) {                    
+                        runPlayerPhysics(dt, player);
+                    }
+                    //cubes.forEach(b => b.update());
+                    updateCubes();
                     startup = false;
                  }
 
                 /*nessecities*/
-                
+                function onWindowResize() {
+
+                    fpscamera.aspect = window.innerWidth / window.innerHeight;
+                    fpscamera.updateProjectionMatrix();
+                    uiCanvas.width = window.innerWidth
+                    uiCanvas.height = window.innerHeight
+
+                    renderer.setSize( window.innerWidth, window.innerHeight );
+
+                    render();
 
                  }
                 function render() {
 
-                    renderer.render( scene, fpscamera );
+                    renderer.render( scene, fpscamera);//player.camera );
 
                  }
 
      
                 function animationLoop() {
 
-                    world.step();
                     UPDATE();
                     render();
                     stats.update();
-          
+                    world.step( );
+
                  }
 		</script>
 	</body>
