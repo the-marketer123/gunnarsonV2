@@ -215,14 +215,17 @@
 
                 };
                 
-                let curlevel = {
+                let level = {
                     num: 1,
                     hasEnem: false,
                     hasCube: false,
                     hasGuns: false,
                     hasMvTl: false,
                     hasExpl: false,
-                    paused: false
+                    paused: false,
+                    curLevel: 'menu',
+                    update: false,
+                    startup: true
                 };
 
                 renderer = new THREE.WebGLRenderer( {antialias: true, canvas: glCanvas} );
@@ -608,7 +611,7 @@
 
             /*Levels*/
 
-                let curLevel = 'menu';
+                level.curLevel = 'menu';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -634,11 +637,11 @@
                     player = addPlayer(0,10,0,fpscamera,world);
                     player.restart = world.takeSnapshot();
 
-                    curlevel.hasCube = true;
-                    curlevel.hasEnem = false;
-                    curlevel.hasGuns = false;
-                    curlevel.hasMvTl = false;
-                    curlevel.hasExpl = false;
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
                     
                     addSkybox(90);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
@@ -664,6 +667,15 @@
                  }
 
 
+                function levelSetup() {
+                    if (level.startup === true || level.update === true) {
+                        switch (curLevel) {
+                            case 'menu': menuBack();
+                            break;
+                            case 'test': testLevel1();
+                        } 
+                    }
+                }
             /*Controls*/
 
                 let width=window.innerWidth
@@ -934,30 +946,17 @@
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
-                function levelSetup() {
-                    switch (curLevel) {
-                        case 'menu': menuBack();
-                        break;
-                        case 'test': testLevel1();
-                    } 
-                 }
-
-                let startup = true
-				let dt = Math.min( 0.05, clock.getDelta() ) * 35;
+ 
 
                 function UPDATE() {
-                    if (startup) {
-                        //prevTime = time;
-                        levelSetup();
-                    }
+                    levelSetup();
 
-                    dt = Math.min( 0.05, clock.getDelta() ) * 35;
+                    let dt = Math.min( 0.05, clock.getDelta() ) * 35;
                     if (player) {                    
                         runPlayerPhysics(dt, player);
                     }
-                    //cubes.forEach(b => b.update());
+                    
                     updateCubes();
-                    startup = false;
                  }
 
             /*nessecities*/
