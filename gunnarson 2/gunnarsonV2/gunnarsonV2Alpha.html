@@ -486,10 +486,10 @@
                     ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
                     ctx.fillText('Grounded: '+player.grounded,10,150)
                     ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
-                    ctx.fillText('Grappling: '+g.active,10,180)
-                    ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
-                    ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
-                    ctx.fillText('Grapple Z: '+enemies.length,10,225)
+                    //ctx.fillText('Grappling: '+g.active,10,180)
+                    //ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
+                    //ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
+                    //ctx.fillText('Grapple Z: '+enemies.length,10,225)
                     
                 }
 
@@ -904,7 +904,7 @@
                             rayOrigin.y -= 0.5;  // Move the ray origin much higher
 
                             let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -0.1, z: 0 });
-                            let hit = world.castRay(ray, 0.1, true);  // Extend the max distance
+                            let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
 
                             if (hit && hit.collider && hit.toi > 0.001) {
                                 player.grounded = true;
