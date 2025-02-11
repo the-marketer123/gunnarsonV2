@@ -158,51 +158,51 @@
 		<script type="module">
 
             /*basics*/
-	        import * as THREE from 'three';
-	        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-	        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-            import { Sky } from 'three/addons/objects/Sky.js';
-            import  Stats  from 'three/addons/libs/stats.module.js'
-            const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
-            await RAPIER.init();
+                import * as THREE from 'three';
+                import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+                import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+                import { Sky } from 'three/addons/objects/Sky.js';
+                import  Stats  from 'three/addons/libs/stats.module.js'
+                const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
+                await RAPIER.init();
 
 
-	        let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
-            const pi = Math.PI;
-            let debugmode = false;
+                let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
+                const pi = Math.PI;
+                let debugmode = false;
 
-            let glCanvas=document.getElementById('gl-canvas')
-            glCanvas.style.display='none'
+                let glCanvas=document.getElementById('gl-canvas')
+                glCanvas.style.display='none'
 
-            let uiCanvas=document.getElementById('ui-canvas')
-            let ctx=uiCanvas.getContext('2d')
-            uiCanvas.style.display='none'
-            uiCanvas=document.body
+                let uiCanvas=document.getElementById('ui-canvas')
+                let ctx=uiCanvas.getContext('2d')
+                uiCanvas.style.display='none'
+                uiCanvas=document.body
 
 
 
-            function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
-                object.scale.set( scaleX, scaleY, scaleZ );
-            
-                if( updateUV )
-                {
-                    var pos = object.geometry.getAttribute( 'position' ),
-                        uv = object.geometry.getAttribute( 'uv' );
-
-                    for( var i=0; i<pos.count; i++ )
+                function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
+                    object.scale.set( scaleX, scaleY, scaleZ );
+                
+                    if( updateUV )
                     {
-                        var x = scaleX * -pos.getX(i),
-                            y = scaleY * -pos.getY(i),
-                            z = scaleZ * -pos.getZ(i);
+                        var pos = object.geometry.getAttribute( 'position' ),
+                            uv = object.geometry.getAttribute( 'uv' );
 
-                        if( i<8 ) uv.setXY( i, z, y );
-                        else if( i<16 ) uv.setXY( i, x, z );
-                        else uv.setXY( i, y, x );
+                        for( var i=0; i<pos.count; i++ )
+                        {
+                            var x = scaleX * -pos.getX(i),
+                                y = scaleY * -pos.getY(i),
+                                z = scaleZ * -pos.getZ(i);
+
+                            if( i<8 ) uv.setXY( i, z, y );
+                            else if( i<16 ) uv.setXY( i, x, z );
+                            else uv.setXY( i, y, x );
+                        }
+                        uv.needsUpdate = true;
                     }
-                    uv.needsUpdate = true;
-                }
-            }           
-			
+                }           
+                
 
             /*Scene*/
                 
@@ -501,7 +501,7 @@
                 let plats = [], cubes = [];
 
                 function addPlatform (pos, rot, size, shape, color) {
-
+                    console.log('hi');
                     let rttx = rot.x * pi/180
                     let rtty = rot.y * pi/180
                     let rttz = rot.z * pi/180;
@@ -520,7 +520,6 @@
                     mesh.rotateY(rtty);
                     mesh.rotateZ(rttz);
                     resize(mesh, 1, 1, 1, true);
-                    plats.push(mesh);
                     cubeMeshes.push(mesh);
 
 
@@ -532,17 +531,24 @@
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.cuboid(size.x/2, size.y/2, size.z/2);
                     world.createCollider(colliderDesc, rigid);
-                    
+                    let num = plats.length;
+
                     function update () {
-                        rigid.resetForces(true); 
-                        let { x, y, z } = rigid.translation();
-                        let rot = rigid.rotation();
-                        let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
-                        let pos = new THREE.Vector3(x, y, z);
-                        mesh.position.set(x, y, z);
-                        mesh.quaternion.set(xr, yr, zr, wr);
+                        if (rigid !== undefined) {
+                            rigid.resetForces(true); 
+                            let { x, y, z } = rigid.translation();
+                            let rot = rigid.rotation();
+                            let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+                            mesh.position.set(x, y, z);
+                            mesh.quaternion.set(xr, yr, zr, wr);
+                            if (rigid.translation().y < -50) {
+                                    world.removeRigidBody(rigid);
+                                    scene.remove(mesh);
+                                    plats[num] = null;
+                            }
+                        }
                     }
-                    cubes.push({ mesh, rigid, update });
+                    plats.push({ mesh, rigid, update, num });
                     scene.add(mesh);
                     return { mesh, rigid, update };
                  }
@@ -567,30 +573,41 @@
                     });
 
                     const mesh = new THREE.Mesh(geometry, material);
+                    let num = cubes.length;
 
                     
                     function update () {
-                        rigid.resetForces(true); 
-                        let { x, y, z } = rigid.translation();
-                        let rot = rigid.rotation();
-                        let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
-                        let pos = new THREE.Vector3(x, y, z);
-                        rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
-                        mesh.position.set(x, y, z);
-                        mesh.quaternion.set(xr, yr, zr, wr);
-                        if (y < -100) {
-                                //world.removeRigidBody(rigid);
-                                scene.remove(mesh);
+                        if (rigid !== undefined) {
+                            console.log(rigid);
+                            rigid.resetForces(true); 
+                            let { x, y, z } = rigid.translation();
+                            let rot = rigid.rotation();
+                            let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+                            let pos = new THREE.Vector3(x, y, z);
+                            rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
+                            mesh.position.set(x, y, z);
+                            mesh.quaternion.set(xr, yr, zr, wr);
+                            if (y < -20) {
+                                    world.removeRigidBody(rigid);
+                                    scene.remove(mesh);
+                                    cubes[num] = null;
+                            }
+
                         }
-                        }
+                    }
                     cubes.push({ mesh, rigid, update });
                     scene.add(mesh);
                     return { mesh, rigid, update };
                  }
                  function updateCubes(){
                     for (var i = 0; i < cubes.length; i++) {
-                        if (cubes[i] !== null) {
+                        if (cubes[i] !== null && cubes.length !== 0) {
                             cubes[i].update();
+                        }
+                    }
+                    for (var i = 0; i < plats.length; i++) {
+                        if (plats[i] !== null && plats.length !== 0) {
+                            plats[i].update();
                         }
                     }
                  }
@@ -611,7 +628,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'menu';
+                level.curLevel = 'test';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -631,6 +648,20 @@
                 }
                 function menuBack () {
                     clearWorld(world);
+                    fpscamera.position.set(5, 5, 5);
+
+                    addSkybox(90);
+
+                    level.hasCube = false;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+
+                    addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z:-5},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+
                 }
                 function testLevel1() {
                     clearWorld(world);
@@ -661,7 +692,9 @@
                     addPCube(-10, 20, 10);
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
-                    for (var i = 0; i < 500; i++) {
+
+                    //C U B E S
+                    for (var i = 0; i < 5000; i++) {
                         addPCube(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
@@ -674,6 +707,8 @@
                             break;
                             case 'test': testLevel1();
                         } 
+                        level.startup = false;
+                        level.update = false;
                     }
                 }
             /*Controls*/
@@ -952,7 +987,7 @@
                     levelSetup();
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
-                    if (player) {                    
+                    if (player !== undefined) {                    
                         runPlayerPhysics(dt, player);
                     }
                     
