@@ -800,9 +800,9 @@
                             vx:0,
                             vy:0,
                             vz:0,
-			    height: height,
-			    xWidth: xwidth,
-			    zWidth: zwidth,
+			    height: height / 2,
+			    xWidth: xwidth / 2,
+			    zWidth: zwidth / 2,
                             fric:0.85,
                             airFric:0.9,
                             walkSpeed: 5,
@@ -816,7 +816,7 @@
                             dead: false,
                             rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),
                             body: 1,
-                            colliderDesc: RAPIER.ColliderDesc.cuboid(xwidth,height,zwidth).setDensity(40),
+                            colliderDesc: RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40),
                             camera: camera,
                             world: world,
                             playerIsExistent: true,
@@ -906,7 +906,7 @@
                             let rayOrigin = player.body.translation();
                             rayOrigin.y -= 0.5;  // Move the ray origin below the player body
 
-                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
+                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -player.height/2, z: 0 });
                             let hit = world.castRay(ray, 1, true);  // Extend the max distance
 
                             if (hit && hit.collider && hit.toi > 0.001) {
