@@ -628,7 +628,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'menu';
+                level.curLevel = 'test';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -659,9 +659,9 @@
                     level.hasMvTl = false;
                     level.hasExpl = false;
 
-                    addPlatform({x: 0, y:0, z: 0},{x:45, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 0, y:0, z:-5},{x:0, y:0, z:45}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
 
                 }
                 function testLevel1() {
