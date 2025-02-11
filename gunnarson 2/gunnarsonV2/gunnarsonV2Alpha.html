@@ -789,7 +789,7 @@
                         return x*(b-a)+a
                     }
                 /*player*/
-                    function addPlayer (x,y,z,camera,world, xwidth=0.5, height=1, zwidth=0.5) {
+                    function addPlayer (x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
                         let player={
                             sx:x,
                             sy:y,
@@ -805,7 +805,7 @@
 			    zWidth: zwidth / 2,
                             fric:0.85,
                             airFric:0.9,
-                            walkSpeed: 5,
+                            walkSpeed: 4,
                             jumpPower: .5,
                             gravity:0.065,
                             yaw:0,
