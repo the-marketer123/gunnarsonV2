@@ -611,7 +611,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'menu';
+                let curLevel = 'menu';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -661,7 +661,7 @@
                     addPCube(-10, 20, 10);
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
-                    for (var i = 0; i < 1000; i++) {
+                    for (var i = 0; i < 500; i++) {
                         addPCube(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
@@ -766,7 +766,7 @@
                             vz:0,
                             fric:0.85,
                             airFric:0.9,
-                            walkSpeed:0.3,
+                            walkSpeed:3,
                             jumpPower:0.3,
                             gravity:0.065,
                             yaw:0,
@@ -920,7 +920,7 @@
                             }
         
                             //console.log('Velocity;  ' + player.vx + '  ' + player.vy + '  ' + player.vz);
-                            player.body.setLinvel({x: player.vx*dt*25, y: player.vy*dt*2.5, z: player.vz*dt*25});
+                            player.body.setLinvel({x: player.vx*dt, y: player.vy*dt*2.5, z: player.vz*dt});
 
                             let thecam = pointerLocks[player.camera.pointerLockNum].object
                             thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
