@@ -789,7 +789,7 @@
                         return x*(b-a)+a
                     }
                 /*player*/
-                    function addPlayer (x,y,z,camera,world) {
+                    function addPlayer (x,y,z,camera,world, xwidth=0.5, height=1, zwidth=0.5) {
                         let player={
                             sx:x,
                             sy:y,
@@ -800,6 +800,9 @@
                             vx:0,
                             vy:0,
                             vz:0,
+			    height: height,
+			    xWidth: xwidth,
+			    zWidth: zwidth,
                             fric:0.85,
                             airFric:0.9,
                             walkSpeed: 5,
@@ -813,7 +816,7 @@
                             dead: false,
                             rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),
                             body: 1,
-                            colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,1,0.25).setDensity(40),
+                            colliderDesc: RAPIER.ColliderDesc.cuboid(xwidth,height,zwidth).setDensity(40),
                             camera: camera,
                             world: world,
                             playerIsExistent: true,
@@ -901,10 +904,10 @@
                             }
                             
                             let rayOrigin = player.body.translation();
-                            rayOrigin.y -= 0.5;  // Move the ray origin much higher
+                            rayOrigin.y -= 0.5;  // Move the ray origin below the player body
 
-                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -0.1, z: 0 });
-                            let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
+                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
+                            let hit = world.castRay(ray, 1, true);  // Extend the max distance
 
                             if (hit && hit.collider && hit.toi > 0.001) {
                                 player.grounded = true;
@@ -929,16 +932,16 @@
                                 player.vx*=player.airFric
                                 player.vz*=player.airFric      
                                 if (player.vy > -100) {
-                                    player.vy-=player.gravity*dt*5
+                                    player.vy-=player.gravity*dt*5;
                                 }
-                                if (player.vx < 0.001 && player.vx > -0.001){
-                                    player.vx = 0;
-                                }
-                                if (player.vz < 0.001 && player.vz > -0.001){
-                                    player.vz = 0;
-                                }
+                             
                             }
-                            
+                            if (player.vx < 0.001 && player.vx > -0.001){
+                                player.vx = 0;
+                            }
+                            if (player.vz < 0.001 && player.vz > -0.001){
+                                player.vz = 0;
+                            }
                             
                 
 
