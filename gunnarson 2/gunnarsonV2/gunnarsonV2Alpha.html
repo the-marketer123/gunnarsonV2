@@ -694,7 +694,7 @@
                     addPCube( 10, 20,-10);
 
                     //C U B E S
-                    for (var i = 0; i < 5000; i++) {
+                    for (var i = 0; i < 50; i++) {
                         addPCube(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
@@ -801,8 +801,8 @@
                             vz:0,
                             fric:0.85,
                             airFric:0.9,
-                            walkSpeed:3,
-                            jumpPower:0.3,
+                            walkSpeed: 5,
+                            jumpPower: .5,
                             gravity:0.065,
                             yaw:0,
                             pitch:0,
@@ -810,7 +810,7 @@
                             fov:70,
                             radius:0.5,
                             dead: false,
-                            rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),//.enabledRotations(false, true,false),
+                            rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),
                             body: 1,
                             colliderDesc: RAPIER.ColliderDesc.cuboid(0.25,1,0.25).setDensity(40),
                             camera: camera,
@@ -955,7 +955,7 @@
                             }
         
                             //console.log('Velocity;  ' + player.vx + '  ' + player.vy + '  ' + player.vz);
-                            player.body.setLinvel({x: player.vx*dt, y: player.vy*dt*2.5, z: player.vz*dt});
+                            player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
 
                             let thecam = pointerLocks[player.camera.pointerLockNum].object
                             thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
