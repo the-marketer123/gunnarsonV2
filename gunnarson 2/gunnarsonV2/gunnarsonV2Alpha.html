@@ -611,7 +611,7 @@
 
             /*Levels*/
 
-                let curLevel = 'menu';
+                level.curLevel = 'menu';
                 let player, restart;
                 function clearWorld(world) {
                     const handles = [];
@@ -669,7 +669,7 @@
 
                 function levelSetup() {
                     if (level.startup === true || level.update === true) {
-                        switch (curLevel) {
+                        switch (level.curLevel) {
                             case 'menu': menuBack();
                             break;
                             case 'test': testLevel1();
