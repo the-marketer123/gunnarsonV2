@@ -957,9 +957,14 @@
                                 player.dead = false;
                                 
                             }
-        
-                            //console.log('Velocity;  ' + player.vx + '  ' + player.vy + '  ' + player.vz);
+				
+				
+				
+			    let quaternion = new THREE.Quaternion();
+			    quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+				
                             player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
+			    player.body.setRotation(quaternion);
 
                             let thecam = pointerLocks[player.camera.pointerLockNum].object
                             thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
