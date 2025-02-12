@@ -907,7 +907,7 @@
                             rayOrigin.y -= 0.5;  // Move the ray origin below the player body
 
                             let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });//-player.height/2, z: 0 });
-                            let hit = world.castRay(ray, 1, true);  // Extend the max distance
+                            let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
 
                             if (hit && hit.collider && hit.toi > 0.001) {
                                 player.grounded = true;
