@@ -629,7 +629,7 @@
             /*Levels*/
 
                 level.curLevel = 'test';
-                let player, restart;
+                let restart;
                 function clearWorld(world) {
                     const handles = [];
 
@@ -666,7 +666,7 @@
                 }
                 function testLevel1() {
                     clearWorld(world);
-                    player = addPlayer(0,10,0,fpscamera,world);
+                    player.setPlayer(0,10,0,fpscamera,world);
                     player.restart = world.takeSnapshot();
 
                     level.hasCube = true;
@@ -789,44 +789,156 @@
                         return x*(b-a)+a
                     }
                 /*player*/
-                    function addPlayer (x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
-                        let player={
-                            sx:x,
-                            sy:y,
-                            sz:z,
-                            x:x,
-                            y:y,
-                            z:z,
-                            vx:0,
-                            vy:0,
-                            vz:0,
-                            height: height / 2,
-                            xWidth: xwidth / 2,
-                            zWidth: zwidth / 2,
-                            fric:0.85,
-                            airFric:0.9,
-                            walkSpeed: 4,
-                            jumpPower: .5,
-                            gravity:0.065,
-                            yaw:0,
-                            pitch:0,
-                            sensitivity:0.005,
-                            fov:70,
-                            radius:0.5,
-                            dead: false,
-                            rigid: RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0),
-                            body: 1,
-                            colliderDesc: RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40),
-                            camera: camera,
-                            world: world,
-                            playerIsExistent: true,
-                            restart: 1,
-                            grounded: false
-                        };
-                        player.body = player.world.createRigidBody(player.rigid);
-                        world.createCollider(player.colliderDesc, player.body);
-                    return (player);
-                    }
+                    //function addPlayer (x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
+                        let player=(function(out){
+
+                            out.setPlayer = function(x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
+                                out.sx=x
+                                out.sy=y
+                                out.sz=z
+                                out.x=x
+                                out.y=y
+                                out.z=z
+                                out.vx=0
+                                out.vy=0
+                                out.vz=0
+                                out.height= height / 2
+                                out.xWidth= xwidth / 2
+                                out.zWidth= zwidth / 2
+                                out.fric=0.85
+                                out.airFric=0.9
+                                out.walkSpeed= 4
+                                out.jumpPower= .5
+                                out.gravity=0.065
+                                out.yaw=0
+                                out.pitch=0
+                                out.sensitivity=0.005
+                                out.fov=70
+                                out.radius=0.5
+                                out.dead= false
+                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0)
+                                out.body= player.world.createRigidBody(out.rigid);
+                                out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
+                                out.camera= camera
+                                out.world= world
+                                out.playerIsExistent= true
+                                out.restart= 1
+                                out.grounded= false
+                            
+                                world.createCollider(out.colliderDesc, out.body);
+                            }
+                            out.prevPos;       
+                            out.runPlayerPhysics = function (dt){
+                                if (out.playerIsExistent) {
+                                
+                                    let sdir=Math.sin(out.yaw)
+                                    let cdir=Math.cos(out.yaw)
+                                    let s=(out.walkSpeed/(out.grounded?out.fric:out.airFric))*dt
+                                    
+                                    let moved = false;
+                                    if(user.keys.r){
+                                        out.dead = true;
+                                    }
+                                    if(user.keys.d){
+                                        moved = true;
+                                        out.vx+=cdir*s
+                                        out.vz-=sdir*s
+                                    }
+                                    
+                                    if(user.keys.w){
+                                        moved = true;
+                                        out.vx-=sdir*s
+                                        out.vz-=cdir*s
+                                    }
+                                    
+                                    if(user.keys.a){
+                                        moved = true;
+                                        out.vx-=cdir*s
+                                        out.vz+=sdir*s
+                                    }
+                                    
+                                    if(user.keys.s){
+                                        moved = true;
+                                        out.vx+=sdir*s
+                                        out.vz+=cdir*s
+                                    }
+                                    
+                                    let rayOrigin = out.body.translation();
+                                    rayOrigin.y -= 1;
+                                    let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -2, z: 0 });
+                                    
+                                    let hit = world.castRay(ray, 1.01, true);
+
+                                    if (hit && hit.collider && hit.toi > 0.001) {
+                                        out.grounded = true;
+                                    } else if (moved === true || level.hasMvTl === true) {
+                                        out.grounded = false;
+                                    }
+                                    console.log(moved + " " + level.hasMvTl);
+
+                                    if(out.grounded){
+                                        
+                                        out.vx*=out.fric
+                                        out.vz*=out.fric
+                                        out.vy = 0
+                                        
+                                        if(user.keys[' ']){
+                                            
+                                            out.vy = out.jumpPower * 25
+                                            out.grounded=false
+                                        }
+                                        
+                                    } else {
+                                        
+                                        out.vx*=out.airFric
+                                        out.vz*=out.airFric      
+                                        if (out.vy > -5) {
+                                            out.vy-=out.gravity*dt*5;
+                                        }
+                                    
+                                    }
+                                    if (out.vx < 0.001 && out.vx > -0.001){
+                                        out.vx = 0;
+                                    }
+                                    if (out.vz < 0.001 && out.vz > -0.001){
+                                        out.vz = 0;
+                                    }
+                                    
+                        
+
+                                    if (out.body.translation().y < -10) {
+                                        out.dead = true;
+                                    }
+                                                        
+                                    if (out.dead === true) {
+                                        out.body.setTranslation({x: out.sz, y: 10, z: out.sz});
+                                        out.vy = 0;
+                                        out.vx = 0;
+                                        out.vz = 0;
+                                        out.dead = false;
+                                        
+                                    }
+                        
+                                    let quaternion = new THREE.Quaternion();
+                                    quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                        
+                                    out.body.setLinvel({x: out.vx*dt, y: out.vy*dt, z: out.vz*dt});
+                                    out.body.setRotation(quaternion);
+                                    
+        
+                                    let thecam = pointerLocks[out.camera.pointerLockNum].object
+                                    thecam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                                    let q = thecam.quaternion;
+                                    
+                                    let euler = new THREE.Euler();
+                                    euler.setFromQuaternion(q, 'YXZ');
+                                    out.yaw = euler.y;  
+                                    out.pitch = euler.x;             
+                                }
+                            }
+                            return out
+                        });
+                        
 
                     const user=(function(controls){
                         
@@ -870,117 +982,7 @@
                         
                     })({})
 
-                    let prevPos;       
-                    function runPlayerPhysics(dt,player){
-                        if (player.playerIsExistent) {
-                        
-                            let sdir=Math.sin(player.yaw)
-                            let cdir=Math.cos(player.yaw)
-                            let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
-                            
-                            let moved = false;
-                            if(user.keys.r){
-                                player.dead = true;
-                            }
-                            if(user.keys.d){
-                                moved = true;
-                                player.vx+=cdir*s
-                                player.vz-=sdir*s
-                            }
-                            
-                            if(user.keys.w){
-                                moved = true;
-                                player.vx-=sdir*s
-                                player.vz-=cdir*s
-                            }
-                            
-                            if(user.keys.a){
-                                moved = true;
-                                player.vx-=cdir*s
-                                player.vz+=sdir*s
-                            }
-                            
-                            if(user.keys.s){
-                                moved = true;
-                                player.vx+=sdir*s
-                                player.vz+=cdir*s
-                            }
-                            
-                            let rayOrigin = player.body.translation();
-                            rayOrigin.y -= 1;
-                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -2, z: 0 });
-                            
-                            let hit = world.castRay(ray, 1.01, true);
-
-                            if (hit && hit.collider && hit.toi > 0.001) {
-                                player.grounded = true;
-                            } else if (moved === true || level.hasMvTl === true) {
-                                player.grounded = false;
-                            }
-                            console.log(moved + " " + level.hasMvTl);
-
-                            if(player.grounded){
-                                
-                                player.vx*=player.fric
-                                player.vz*=player.fric
-                                player.vy = 0
-                                
-                                if(user.keys[' ']){
-                                    
-                                    player.vy = player.jumpPower * 25
-                                    player.grounded=false
-                                }
-                                
-                            } else {
-                                
-                                player.vx*=player.airFric
-                                player.vz*=player.airFric      
-                                if (player.vy > -20) {
-                                    player.vy-=player.gravity*dt*5;
-                                }
-                             
-                            }
-                            if (player.vx < 0.001 && player.vx > -0.001){
-                                player.vx = 0;
-                            }
-                            if (player.vz < 0.001 && player.vz > -0.001){
-                                player.vz = 0;
-                            }
-                            
-                
-
-                            if (player.body.translation().y < -10) {
-                                player.dead = true;
-                            }
-                                                
-                            if (player.dead === true) {
-                                player.body.setTranslation({x: player.sz, y: 10, z: player.sz});
-                                player.vy = 0;
-                                player.vx = 0;
-                                player.vz = 0;
-                                player.dead = false;
-                                
-                            }
-				
-                           
-				
-			                let quaternion = new THREE.Quaternion();
-			                quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
-				
-                            player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
-			                player.body.setRotation(quaternion);
-                            
- 
-                            let thecam = pointerLocks[player.camera.pointerLockNum].object
-                            thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
-                            let q = thecam.quaternion;
-                            
-                            let euler = new THREE.Euler();
-                            euler.setFromQuaternion(q, 'YXZ');
-                            player.yaw = euler.y;  
-                            player.pitch = euler.x;             
-                        }
-                    }
+                   
                 
                 
 
@@ -999,7 +1001,7 @@
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
                     if (player !== undefined) {                    
-                        runPlayerPhysics(dt, player);
+                        player.runPlayerPhysics(dt);
                     }
                     
                     updateCubes();
