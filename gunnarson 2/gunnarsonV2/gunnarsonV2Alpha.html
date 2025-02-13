@@ -501,7 +501,7 @@
                 let plats = [], cubes = [];
 
                 function addPlatform (pos, rot, size, shape, color) {
-                    console.log('hi');
+                    //console.log('hi');
                     let rttx = rot.x * pi/180
                     let rtty = rot.y * pi/180
                     let rttz = rot.z * pi/180;
@@ -578,7 +578,7 @@
                     
                     function update () {
                         if (rigid !== undefined) {
-                            console.log(rigid);
+                            //console.log(rigid);
                             rigid.resetForces(true); 
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
@@ -800,9 +800,9 @@
                             vx:0,
                             vy:0,
                             vz:0,
-			    height: height / 2,
-			    xWidth: xwidth / 2,
-			    zWidth: zwidth / 2,
+                            height: height / 2,
+                            xWidth: xwidth / 2,
+                            zWidth: zwidth / 2,
                             fric:0.85,
                             airFric:0.9,
                             walkSpeed: 4,
@@ -820,7 +820,8 @@
                             camera: camera,
                             world: world,
                             playerIsExistent: true,
-                            restart: 1
+                            restart: 1,
+                            grounded: false
                         };
                         player.body = player.world.createRigidBody(player.rigid);
                         world.createCollider(player.colliderDesc, player.body);
@@ -869,6 +870,7 @@
                         
                     })({})
 
+                    let prevPos;       
                     function runPlayerPhysics(dt,player){
                         if (player.playerIsExistent) {
                         
@@ -876,44 +878,46 @@
                             let cdir=Math.cos(player.yaw)
                             let s=(player.walkSpeed/(player.grounded?player.fric:player.airFric))*dt
                             
+                            let moved = false;
                             if(user.keys.r){
                                 player.dead = true;
                             }
                             if(user.keys.d){
-                                
+                                moved = true;
                                 player.vx+=cdir*s
                                 player.vz-=sdir*s
                             }
                             
                             if(user.keys.w){
-                                
+                                moved = true;
                                 player.vx-=sdir*s
                                 player.vz-=cdir*s
                             }
                             
                             if(user.keys.a){
-                                
+                                moved = true;
                                 player.vx-=cdir*s
                                 player.vz+=sdir*s
                             }
                             
                             if(user.keys.s){
-                                
+                                moved = true;
                                 player.vx+=sdir*s
                                 player.vz+=cdir*s
                             }
                             
                             let rayOrigin = player.body.translation();
-                            rayOrigin.y -= 1;  // Move the ray origin below the player body
-
-                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });//-player.height/2, z: 0 });
-                            let hit = world.castRay(ray, 1.01, true);  // Extend the max distance
+                            rayOrigin.y -= 1;
+                            let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -2, z: 0 });
+                            
+                            let hit = world.castRay(ray, 1.01, true);
 
                             if (hit && hit.collider && hit.toi > 0.001) {
                                 player.grounded = true;
-                            } else {
+                            } else if (moved === true || level.hasMvTl === true) {
                                 player.grounded = false;
                             }
+                            console.log(moved + " " + level.hasMvTl);
 
                             if(player.grounded){
                                 
@@ -945,7 +949,7 @@
                             
                 
 
-                            if (player.body.translation().y < -20) {
+                            if (player.body.translation().y < -10) {
                                 player.dead = true;
                             }
                                                 
@@ -958,14 +962,15 @@
                                 
                             }
 				
+                           
 				
-				
-			    let quaternion = new THREE.Quaternion();
-			    quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+			                let quaternion = new THREE.Quaternion();
+			                quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
 				
                             player.body.setLinvel({x: player.vx*dt, y: player.vy*dt, z: player.vz*dt});
-			    player.body.setRotation(quaternion);
-
+			                player.body.setRotation(quaternion);
+                            
+ 
                             let thecam = pointerLocks[player.camera.pointerLockNum].object
                             thecam.position.set(player.body.translation().x, player.body.translation().y, player.body.translation().z);
                             let q = thecam.quaternion;
@@ -973,10 +978,7 @@
                             let euler = new THREE.Euler();
                             euler.setFromQuaternion(q, 'YXZ');
                             player.yaw = euler.y;  
-                            player.pitch = euler.x; 
-                                                    
-                            //console.log('Y Velocity: ' + player.vy);
-
+                            player.pitch = euler.x;             
                         }
                     }
                 
