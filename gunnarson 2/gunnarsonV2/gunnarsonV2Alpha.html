@@ -169,7 +169,7 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = true;
+                const debug = false;
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.style.display='none'
@@ -570,7 +570,7 @@
                             }
                         }
                     }
-                    plats.push({ mesh, rigid, update, num });
+                    plats.push({ mesh, rigid, update, num, colliderDesc });
                     scene.add(mesh);
                     return { mesh, rigid, update };
                  }
@@ -756,6 +756,8 @@
                                 out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
                                 out.playerIsExistent= true
                                 out.restart= 1
+                                //out.playerCollideHandle = out.colliderDesc.handle
+                                //out.collideEvent = new RAPIER.EventQueue(true)
                                 out.grounded= false
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                             
@@ -805,17 +807,53 @@
                                     }
                                     
                                     let rayOrigin = out.body.translation();
-                                    rayOrigin.y -= 1;
-                                    let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
-                                    
-                                    let hit = world.castRay(ray, 1.01, true);
+                                    out.rays = [];
+                                    out.rays[0] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0), { x: 0, y: -1, z: 0 }));
+                                    out.rays[1] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
+                                    out.rays[2] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
+                                    out.rays[3] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
+                                    out.rays[4] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
 
-                                    if (hit && hit.collider && hit.toi > 0.001) {
+                                    out.hits = [];
+                                    out.hits[0] = world.castRay(out.rays[0], 1.1, true);
+                                    out.hits[1] = world.castRay(out.rays[1], 1.1, true);
+                                    out.hits[2] = world.castRay(out.rays[2], 1.1, true);
+                                    out.hits[3] = world.castRay(out.rays[3], 1.1, true);
+                                    out.hits[4] = world.castRay(out.rays[4], 1.1, true);
+
+                                    if (out.hits[0] && out.hits[0].collider && out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
                                         out.grounded = true;
-                                    } else if (moved === true || level.hasMvTl === true) {
+                                    } else if (out.hits[1] && out.hits[1].collider && out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
+                                        out.grounded = true;
+                                    } else if (out.hits[2] && out.hits[2].collider && out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
+                                        out.grounded = true;
+                                    } else if (out.hits[3] && out.hits[3].collider && out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
+                                        out.grounded = true;
+                                    } else if (out.hits[4] && out.hits[4].collider && out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
+                                        out.grounded = true;
+                                    } else {
                                         out.grounded = false;
                                     }
-                                    console.log(hit.toi);
+
+                                    
+                                    /*out.collideEvent.drainCollisionEvents((handle1, handle2, started) => {
+                                        console.log("Collision with:", handle1, handle2, "Started:", started);
+                                        for (var i = 0; i < plats.length; i++) {
+                                            if (handle1 === out.playerCollideHandle || handle2 === playerCollider.handle) {
+                                                if (handle1 === plats[i].colliderDesc.handle || handle2 === plats[i].colliderDesc.handle) {
+                                                    let otherHandle = handle1 === playerCollider.handle ? handle2 : handle1;
+                                                    let otherCollider = world.getCollider(otherHandle);
+
+                                                    if (started) {
+                                                        out.grounded = true;
+                                                    } else {
+                                                        out.grounded = false;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });*/
+
 
                                     if(out.grounded){
                                         
@@ -833,7 +871,7 @@
                                         
                                         out.vx*=out.airFric
                                         out.vz*=out.airFric      
-                                        if (out.vy > -5) {
+                                        if (out.vy > -20) {
                                             out.vy-=out.gravity*dt*5;
                                         }
                                     
@@ -1063,7 +1101,8 @@
                     UPDATE(debug);
                     render(debug);
                     stats.update();
-                    world.step( );
+                
+                    world.step( )//player.collideEvent );
 
                  }
 		</script>
