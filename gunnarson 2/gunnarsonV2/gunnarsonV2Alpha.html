@@ -808,7 +808,7 @@
                                     
                                     let rayOrigin = out.body.translation();
                                     out.rays = [];
-                                    out.rays[0] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0), { x: 0, y: -1, z: 0 }));
+                                    out.rays[0] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   { x: 0, y: -1, z: 0 }));
                                     out.rays[1] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
                                     out.rays[2] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
                                     out.rays[3] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
@@ -821,20 +821,35 @@
                                     out.hits[3] = world.castRay(out.rays[3], 1.1, true);
                                     out.hits[4] = world.castRay(out.rays[4], 1.1, true);
 
+                                    let trueHits = 0;
                                     if (out.hits[0] && out.hits[0].collider && out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
-                                        out.grounded = true;
-                                    } else if (out.hits[1] && out.hits[1].collider && out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
-                                        out.grounded = true;
-                                    } else if (out.hits[2] && out.hits[2].collider && out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
-                                        out.grounded = true;
-                                    } else if (out.hits[3] && out.hits[3].collider && out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
-                                        out.grounded = true;
-                                    } else if (out.hits[4] && out.hits[4].collider && out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
+                                        trueHits++;
+                                    }  
+                                    if (out.hits[1] && out.hits[1].collider && out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
+                                        trueHits++;
+                                    }  
+                                    if (out.hits[2] && out.hits[2].collider && out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
+                                        trueHits++;
+                                    } 
+                                    if (out.hits[3] && out.hits[3].collider && out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
+                                        trueHits++;
+                                    } 
+                                    if (out.hits[4] && out.hits[4].collider && out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
+                                        trueHits++;
+                                    }
+                                    console.log(trueHits);
+                                    if (trueHits > 2) {
                                         out.grounded = true;
                                     } else {
                                         out.grounded = false;
                                     }
 
+                                    /*for (var i= 0; i < out.hits.length; i++ ){
+                                        console.log(out.hits[i]?.toi);
+                                        if (out.hits[i]?.toi === 0 ){
+                                            console.log(i);
+                                        }
+                                    }*/
                                     
                                     /*out.collideEvent.drainCollisionEvents((handle1, handle2, started) => {
                                         console.log("Collision with:", handle1, handle2, "Started:", started);
