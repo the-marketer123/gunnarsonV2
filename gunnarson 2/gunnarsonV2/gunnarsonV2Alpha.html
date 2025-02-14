@@ -169,7 +169,7 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = false;
+                const debug = true;
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.style.display='none'
@@ -501,9 +501,9 @@
 
             /*Main Functions*/
 
-                let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
+                let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [], lines = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-                function createLineFromPoints(scene, points, color = 0xffffff) {
+                function createLineFromPoints(scene, points, color = 0xffffff, num = lines.length) {
                     // Create a geometry for the line
                     const geometry = new THREE.BufferGeometry();
                     //geometry.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3));
@@ -516,7 +516,13 @@
                     const line = new THREE.Line(geometry, material);
 
                     // Add the line to the scene
-                    scene.add(line);
+                    if (lines.length === num) {
+                        lines.push(line);
+                        scene.add(line);
+                    } else {
+                        lines[num] = line;
+                        scene.add(line);
+                    }
 
                     return line;
                     }
@@ -756,8 +762,6 @@
                                 out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
                                 out.playerIsExistent= true
                                 out.restart= 1
-                                //out.playerCollideHandle = out.colliderDesc.handle
-                                //out.collideEvent = new RAPIER.EventQueue(true)
                                 out.grounded= false
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                             
@@ -768,8 +772,19 @@
                             out.prevPos;       
                             out.runDebug = function (dt, rayOrigin) {
                                 out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
-                                //console.log(rayOrigin);
-                                createLineFromPoints(scene, [rayOrigin, new THREE.Vector3(rayOrigin.x, rayOrigin.y - 1, rayOrigin.z)]);
+                                
+                                for (var i = 0; i < 4; i++) {
+                                    if (lines[i] !== undefined) {
+                                        //console.log('hi');
+                                        scene.remove(lines[i]);
+                                    }
+                                }
+                                //console.log(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0));
+                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0)], 0xff0000, 0);
+                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)], 0x00ff00, 1);
+                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)], 0x00ff00, 2);
+                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)], 0x00ff00, 3);
+                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)], 0x00ff00, 4);
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
@@ -822,53 +837,27 @@
                                     out.hits[4] = world.castRay(out.rays[4], 1.1, true);
 
                                     let trueHits = 0;
-                                    if (out.hits[0] && out.hits[0].collider && out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
+                                    if (out.hits[0] && out.hits[0].collider && out.hits[0].toi < 0.1) { //out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
                                         trueHits++;
                                     }  
-                                    if (out.hits[1] && out.hits[1].collider && out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
+                                    if (out.hits[1] && out.hits[1].collider && out.hits[1].toi < 0.1) { //out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
                                         trueHits++;
                                     }  
-                                    if (out.hits[2] && out.hits[2].collider && out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
+                                    if (out.hits[2] && out.hits[2].collider && out.hits[2].toi < 0.1) { //out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
                                         trueHits++;
                                     } 
-                                    if (out.hits[3] && out.hits[3].collider && out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
+                                    if (out.hits[3] && out.hits[3].collider && out.hits[3].toi < 0.1) { //out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
                                         trueHits++;
                                     } 
-                                    if (out.hits[4] && out.hits[4].collider && out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
+                                    if (out.hits[4] && out.hits[4].collider && out.hits[4].toi < 0.1) { //out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
                                         trueHits++;
                                     }
-                                    console.log(trueHits);
+                                    //console.log(trueHits);
                                     if (trueHits > 2) {
                                         out.grounded = true;
                                     } else {
                                         out.grounded = false;
                                     }
-
-                                    /*for (var i= 0; i < out.hits.length; i++ ){
-                                        console.log(out.hits[i]?.toi);
-                                        if (out.hits[i]?.toi === 0 ){
-                                            console.log(i);
-                                        }
-                                    }*/
-                                    
-                                    /*out.collideEvent.drainCollisionEvents((handle1, handle2, started) => {
-                                        console.log("Collision with:", handle1, handle2, "Started:", started);
-                                        for (var i = 0; i < plats.length; i++) {
-                                            if (handle1 === out.playerCollideHandle || handle2 === playerCollider.handle) {
-                                                if (handle1 === plats[i].colliderDesc.handle || handle2 === plats[i].colliderDesc.handle) {
-                                                    let otherHandle = handle1 === playerCollider.handle ? handle2 : handle1;
-                                                    let otherCollider = world.getCollider(otherHandle);
-
-                                                    if (started) {
-                                                        out.grounded = true;
-                                                    } else {
-                                                        out.grounded = false;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    });*/
-
 
                                     if(out.grounded){
                                         
@@ -886,9 +875,7 @@
                                         
                                         out.vx*=out.airFric
                                         out.vz*=out.airFric      
-                                        if (out.vy > -20) {
-                                            out.vy-=out.gravity*dt*5;
-                                        }
+                                        out.vy-=out.gravity*dt*5;
                                     
                                     }
                                     if (out.vx < 0.001 && out.vx > -0.001){
