@@ -169,7 +169,7 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                let debugmode = false;
+                const debug = true;
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.style.display='none'
@@ -308,17 +308,23 @@
                 let pointerLocks = [];
                 function addPointerLock ( camera, element ) {
                     let controls = new PointerLockControls( camera, element );
-                    document.addEventListener( 'click', function () {
-                    controls.lock();
-                    } );                    
+                    if (debug !== true) {
+                        document.addEventListener( 'click', function () {
+                        controls.lock();
+                        } );        
+                    }            
                     pointerLocks.push(controls);
                     camera.pointerLockNum = pointerLocks.length - 1;
 
                 }
 
-
-                addPointerLock(fpscamera, document.body);
                 //addOrbit( fpscamera, document.body );
+                //addPointerLock(fpscamera, document.body);
+                if (debug === true) {
+                    addOrbit( fpscamera, document.body );
+                } else {
+                    addPointerLock(fpscamera, document.body);
+                }
                 scene.add( fpscamera );
                 scene.add( bupcamera );
                 
@@ -497,7 +503,23 @@
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-                
+                function createLineFromPoints(scene, points, color = 0xffffff) {
+                    // Create a geometry for the line
+                    const geometry = new THREE.BufferGeometry();
+                    //geometry.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3));
+                    geometry.setFromPoints( points );
+
+                    // Create a material for the line
+                    const material = new THREE.LineBasicMaterial({ color: color });
+
+                    // Create the line object
+                    const line = new THREE.Line(geometry, material);
+
+                    // Add the line to the scene
+                    scene.add(line);
+
+                    return line;
+                    }
                 let plats = [], cubes = [];
 
                 function addPlatform (pos, rot, size, shape, color) {
@@ -624,94 +646,6 @@
                     scene.add( sky );
                  }
 
-
-
-            /*Levels*/
-
-                level.curLevel = 'test';
-                let restart;
-                function clearWorld(world) {
-                    const handles = [];
-
-                    // Collect all rigid body handles
-                    world.forEachRigidBody(body => {
-                        handles.push(body.handle);
-                    });
-
-                    // Remove each rigid body using its handle
-                    handles.forEach(handle => {
-                        const body = world.getRigidBody(handle);
-                        if (body) {
-                            world.removeRigidBody(body);
-                        }
-                    });
-                }
-                function menuBack () {
-                    clearWorld(world);
-                    fpscamera.position.set(5, 5, 5);
-                    //fpscamera.position.set(5, 5, 5);
-
-                    addSkybox(90);
-
-                    level.hasCube = false;
-                    level.hasEnem = false;
-                    level.hasGuns = false;
-                    level.hasMvTl = false;
-                    level.hasExpl = false;
-
-                    addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-
-                }
-                function testLevel1() {
-                    clearWorld(world);
-                    player.setPlayer(0,10,0,fpscamera,world);
-                    player.restart = world.takeSnapshot();
-
-                    level.hasCube = true;
-                    level.hasEnem = false;
-                    level.hasGuns = false;
-                    level.hasMvTl = false;
-                    level.hasExpl = false;
-                    
-                    addSkybox(90);
-                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    
-                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-
-                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-
-                    addPCube(0,20,0);
-                    addPCube( 10, 20, 10);
-                    addPCube(-10, 20, 10);
-                    addPCube(-10, 20,-10);
-                    addPCube( 10, 20,-10);
-
-                    //C U B E S
-                    for (var i = 0; i < 50; i++) {
-                        addPCube(random(-15, 15), random(10, 20), random(-15, 15));
-                    }
-                 }
-
-
-                function levelSetup() {
-                    if (level.startup === true || level.update === true) {
-                        switch (level.curLevel) {
-                            case 'menu': menuBack();
-                            break;
-                            case 'test': testLevel1();
-                        } 
-                        level.startup = false;
-                        level.update = false;
-                    }
-                }
             /*Controls*/
 
                 let width=window.innerWidth
@@ -789,9 +723,8 @@
                         return x*(b-a)+a
                     }
                 /*player*/
-                    //function addPlayer (x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
-                        let player=(function(out){
 
+                    let player=(function(out){
                             out.setPlayer = function(x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
                                 out.sx=x
                                 out.sy=y
@@ -801,7 +734,9 @@
                                 out.z=z
                                 out.vx=0
                                 out.vy=0
-                                out.vz=0
+                                out.vz=0                                
+                                out.camera= camera
+                                out.world= world
                                 out.height= height / 2
                                 out.xWidth= xwidth / 2
                                 out.zWidth= zwidth / 2
@@ -817,17 +752,23 @@
                                 out.radius=0.5
                                 out.dead= false
                                 out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0)
-                                out.body= player.world.createRigidBody(out.rigid);
+                                out.body = out.world.createRigidBody(out.rigid);
                                 out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
-                                out.camera= camera
-                                out.world= world
                                 out.playerIsExistent= true
                                 out.restart= 1
                                 out.grounded= false
+                                out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                             
                                 world.createCollider(out.colliderDesc, out.body);
+                                addPointerLock(camera, document.body);
+                                if (debug) {scene.add(out.debugmesh);}
                             }
                             out.prevPos;       
+                            out.runDebug = function (dt, rayOrigin) {
+                                out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                                //console.log(rayOrigin);
+                                createLineFromPoints(scene, [rayOrigin, new THREE.Vector3(rayOrigin.x, rayOrigin.y - 1, rayOrigin.z)]);
+                            }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
                                 
@@ -865,7 +806,7 @@
                                     
                                     let rayOrigin = out.body.translation();
                                     rayOrigin.y -= 1;
-                                    let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -2, z: 0 });
+                                    let ray = new RAPIER.Ray(rayOrigin, { x: 0, y: -1, z: 0 });
                                     
                                     let hit = world.castRay(ray, 1.01, true);
 
@@ -874,7 +815,7 @@
                                     } else if (moved === true || level.hasMvTl === true) {
                                         out.grounded = false;
                                     }
-                                    console.log(moved + " " + level.hasMvTl);
+                                    console.log(hit.toi);
 
                                     if(out.grounded){
                                         
@@ -926,18 +867,22 @@
                                     out.body.setRotation(quaternion);
                                     
         
-                                    let thecam = pointerLocks[out.camera.pointerLockNum].object
-                                    thecam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
-                                    let q = thecam.quaternion;
+                                    let cam = pointerLocks[out.camera.pointerLockNum].object
+                                    cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                                    let q = cam.quaternion;
                                     
                                     let euler = new THREE.Euler();
                                     euler.setFromQuaternion(q, 'YXZ');
                                     out.yaw = euler.y;  
-                                    out.pitch = euler.x;             
+                                    out.pitch = euler.x;    
+                                    
+                                    if (debug === true) {
+                                        out.runDebug(dt, rayOrigin);
+                                    }
                                 }
                             }
                             return out
-                        });
+                        })({})
                         
 
                     const user=(function(controls){
@@ -982,13 +927,98 @@
                         
                     })({})
 
-                   
-                
-                
 
-				
+            /*Levels*/
+
+                level.curLevel = 'test';
+                let restart;
+                function clearWorld(world) {
+                    const handles = [];
+
+                    // Collect all rigid body handles
+                    world.forEachRigidBody(body => {
+                        handles.push(body.handle);
+                    });
+
+                    // Remove each rigid body using its handle
+                    handles.forEach(handle => {
+                        const body = world.getRigidBody(handle);
+                        if (body) {
+                            world.removeRigidBody(body);
+                        }
+                    });
+                }
+                function menuBack () {
+                    clearWorld(world);
+                    fpscamera.position.set(5, 5, 5);
+                    //fpscamera.position.set(5, 5, 5);
+
+                    addSkybox(90);
+
+                    level.hasCube = false;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+
+                    addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+
+                }
+                function testLevel1(debug=false) {
+                    clearWorld(world);
+                    if (debug === false) {
+                        player.setPlayer(0,10,0,fpscamera,world);
+                        player.restart = world.takeSnapshot();
+                    } else {
+                        addOrbit(fpscamera);    
+                        player.setPlayer(0,10,0,bupcamera,world);
+                    }
+
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+                    
+                    addSkybox(90);
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+
+                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+
+                    addPCube(0,20,0);
+                    addPCube( 10, 20, 10);
+                    addPCube(-10, 20, 10);
+                    addPCube(-10, 20,-10);
+                    addPCube( 10, 20,-10);
+
+                    //C U B E S
+                    for (var i = 0; i < 50; i++) {
+                        addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                    }
+                 }
 
 
+                function levelSetup(debug) {
+                    if (level.startup === true || level.update === true) {
+                        switch (level.curLevel) {
+                            case 'menu': menuBack();
+                            break;
+                            case 'test': testLevel1(debug);
+                        } 
+                        level.startup = false;
+                        level.update = false;
+                    }
+                }
 
             /*Main*/
                                 
@@ -996,11 +1026,11 @@
                 
  
 
-                function UPDATE() {
-                    levelSetup();
+                function UPDATE(debug) {
+                    levelSetup(debug);
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
-                    if (player !== undefined) {                    
+                    if (player.playerIsExistent === true) {                    
                         player.runPlayerPhysics(dt);
                     }
                     
@@ -1020,17 +1050,18 @@
                     render();
 
                  }
-                function render() {
-
-                    renderer.render( scene, fpscamera);//player.camera );
-
-                 }
-
+                function render(debug) {
+                    if (debug === false) {                    
+                        renderer.render( scene, player.camera );
+                    } else {
+                        renderer.render( scene, fpscamera );
+                    }
+                }
      
                 function animationLoop() {
 
-                    UPDATE();
-                    render();
+                    UPDATE(debug);
+                    render(debug);
                     stats.update();
                     world.step( );
 
