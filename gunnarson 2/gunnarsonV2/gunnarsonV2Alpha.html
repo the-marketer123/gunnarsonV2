@@ -771,9 +771,12 @@
                             out.prevPos;       
                             out.runPlayerDebug = function (dt, rayOrigin) {
                                 out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
-                                out.debugmesh.position.set(rayOrigin.x, rayOrigin.y, rayOrigin.z);
+                                out.debugmesh.position.set(new THREE.Vector3(rayOrigin.x, rayOrigin.y - 1.001, rayOrigin.z));
+
+                                //console.log(rayOrigin.x + '  ' + rayOrigin.y + '  ' + rayOrigin.z);
+                                //console.log(rayOrigin.x + '  ' + (rayOrigin.y - 1.001) + '  ' + rayOrigin.z);
                                 
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0)    ]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x, rayOrigin.y   - 1.001, rayOrigin.z),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0)    ]);
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)]);
