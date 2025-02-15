@@ -9,18 +9,96 @@
         <script src='https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js'></script><!--GL Matrix-->
         <style>
             body {
-                margin: 0;
-                background-color: #000;
-                color: #fff;
-                font-family: Monospace;
-                font-size: 13px;
-                line-height: 24px;
-                overscroll-behavior: none;
+                
+                margin:0;
+                overflow:hidden;
+                font-family:trebuchet ms;
+            }
+            
+            #gl-canvas {
+                
+                display:none;
             }
             
             #board-canvas {
-                display: none; 
+                
+                display:none;
             }
+            
+            #ui-canvas {
+                
+                position:fixed;
+                z-index:-1;
+            }
+            
+            .page {
+                
+                display:none;
+                color:rgb(255,255,255);
+                padding:20px;
+                z-index:1;
+            }
+            
+            input {
+                
+                height:24px;
+                outline:none;
+                background-color:rgb(255,255,255);
+                border:none;
+                border-bottom:4px solid black;
+                transition-duration:0.4s;
+                border-radius:5px;
+            }
+            
+            input:hover {
+                
+                background-color:rgb(200,200,255);
+            }
+            
+            input:focus {
+                
+                background-color:rgb(170,200,255);
+            }
+            
+            textarea {
+                
+                height:240px;
+                outline:none;
+                background-color:rgb(255,255,255);
+                border:none;
+                border-bottom:4px solid black;
+                transition-duration:0.4s;
+                border-radius:5px;
+            }
+            
+            textarea:hover {
+                
+                background-color:rgb(200,200,255);
+            }
+            
+            textarea:focus {
+                
+                background-color:rgb(170,200,255);
+            }
+            
+            button {
+                
+                width:60px;
+                height:30px;
+                transition-duration:0.4s;
+                border-radius:8px;
+                font-size:16px;
+                background-color:rgb(255,255,255);
+            }
+            
+            button:hover {
+                
+                cursor:pointer;
+                border-radius:13px;
+                background-color:rgb(150,255,205);
+            }
+            
+
             a {
                 color: #ff0;
                 text-decoration: none;
@@ -30,25 +108,6 @@
                 text-decoration: underline;
             }
             
-            button {
-                cursor: pointer;
-                text-transform: uppercase;
-            }
-            
-            #info {
-                position: absolute;
-                top: 0px;
-                width: 100%;
-                padding: 10px;
-                box-sizing: border-box;
-                text-align: center;
-                -moz-user-select: none;
-                -webkit-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-                pointer-events: none;
-                z-index: 1; /* TODO Solve this in HTML */
-            }
             
             a, button, input, select {
                 pointer-events: auto;
@@ -103,7 +162,8 @@
                 padding: 10px;
             }
         </style>
-        
+        <link href='https://fonts.googleapis.com/css?family=Afacad' rel='stylesheet'>
+
     </head>
 	<body id="body">
         <canvas id='board-canvas' width='800' height='1500'></canvas>
@@ -171,7 +231,9 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = true;
+                const debug = false;
+                let windowWidth = window.innerWidth;
+                let windowHeight = window.innerHeight;
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.style.display='none'
@@ -204,6 +266,32 @@
                         uv.needsUpdate = true;
                     }
                 }           
+
+                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', parentdoc=document.body) {
+                    let options = {}
+                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc } = options;
+                    //                 '12px'        'black'               'arial'          document.body     FORMATS
+
+                    // Create the text element
+                    const textElement = document.createElement('div');
+                    textElement.textContent = text;
+                    
+                    // Apply styles
+                    textElement.style.position = 'absolute';
+                    textElement.style.left = `${x}px`;
+                    textElement.style.top = `${y}px`;
+                    textElement.style.fontSize = fontSize;
+                    textElement.style.color = color;
+                    textElement.style.fontFamily = fontFamily;
+                    textElement.style.whiteSpace = 'nowrap'; // Prevent text from wrapping
+                    textElement.style.pointerEvents = 'none'; // Ensures it doesn't interfere with interactions
+                    
+                    // Append to the specified parent or default to body
+                    parent.appendChild(textElement);
+                    
+                    return textElement;
+                }
+
                 
 
             /*Scene*/
@@ -312,7 +400,7 @@
                     let controls = new PointerLockControls( camera, element );
                     if (debug !== true) {
                         document.addEventListener( 'click', function () {
-                        controls.lock();
+                            controls.lock();
                         } );        
                     }            
                     pointerLocks.push(controls);
@@ -320,12 +408,10 @@
 
                 }
 
-                //addOrbit( fpscamera, document.body );
-                //addPointerLock(fpscamera, document.body);
                 if (debug === true) {
                     addOrbit( fpscamera, document.body );
                 } else {
-                    addPointerLock(fpscamera, document.body);
+                    //addPointerLock(fpscamera, document.body);
                 }
                 scene.add( fpscamera );
                 scene.add( bupcamera );
@@ -750,7 +836,7 @@
                                 out.fric=0.85
                                 out.airFric=0.9
                                 out.walkSpeed= 4
-                                out.jumpPower= .5
+                                out.jumpPower= .35
                                 out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
@@ -758,7 +844,7 @@
                                 out.fov=70
                                 out.radius=0.5
                                 out.dead= false
-                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(50.0)
+                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z)//.setGravityScale(50.0)
                                 out.body = out.world.createRigidBody(out.rigid);
                                 out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
                                 out.playerIsExistent= true
@@ -927,26 +1013,6 @@
                         controls.mousePressed=controls.mouseClicked=false
                         controls.keys={}
                         
-                        uiCanvas.onmousemove=function(e){
-                            
-                            controls.mouseX+=e.movementX
-                            controls.mouseY+=e.movementY
-                            
-                            
-                        }
-                        
-                        uiCanvas.onmousedown=function(){
-                            
-                            controls.mousePressed=true
-                            controls.mouseClicked=true
-                            uiCanvas.requestPointerLock()
-                        }
-                        
-                        uiCanvas.onmouseup=function(){
-                            
-                            controls.mousePressed=false
-                        }
-                        
                         document.onkeydown=function(e){
                             
                             controls.keys[e.key.toString()]=true
@@ -984,25 +1050,34 @@
                         }
                     });
                 }
-                function menuBack () {
-                    clearWorld(world);
-                    fpscamera.position.set(5, 5, 5);
-                    //fpscamera.position.set(5, 5, 5);
+                let currentScene = 'menu';
+                let scenes = {};
 
-                    addSkybox(90);
+                // Menu Scene
+                scenes.menu = (function(out){
+                    out.setBackground = function () {
+                        clearWorld(world);
+                        fpscamera.position.set(1.5,2.5,1.5);
+                        fpscamera.lookAt(0, 2, 0);
+                        fpscamera.fov = 50;
+                        addSkybox(90);
 
-                    level.hasCube = false;
-                    level.hasEnem = false;
-                    level.hasGuns = false;
-                    level.hasMvTl = false;
-                    level.hasExpl = false;
+                        addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
+                        addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:50,y:1,z:50},"SQRE","GRAY");
+                        addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
+                    }
 
-                    addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    out.update = function() {
+                        out.setBackground();
+                        drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'blue', 'Afacad', document.body);
+                    }
+                    
+                    return out
+                })({})
+                
 
-                }
-                function testLevel1(debug=false) {
+                let levels = {};
+                 levels.testLevel1 = function(debug=false) {
                     clearWorld(world);
                     if (debug === false) {
                         player.setPlayer(0,10,0,fpscamera,world);
@@ -1044,15 +1119,26 @@
                  }
 
 
-                function levelSetup(debug) {
+                 scenes.levelSetup = function(debug) {
                     if (level.startup === true || level.update === true) {
                         switch (level.curLevel) {
-                            case 'menu': menuBack();
-                            break;
-                            case 'test': testLevel1(debug);
+                            case 'test': levels.testLevel1(debug);
                         } 
                         level.startup = false;
                         level.update = false;
+                    }
+                    updateCubes();
+                }
+
+                scenes.update = function(debug) {
+                    if (currentScene === 'menu') {
+                        scenes.menu.update();
+                    } else if (currentScene === 'play') {
+                        scenes.levelSetup(debug);
+                    } else if (currentScene === 'pause') {
+                        //scenes.pause.update();
+                    } else if (currentScene === 'options') {
+                        scenes.options.update();
                     }
                 }
 
@@ -1063,14 +1149,11 @@
  
 
                 function UPDATE(debug) {
-                    levelSetup(debug);
-
+                    scenes.update(debug);
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
                     if (player.playerIsExistent === true) {                    
                         player.runPlayerPhysics(dt);
                     }
-                    
-                    updateCubes();
                  }
 
             /*nessecities*/
@@ -1081,13 +1164,16 @@
                     uiCanvas.width = window.innerWidth
                     uiCanvas.height = window.innerHeight
 
+                    windowWidth = window.innerWidth;
+                    windowHeight = window.innerHeight;
+
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
                     render();
 
                  }
                 function render(debug) {
-                    if (debug === false) {                    
+                    if (debug === false && player.playerIsExistent === true) {                    
                         renderer.render( scene, player.camera );
                     } else {
                         renderer.render( scene, fpscamera );
@@ -1101,6 +1187,8 @@
                     stats.update();
                 
                     world.step( )//player.collideEvent );
+
+
 
                  }
 		</script>
