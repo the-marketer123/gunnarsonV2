@@ -267,14 +267,52 @@
                     }
                 }           
 
-                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', parentdoc=document.body) {
+                function getTextWidth(text, fontSize, fontFamily = "Arial") {
+                    const canvas = document.createElement("canvas");
+                    const context = canvas.getContext("2d");
+                    context.font = `${fontSize} ${fontFamily}`;
+                    const width = context.measureText(text).width;
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    return width;
+                }
+
+                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', bold='normal',cool=false,parentdoc=document.body) {
                     let options = {}
                     const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc } = options;
-                    //                 '12px'        'black'               'arial'          document.body     FORMATS
 
-                    // Create the text element
+                    const existingText = document.querySelectorAll('.absolute-text');
+                    existingText.forEach(el => el.remove());
+
                     const textElement = document.createElement('div');
                     textElement.textContent = text;
+                    textElement.classList.add('absolute-text');
+     
+                    const textElement2 = document.createElement('div');
+
+                    if (x === 'center') {
+                        x = (parent.clientWidth/2) - (getTextWidth(text, fontSize, fontFamily)/2);
+                    }
+
+                    if (cool) {
+                        textElement2.textContent = text;
+                        textElement2.classList.add('absolute-text');
+
+
+                        textElement2.style.position = 'absolute';  
+                        textElement2.style.left = `${x}px`;
+                        textElement2.style.top = `${y}px`;
+                        textElement2.style.fontSize = fontSize;
+                        textElement2.style.color = 'white';
+                        textElement2.style.fontFamily = fontFamily;
+                        textElement2.style.whiteSpace = 'nowrap';
+                        textElement2.style.pointerEvents = 'none';
+                        //textElement2.style.fontWeight = ''bold'';
+
+
+                        bold = 'bold';
+                    }
+                    
                     
                     // Apply styles
                     textElement.style.position = 'absolute';
@@ -285,12 +323,16 @@
                     textElement.style.fontFamily = fontFamily;
                     textElement.style.whiteSpace = 'nowrap'; // Prevent text from wrapping
                     textElement.style.pointerEvents = 'none'; // Ensures it doesn't interfere with interactions
+                    textElement.style.fontWeight = bold;
                     
                     // Append to the specified parent or default to body
                     parent.appendChild(textElement);
-                    
+                    if (cool) {
+                    parent.appendChild(textElement2);}
+
                     return textElement;
                 }
+
 
                 
 
@@ -1069,7 +1111,11 @@
 
                     out.update = function() {
                         out.setBackground();
-                        drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'blue', 'Afacad', document.body);
+                        //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'red', 'Afacad', 'bold');
+                        //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'white', 'Afacad', 'normal');
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true);
+                        drawText('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true);
+                        drawText('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true);
                     }
                     
                     return out
