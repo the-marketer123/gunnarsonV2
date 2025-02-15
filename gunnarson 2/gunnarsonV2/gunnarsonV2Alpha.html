@@ -155,6 +155,8 @@
         <canvas id='gl-canvas' width='600' height='600'></canvas>
         <canvas id='ui-canvas' width='600' height='600'></canvas>
 
+        
+
 		<script type="module">
 
             /*basics*/
@@ -771,16 +773,14 @@
                             out.prevPos;       
                             out.runPlayerDebug = function (dt, rayOrigin) {
                                 out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
-                                out.debugmesh.position.set(new THREE.Vector3(rayOrigin.x, rayOrigin.y - 1.001, rayOrigin.z));
-
-                                //console.log(rayOrigin.x + '  ' + rayOrigin.y + '  ' + rayOrigin.z);
-                                //console.log(rayOrigin.x + '  ' + (rayOrigin.y - 1.001) + '  ' + rayOrigin.z);
-                                
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x, rayOrigin.y   - 1.001, rayOrigin.z),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0)    ]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)]);
+                                for (var i = 0; i < lines.length; i++) {
+                                    scene.remove(lines[i]);
+                                }
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x, rayOrigin.y   - 1.001, rayOrigin.z),   new THREE.Vector3(rayOrigin.x, rayOrigin.y - 2.001, rayOrigin.z)    ]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
