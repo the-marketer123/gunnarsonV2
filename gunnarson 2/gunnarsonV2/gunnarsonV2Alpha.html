@@ -503,25 +503,19 @@
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [], lines = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-                function createLineFromPoints(scene, points, color = 0xffffff, num = lines.length) {
-                    // Create a geometry for the line
+                
+                function drawDebugLine(scene, points, color = 0xffffff, num = lines.length) {
                     const geometry = new THREE.BufferGeometry();
-                    //geometry.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3));
                     geometry.setFromPoints( points );
-
-                    // Create a material for the line
                     const material = new THREE.LineBasicMaterial({ color: color });
 
-                    // Create the line object
-                    const line = new THREE.Line(geometry, material);
+                    const line = new THREE.Line(geometry, material);                    
+                    scene.add(line);
 
-                    // Add the line to the scene
                     if (lines.length === num) {
-                        lines.push(line);
-                        scene.add(line);
+                        lines.push( line );
                     } else {
-                        lines[num] = line;
-                        scene.add(line);
+                        lines[num] = ( line );
                     }
 
                     return line;
@@ -578,7 +572,7 @@
                     }
                     plats.push({ mesh, rigid, update, num, colliderDesc });
                     scene.add(mesh);
-                    return { mesh, rigid, update };
+                    return { mesh, rigid, update, num, colliderDesc };
                  }
                 function addPCube(x,y,z) {
 
@@ -612,10 +606,15 @@
                             let rot = rigid.rotation();
                             let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
                             let pos = new THREE.Vector3(x, y, z);
-                            rigid.setLinvel(new RAPIER.Vector3(0, -5, 0));
+
+                            if (rigid.linvel().y > -50) { 
+                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y-0.5, rigid.linvel().z));
+                            }
+
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(xr, yr, zr, wr);
-                            if (y < -20) {
+
+                            if (y < -100) {
                                     world.removeRigidBody(rigid);
                                     scene.remove(mesh);
                                     cubes[num] = null;
@@ -770,21 +769,15 @@
                                 if (debug) {scene.add(out.debugmesh);}
                             }
                             out.prevPos;       
-                            out.runDebug = function (dt, rayOrigin) {
+                            out.runPlayerDebug = function (dt, rayOrigin) {
                                 out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                                out.debugmesh.position.set(rayOrigin.x, rayOrigin.y, rayOrigin.z);
                                 
-                                for (var i = 0; i < 4; i++) {
-                                    if (lines[i] !== undefined) {
-                                        //console.log('hi');
-                                        scene.remove(lines[i]);
-                                    }
-                                }
-                                //console.log(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0));
-                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0)], 0xff0000, 0);
-                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)], 0x00ff00, 1);
-                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)], 0x00ff00, 2);
-                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)], 0x00ff00, 3);
-                                createLineFromPoints(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)], 0x00ff00, 4);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y - 1.001, rayOrigin.z - 0)    ]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)]);
+                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5)]);
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
@@ -917,7 +910,7 @@
                                     out.pitch = euler.x;    
                                     
                                     if (debug === true) {
-                                        out.runDebug(dt, rayOrigin);
+                                        out.runPlayerDebug(dt, rayOrigin);
                                     }
                                 }
                             }
