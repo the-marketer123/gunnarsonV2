@@ -16,7 +16,6 @@
             }
             
             #gl-canvas {
-                
                 display:none;
             }
             
@@ -231,17 +230,20 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = false;
+                const debug = true;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
 
                 let glCanvas=document.getElementById('gl-canvas')
-                glCanvas.style.display='none'
+                //let gl_ctx=glCanvas.getContext('2d')
+                glCanvas.width = window.innerWidth
+                glCanvas.height = window.innerHeight
 
                 let uiCanvas=document.getElementById('ui-canvas')
-                let ctx=uiCanvas.getContext('2d')
-                uiCanvas.style.display='none'
-                uiCanvas=document.body
+                let ui_ctx=uiCanvas.getContext('2d')
+                uiCanvas.width = window.innerWidth
+                uiCanvas.height = window.innerHeight
+
 
 
 
@@ -267,17 +269,28 @@
                     }
                 }           
 
-                function getTextWidth(text, fontSize, fontFamily = "Arial") {
+                function getTextWidth(text, fontSize = "12px", fontFamily = "Arial", fontWeight = "normal") {
                     const canvas = document.createElement("canvas");
                     const context = canvas.getContext("2d");
-                    context.font = `${fontSize} ${fontFamily}`;
-                    const width = context.measureText(text).width;
-                    canvas.width = 0;
-                    canvas.height = 0;
-                    return width;
+
+                    // Ensure proper font formatting
+                    context.font = `${fontWeight} ${fontSize} ${fontFamily}`;
+
+                    return context.measureText(text).width; // Return width directly
                 }
 
-                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', bold='normal',cool=false,id=null,parentdoc=document.body) {
+                function drawText(
+                    text, 
+                    x, 
+                    y, 
+                    size='12px', 
+                    tcolor='black', 
+                    font='Arial', 
+                    bold='normal',
+                    cool=false,
+                    id=null,
+                    parentdoc=document.body
+                    ) {
                     let options = {}
                     const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
 
@@ -296,9 +309,7 @@
                     const textElement2 = document.createElement('div');
 
                     if (x === 'center') {
-                        //console.log(getTextWidth(text, fontSize, fontFamily));
-                        x = (parent.clientWidth/2) - (getTextWidth(text, fontSize, fontFamily)/2);
-                        //console.log(x);
+                        x = (parent.clientWidth / 2) - (getTextWidth(text, fontSize, fontFamily, bold) / 2);
 
                     }
 
@@ -354,7 +365,7 @@
                     id = null,
                     parentdoc = document.body,
                     onClick = null 
-                ) {
+                    ) {
                     let options = {};
                     const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
 
@@ -373,7 +384,7 @@
                     let textElement2 = null;
 
                     if (x === "center") {
-                        x = parent.clientWidth / 2 - getTextWidth(text, fontSize, fontFamily) / 2;
+                        x = (parent.clientWidth / 2) - (getTextWidth(text, fontSize, fontFamily, bold) / 2);
                     }
 
                     if (cool) {
@@ -459,16 +470,9 @@
                     startup: true
                 };
 
-                renderer = new THREE.WebGLRenderer( {antialias: true, canvas: glCanvas} );
+                renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true });
                 renderer.setSize( innerWidth, innerHeight );
                 renderer.setAnimationLoop( animationLoop );
-
-                const keys = [];
-                document.addEventListener('keydown', (event) => {
-                    keys[event.keyCode] = true; 
-                });
-
-                
 
                 //textures
                 let boardCanvas=document.getElementById('board-canvas');
@@ -533,7 +537,6 @@
                     orbitControls.update();
                     orbits.push(orbitControls);
                     camera.orbitNum = orbits.length - 1;
-
                 }
 
                 let pointerLocks = [];
@@ -549,11 +552,6 @@
 
                 }
 
-                if (debug === true) {
-                    addOrbit( fpscamera, document.body );
-                } else {
-                    //addPointerLock(fpscamera, document.body);
-                }
                 scene.add( fpscamera );
                 scene.add( bupcamera );
                 
@@ -710,17 +708,17 @@
                     
                     if(!showDebug){return;}
                     
-                    ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
-                    ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
-                    ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
-                    ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
-                    ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
-                    ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
-                    ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
-                    ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
-                    ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
-                    ctx.fillText('Grounded: '+player.grounded,10,150)
-                    ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
+                    ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+                    ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
+                    ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
+                    ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
+                    ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
+                    ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
+                    ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
+                    ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                    ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
+                    ui_ctx.fillText('Grounded: '+player.grounded,10,150)
+                    ui_ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
                     //ctx.fillText('Grappling: '+g.active,10,180)
                     //ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
                     //ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
@@ -889,7 +887,6 @@
 
                 uiCanvas.width = window.innerWidth
                 uiCanvas.height = window.innerHeight
-                //uiCanvas.style.display='none'
 
 
                 let FIXED_PHYSICS_TIMESTEP=0.5/60
@@ -1008,6 +1005,18 @@
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
                                 drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
+
+                                ui_ctx.fillStyle = 'white';
+                                ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+                                ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
+                                ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
+                                ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
+                                ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
+                                ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
+                                ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
+                                ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                                ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
+                                ui_ctx.fillText('Grounded: '+player.grounded,10,150)
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
@@ -1153,6 +1162,26 @@
                         controls.mouseX=controls.mouseY=0
                         controls.mousePressed=controls.mouseClicked=false
                         controls.keys={}
+
+                        uiCanvas.onmousemove=function(e){
+                            
+                            controls.mouseX+=e.movementX
+                            controls.mouseY+=e.movementY
+                            
+                            
+                        }
+                        
+                        uiCanvas.onmousedown=function(){
+                            
+                            controls.mousePressed=true
+                            controls.mouseClicked=true
+                            uiCanvas.requestPointerLock()
+                        }
+                        
+                        uiCanvas.onmouseup=function(){
+                            
+                            controls.mousePressed=false
+                        }
                         
                         document.onkeydown=function(e){
                             
@@ -1224,30 +1253,18 @@
 
                     out.update = function() {
                         out.setBackground();
-                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1', document.body);
-                        drawButton('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
-                        drawButton('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3', document.body, function(){currentScene = 'options'});
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/18, '200px', 'red', 'Afacad', 'normal', true, '1', document.body);
+                        drawButton('Play', 'center', windowHeight  * 6/18, '100px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
+                        drawButton('Options', 'center', windowHeight  * 10/18, '100px', 'red', 'Afacad', 'normal', true, '3', document.body, function(){currentScene = 'options'});
                     }
                     
                     return out
                 })({})                
                 scenes.levelSelect = (function(out){
-                    out.setBackground = function () {
-                        clearWorld(world);
-                        fpscamera.position.set(1.5,2.5,1.5);
-                        fpscamera.lookAt(0, 2, 0);
-                        fpscamera.fov = 50;
-                        addSkybox(180);
-
-                        addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
-                        addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:50,y:1,z:50},"SQRE","GRAY");
-                        addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
-                    }
-
                     out.update = function() {
-                        out.setBackground();
-                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '200px', 'red', 'Afacad', 'normal', true, '1', document.body);
-                        drawButton('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
+                        scenes.menu.setBackground();
+                        drawText('Levels', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1', document.body);
+                        drawButton('Chapter 1', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
                         drawButton('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3', document.body);
                     }
                     
@@ -1256,7 +1273,7 @@
                 
 
                 let levels = {};
-                 levels.testLevel1 = function(debug=false) {
+                levels.testLevel1 = function(debug=false) {
                     clearWorld(world);
                     clearText();
 
@@ -1264,7 +1281,7 @@
                         player.setPlayer(0,10,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
-                        addOrbit(fpscamera);    
+                        addOrbit(fpscamera, renderer.domElement);    
                         player.setPlayer(0,10,0,bupcamera,world);
                     }
 
@@ -1311,13 +1328,19 @@
                         level.update = false;
                     }
                     if (level.hasCube === true) {
-                        //console.log(cubes);
                         updateCubes();
                     }
-                    //updateCubes();
                 }
                 scenes.menu.count = 0;
-                scenes.update = function(debug) {
+
+            /*Main*/
+                                
+                window.addEventListener( 'resize', onWindowResize );
+                
+ 
+
+                function UPDATE(debug) {
+
                     if (currentScene === 'menu') {
                         if (scenes.menu.count === 0) {
                             scenes.menu.update();
@@ -1330,19 +1353,17 @@
                     } else if (currentScene === 'options') {
                         scenes.options.update();
                     }
-                }
 
-            /*Main*/
-                                
-                window.addEventListener( 'resize', onWindowResize );
-                
- 
-
-                function UPDATE(debug) {
-                    scenes.update(debug);
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
                     if (player.playerIsExistent === true) {                    
                         player.runPlayerPhysics(dt);
+                    }
+
+                    if (debug === false && player.playerIsExistent === true) {                    
+                        renderer.render( scene, player.camera );
+                    } else {
+                        console.log('debug');
+                        renderer.render( scene, fpscamera );
                     }
                  }
 
@@ -1359,21 +1380,14 @@
 
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
-                    render();
+                    //render(debug);
 
                  }
-                function render(debug) {
-                    if (debug === false && player.playerIsExistent === true) {                    
-                        renderer.render( scene, player.camera );
-                    } else {
-                        renderer.render( scene, fpscamera );
-                    }
-                }
      
                 function animationLoop() {
 
                     UPDATE(debug);
-                    render(debug);
+                    //render(debug);
                     stats.update();
                 
                     world.step( )//player.collideEvent );
