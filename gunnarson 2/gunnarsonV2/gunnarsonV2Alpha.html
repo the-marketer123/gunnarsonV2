@@ -277,15 +277,20 @@
                     return width;
                 }
 
-                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', bold='normal',cool=false,parentdoc=document.body) {
+                function drawText(text, x, y, size='12px', tcolor='black', font='Arial', bold='normal',cool=false,id=null,parentdoc=document.body) {
                     let options = {}
-                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc } = options;
+                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
 
-                    const existingText = document.querySelectorAll('.absolute-text');
-                    existingText.forEach(el => el.remove());
+                    if (uniqueId) {
+                        const existingText = document.getElementById(uniqueId);
+                        if (existingText) existingText.remove();
+                        const existingText2 = document.getElementById(uniqueId + 'inner');
+                        if (existingText2) existingText2.remove();
+                    }
 
                     const textElement = document.createElement('div');
                     textElement.textContent = text;
+                    if (uniqueId) textElement.id = uniqueId;
                     textElement.classList.add('absolute-text');
      
                     const textElement2 = document.createElement('div');
@@ -297,6 +302,8 @@
                     if (cool) {
                         textElement2.textContent = text;
                         textElement2.classList.add('absolute-text');
+                        if (uniqueId) textElement.id = uniqueId + 'inner';
+
 
 
                         textElement2.style.position = 'absolute';  
@@ -307,7 +314,6 @@
                         textElement2.style.fontFamily = fontFamily;
                         textElement2.style.whiteSpace = 'nowrap';
                         textElement2.style.pointerEvents = 'none';
-                        //textElement2.style.fontWeight = ''bold'';
 
 
                         bold = 'bold';
@@ -1113,9 +1119,9 @@
                         out.setBackground();
                         //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'red', 'Afacad', 'bold');
                         //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'white', 'Afacad', 'normal');
-                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true);
-                        drawText('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true);
-                        drawText('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true);
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1');
+                        drawText('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2');
+                        drawText('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3');
                     }
                     
                     return out
@@ -1178,7 +1184,10 @@
 
                 scenes.update = function(debug) {
                     if (currentScene === 'menu') {
-                        scenes.menu.update();
+                        if (scenes.menu.count === 0) {
+                            scenes.menu.update();
+                            scenes.menu.count ++;
+}
                     } else if (currentScene === 'play') {
                         scenes.levelSetup(debug);
                     } else if (currentScene === 'pause') {
