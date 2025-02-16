@@ -836,8 +836,8 @@
                             let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
                             let pos = new THREE.Vector3(x, y, z);
 
-                            if (rigid.linvel().y > -50) { 
-                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y-0.5, rigid.linvel().z));
+                            if (rigid.linvel().y > -20) { 
+                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y-0.25, rigid.linvel().z));
                             }
 
                             mesh.position.set(x, y, z);
@@ -1226,6 +1226,28 @@
                         out.setBackground();
                         drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1', document.body);
                         drawButton('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
+                        drawButton('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3', document.body, function(){currentScene = 'options'});
+                    }
+                    
+                    return out
+                })({})                
+                scenes.levelSelect = (function(out){
+                    out.setBackground = function () {
+                        clearWorld(world);
+                        fpscamera.position.set(1.5,2.5,1.5);
+                        fpscamera.lookAt(0, 2, 0);
+                        fpscamera.fov = 50;
+                        addSkybox(180);
+
+                        addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
+                        addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:50,y:1,z:50},"SQRE","GRAY");
+                        addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
+                    }
+
+                    out.update = function() {
+                        out.setBackground();
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '200px', 'red', 'Afacad', 'normal', true, '1', document.body);
+                        drawButton('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
                         drawButton('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3', document.body);
                     }
                     
@@ -1252,7 +1274,7 @@
                     level.hasMvTl = false;
                     level.hasExpl = false;
                     
-                    addSkybox(90);
+                    addSkybox(85);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
