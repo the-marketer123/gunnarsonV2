@@ -296,7 +296,10 @@
                     const textElement2 = document.createElement('div');
 
                     if (x === 'center') {
+                        //console.log(getTextWidth(text, fontSize, fontFamily));
                         x = (parent.clientWidth/2) - (getTextWidth(text, fontSize, fontFamily)/2);
+                        //console.log(x);
+
                     }
 
                     if (cool) {
@@ -337,7 +340,97 @@
                     parent.appendChild(textElement2);}
 
                     return textElement;
+                }                
+                
+                function drawButton(
+                    text,
+                    x,
+                    y,
+                    size = "12px",
+                    tcolor = "black",
+                    font = "Arial",
+                    bold = "normal",
+                    cool = false,
+                    id = null,
+                    parentdoc = document.body,
+                    onClick = null 
+                ) {
+                    let options = {};
+                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
+
+                    if (uniqueId) {
+                        const existingText = document.getElementById(uniqueId);
+                        if (existingText) existingText.remove();
+                        const existingText2 = document.getElementById(uniqueId + "inner");
+                        if (existingText2) existingText2.remove();
+                    }
+
+                    const textElement = document.createElement("div");
+                    textElement.textContent = text;
+                    if (uniqueId) textElement.id = uniqueId;
+                    textElement.classList.add("absolute-text");
+
+                    let textElement2 = null;
+
+                    if (x === "center") {
+                        x = parent.clientWidth / 2 - getTextWidth(text, fontSize, fontFamily) / 2;
+                    }
+
+                    if (cool) {
+                        textElement2 = document.createElement("div");
+                        textElement2.textContent = text;
+                        textElement2.classList.add("absolute-text");
+                        if (uniqueId) textElement2.id = uniqueId + "inner";
+
+                        textElement2.style.position = "absolute";
+                        textElement2.style.left = `${x}px`;
+                        textElement2.style.top = `${y}px`;
+                        textElement2.style.fontSize = fontSize;
+                        textElement2.style.color = "white";
+                        textElement2.style.fontFamily = fontFamily;
+                        textElement2.style.whiteSpace = "nowrap";
+                        textElement2.style.pointerEvents = "auto"; // Allow event detection
+                        textElement2.style.cursor = "pointer"; // Make it look clickable
+
+                        bold = "bold";
+
+                        // Add hover effect to darken inner text
+                        textElement2.addEventListener("mouseenter", function () {
+                            textElement2.style.color = "gray"; // Darkens on hover
+                        });
+
+                        textElement2.addEventListener("mouseleave", function () {
+                            textElement2.style.color = "white"; // Restores original color
+                        });
+
+                        // Add click event if provided
+                        if (onClick && typeof onClick === "function") {
+                            textElement2.addEventListener("click", function (event) {
+                                onClick(event);
+                            });
+                        }
+                    }
+
+                    // Apply styles to outer text
+                    textElement.style.position = "absolute";
+                    textElement.style.left = `${x}px`;
+                    textElement.style.top = `${y}px`;
+                    textElement.style.fontSize = fontSize;
+                    textElement.style.color = color;
+                    textElement.style.fontFamily = fontFamily;
+                    textElement.style.whiteSpace = "nowrap";
+                    textElement.style.pointerEvents = "none";
+                    textElement.style.fontWeight = bold;
+
+                    // Append to the specified parent or default to body
+                    parent.appendChild(textElement);
+                    if (cool) {
+                        parent.appendChild(textElement2);
+                    }
+
+                    return textElement;
                 }
+
 
 
                 
@@ -1083,20 +1176,34 @@
                 level.curLevel = 'test';
                 let restart;
                 function clearWorld(world) {
-                    const handles = [];
-
-                    // Collect all rigid body handles
-                    world.forEachRigidBody(body => {
-                        handles.push(body.handle);
+                    rigidBodies.forEach((body, index) => {
+                        world.removeCollider(body.collider);
+                        world.removeRigidBody(body);
                     });
 
-                    // Remove each rigid body using its handle
-                    handles.forEach(handle => {
-                        const body = world.getRigidBody(handle);
-                        if (body) {
-                            world.removeRigidBody(body);
+                    plats.forEach(plat => {
+                        if (plat.colliderDesc) {
+                            world.removeCollider(plat.colliderDesc); // Remove physics collider
+                        }
+                        if (plat.rigid) {
+                            world.removeRigidBody(plat.rigid); // Remove physics body
+                        }
+                        if (plat.mesh) {
+                            scene.remove(plat.mesh); // Remove mesh from scene
                         }
                     });
+
+                    plats = []; // Clear the array
+                    
+
+                    rigidBodies = []; // Clear the array
+
+                    // Remove corresponding meshes from the scene
+                    scene.children = scene.children.filter(child => !(child.isMesh));
+                }
+                function clearText() {
+                    document.querySelectorAll('.absolute-text').forEach(el => el.remove()); // Remove text elements
+                    document.querySelectorAll('.menu-block').forEach(el => el.remove()); // Remove background blocks
                 }
                 let currentScene = 'menu';
                 let scenes = {};
@@ -1117,11 +1224,9 @@
 
                     out.update = function() {
                         out.setBackground();
-                        //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'red', 'Afacad', 'bold');
-                        //drawText('Gunnarson 3D', windowWidth / 2 - 300, windowHeight  * 1/9, '100px', 'white', 'Afacad', 'normal');
-                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1');
-                        drawText('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2');
-                        drawText('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3');
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/9, '100px', 'red', 'Afacad', 'normal', true, '1', document.body);
+                        drawButton('Play', 'center', windowHeight  * 3/9, '75px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
+                        drawButton('Options', 'center', windowHeight  * 5/9, '75px', 'red', 'Afacad', 'normal', true, '3', document.body);
                     }
                     
                     return out
@@ -1131,6 +1236,8 @@
                 let levels = {};
                  levels.testLevel1 = function(debug=false) {
                     clearWorld(world);
+                    clearText();
+
                     if (debug === false) {
                         player.setPlayer(0,10,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
@@ -1163,9 +1270,11 @@
                     addPCube(-10, 20, 10);
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
+                    console.log('testLevel1');
+
 
                     //C U B E S
-                    for (var i = 0; i < 50; i++) {
+                    for (var i = 0; i < 500; i++) {
                         addPCube(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
@@ -1179,19 +1288,23 @@
                         level.startup = false;
                         level.update = false;
                     }
-                    updateCubes();
+                    if (level.hasCube === true) {
+                        //console.log(cubes);
+                        updateCubes();
+                    }
+                    //updateCubes();
                 }
-
+                scenes.menu.count = 0;
                 scenes.update = function(debug) {
                     if (currentScene === 'menu') {
                         if (scenes.menu.count === 0) {
                             scenes.menu.update();
                             scenes.menu.count ++;
-}
+                    }
                     } else if (currentScene === 'play') {
                         scenes.levelSetup(debug);
                     } else if (currentScene === 'pause') {
-                        //scenes.pause.update();
+                        scenes.pause.update();
                     } else if (currentScene === 'options') {
                         scenes.options.update();
                     }
