@@ -214,10 +214,7 @@
         <canvas id='gl-canvas' width='600' height='600'></canvas>
         <canvas id='ui-canvas' width='600' height='600'></canvas>
 
-        
-
 		<script type="module">
-
             /*basics*/
                 import * as THREE from 'three';
                 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
@@ -230,12 +227,11 @@
 
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = true;
+                const debug = false;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
 
                 let glCanvas=document.getElementById('gl-canvas')
-                //let gl_ctx=glCanvas.getContext('2d')
                 glCanvas.width = window.innerWidth
                 glCanvas.height = window.innerHeight
 
@@ -243,9 +239,6 @@
                 let ui_ctx=uiCanvas.getContext('2d')
                 uiCanvas.width = window.innerWidth
                 uiCanvas.height = window.innerHeight
-
-
-
 
                 function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
                     object.scale.set( scaleX, scaleY, scaleZ );
@@ -279,168 +272,146 @@
                     return context.measureText(text).width; // Return width directly
                 }
 
-                function drawText(
-                    text, 
-                    x, 
-                    y, 
-                    size='12px', 
-                    tcolor='black', 
-                    font='Arial', 
-                    bold='normal',
-                    cool=false,
-                    id=null,
-                    parentdoc=document.body
-                    ) {
-                    let options = {}
-                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
+                const buttons = [];
+                const texts = [];
 
-                    if (uniqueId) {
-                        const existingText = document.getElementById(uniqueId);
-                        if (existingText) existingText.remove();
-                        const existingText2 = document.getElementById(uniqueId + 'inner');
-                        if (existingText2) existingText2.remove();
-                    }
+                function drawText(text, x, y, size = '12px', color = 'black', font = 'Arial', bold = 'normal', cool = false) {
+                    // Store the text properties in the array
+                    texts.push({ text, x, y, size, color, font, bold, cool });
 
-                    const textElement = document.createElement('div');
-                    textElement.textContent = text;
-                    if (uniqueId) textElement.id = uniqueId;
-                    textElement.classList.add('absolute-text');
-     
-                    const textElement2 = document.createElement('div');
-
-                    if (x === 'center') {
-                        x = (parent.clientWidth / 2) - (getTextWidth(text, fontSize, fontFamily, bold) / 2);
-
-                    }
-
-                    if (cool) {
-                        textElement2.textContent = text;
-                        textElement2.classList.add('absolute-text');
-                        if (uniqueId) textElement.id = uniqueId + 'inner';
-
-
-
-                        textElement2.style.position = 'absolute';  
-                        textElement2.style.left = `${x}px`;
-                        textElement2.style.top = `${y}px`;
-                        textElement2.style.fontSize = fontSize;
-                        textElement2.style.color = 'white';
-                        textElement2.style.fontFamily = fontFamily;
-                        textElement2.style.whiteSpace = 'nowrap';
-                        textElement2.style.pointerEvents = 'none';
-
-
-                        bold = 'bold';
-                    }
-                    
-                    
-                    // Apply styles
-                    textElement.style.position = 'absolute';
-                    textElement.style.left = `${x}px`;
-                    textElement.style.top = `${y}px`;
-                    textElement.style.fontSize = fontSize;
-                    textElement.style.color = color;
-                    textElement.style.fontFamily = fontFamily;
-                    textElement.style.whiteSpace = 'nowrap'; // Prevent text from wrapping
-                    textElement.style.pointerEvents = 'none'; // Ensures it doesn't interfere with interactions
-                    textElement.style.fontWeight = bold;
-                    
-                    // Append to the specified parent or default to body
-                    parent.appendChild(textElement);
-                    if (cool) {
-                    parent.appendChild(textElement2);}
-
-                    return textElement;
-                }                
-                
-                function drawButton(
-                    text,
-                    x,
-                    y,
-                    size = "12px",
-                    tcolor = "black",
-                    font = "Arial",
-                    bold = "normal",
-                    cool = false,
-                    id = null,
-                    parentdoc = document.body,
-                    onClick = null 
-                    ) {
-                    let options = {};
-                    const { fontSize = size, color = tcolor, fontFamily = font, parent = parentdoc, uniqueId = id } = options;
-
-                    if (uniqueId) {
-                        const existingText = document.getElementById(uniqueId);
-                        if (existingText) existingText.remove();
-                        const existingText2 = document.getElementById(uniqueId + "inner");
-                        if (existingText2) existingText2.remove();
-                    }
-
-                    const textElement = document.createElement("div");
-                    textElement.textContent = text;
-                    if (uniqueId) textElement.id = uniqueId;
-                    textElement.classList.add("absolute-text");
-
-                    let textElement2 = null;
-
-                    if (x === "center") {
-                        x = (parent.clientWidth / 2) - (getTextWidth(text, fontSize, fontFamily, bold) / 2);
-                    }
-
-                    if (cool) {
-                        textElement2 = document.createElement("div");
-                        textElement2.textContent = text;
-                        textElement2.classList.add("absolute-text");
-                        if (uniqueId) textElement2.id = uniqueId + "inner";
-
-                        textElement2.style.position = "absolute";
-                        textElement2.style.left = `${x}px`;
-                        textElement2.style.top = `${y}px`;
-                        textElement2.style.fontSize = fontSize;
-                        textElement2.style.color = "white";
-                        textElement2.style.fontFamily = fontFamily;
-                        textElement2.style.whiteSpace = "nowrap";
-                        textElement2.style.pointerEvents = "auto"; // Allow event detection
-                        textElement2.style.cursor = "pointer"; // Make it look clickable
-
-                        bold = "bold";
-
-                        // Add hover effect to darken inner text
-                        textElement2.addEventListener("mouseenter", function () {
-                            textElement2.style.color = "gray"; // Darkens on hover
-                        });
-
-                        textElement2.addEventListener("mouseleave", function () {
-                            textElement2.style.color = "white"; // Restores original color
-                        });
-
-                        // Add click event if provided
-                        if (onClick && typeof onClick === "function") {
-                            textElement2.addEventListener("click", function (event) {
-                                onClick(event);
-                            });
-                        }
-                    }
-
-                    // Apply styles to outer text
-                    textElement.style.position = "absolute";
-                    textElement.style.left = `${x}px`;
-                    textElement.style.top = `${y}px`;
-                    textElement.style.fontSize = fontSize;
-                    textElement.style.color = color;
-                    textElement.style.fontFamily = fontFamily;
-                    textElement.style.whiteSpace = "nowrap";
-                    textElement.style.pointerEvents = "none";
-                    textElement.style.fontWeight = bold;
-
-                    // Append to the specified parent or default to body
-                    parent.appendChild(textElement);
-                    if (cool) {
-                        parent.appendChild(textElement2);
-                    }
-
-                    return textElement;
+                    // Draw the text immediately
+                    drawTextInstance({ text, x, y, size, color, font, bold, cool });
                 }
+
+                function drawTextInstance(textObj) {
+                    ui_ctx.font = `${textObj.bold} ${textObj.size} ${textObj.font}`;
+
+                    // If 'x' is 'center', calculate centered position
+                    if (textObj.x === 'center') {
+                        const textWidth = ui_ctx.measureText(textObj.text).width;
+                        textObj.x = (uiCanvas.width - textWidth) / 2;
+                    }
+
+                    ui_ctx.textBaseline = "top";
+
+                    if (textObj.cool) {
+                        // Fill with white, then outline with the chosen color
+                        ui_ctx.fillStyle = 'white';
+                        ui_ctx.fillText(textObj.text, textObj.x, textObj.y);
+                        ui_ctx.lineWidth = 2;
+                        ui_ctx.strokeStyle = textObj.color;
+                        ui_ctx.strokeText(textObj.text, textObj.x, textObj.y);
+                    } else {
+                        // Normal rendering
+                        ui_ctx.fillStyle = textObj.color;
+                        ui_ctx.fillText(textObj.text, textObj.x, textObj.y);
+                    }
+                }
+
+                function drawButton(text, x, y, size = "16px", tcolor = "black", font = "Arial", bold = "normal", cool = false, callback = null, padding = 10) {
+                    ui_ctx.font = `${bold} ${size} ${font}`;
+                    
+                    if (x === 'center') {
+                        const textWidth = ui_ctx.measureText(text).width;
+                        x = (uiCanvas.width - textWidth) / 2;
+                    }
+                    const textWidth = ui_ctx.measureText(text).width;
+                    const textHeight = parseInt(size, 10);
+                    const buttonWidth = textWidth + padding * 2;
+                    const buttonHeight = textHeight + padding * 2;
+
+                    const button = {
+                        x, y,
+                        width: buttonWidth,
+                        height: buttonHeight,
+                        text, size, tcolor, font, bold, cool, callback, padding,
+                        hovered: false
+                    };
+
+                    buttons.push(button);
+
+                    drawButtonInstance(button);
+                }
+
+                function drawButtonInstance(button) {
+                    ui_ctx.font = `${button.bold} ${button.size} ${button.font}`;
+                    ui_ctx.textBaseline = "middle";
+
+                    const textWidth = ui_ctx.measureText(button.text).width;
+                    const textX = button.x + (button.width - textWidth) / 2;
+                    const textY = button.y + button.height / 2;
+                    const fontSize = parseInt(button.size, 10);
+
+                    if (button.cool) {
+                        let gradient = ui_ctx.createLinearGradient(textX, textY - fontSize / 2, textX, textY + fontSize / 2);
+                        if (button.hovered) {
+                        gradient.addColorStop(0, 'gray');
+                        gradient.addColorStop(1, 'gray');
+                        } else {
+                        gradient.addColorStop(0, 'white');
+                        gradient.addColorStop(1, 'white');
+                        }
+                        ui_ctx.fillStyle = gradient;
+                        ui_ctx.fillText(button.text, textX, textY);
+
+                        ui_ctx.lineWidth = 2;
+                        ui_ctx.strokeStyle = button.tcolor;
+                        ui_ctx.strokeText(button.text, textX, textY);
+                    } else {
+                        ui_ctx.fillStyle = button.tcolor;
+                        ui_ctx.fillText(button.text, textX, textY);
+                    }
+                }
+
+                function redrawUI() {
+                    // Clear the entire UI canvas
+                    ui_ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+
+                    // Redraw all stored texts
+                    texts.forEach(textObj => drawTextInstance(textObj));
+
+                    // Redraw all buttons
+                    buttons.forEach(button => drawButtonInstance(button));
+                }
+
+                let ctkl = true;
+                uiCanvas.addEventListener("mousemove", function(event) {
+                    const rect = uiCanvas.getBoundingClientRect();
+                    const mouseX = event.clientX - rect.left;
+                    const mouseY = event.clientY - rect.top;
+                    let needsRedraw = false;
+
+                    buttons.forEach(button => {
+                        const isHovered = mouseX >= button.x && mouseX <= button.x + button.width &&
+                                        mouseY >= button.y && mouseY <= button.y + button.height;
+                        if (isHovered !== button.hovered) {
+                        button.hovered = isHovered;
+                        needsRedraw = true;
+                        }
+                    });
+                    if (needsRedraw || ctkl === true) {
+                        redrawUI();
+                        ctkl = false;
+                    }
+                });
+
+                uiCanvas.addEventListener("click", function(event) {
+                    const rect = uiCanvas.getBoundingClientRect();
+                    const clickX = event.clientX - rect.left;
+                    const clickY = event.clientY - rect.top;
+
+                    buttons.forEach(button => {
+                        if (clickX >= button.x && clickX <= button.x + button.width &&
+                            clickY >= button.y && clickY <= button.y + button.height) {
+                        if (button.callback && typeof button.callback === 'function') {
+                            button.callback();
+                        }
+                        }
+                    });
+                });
+
+
+
 
 
 
@@ -670,7 +641,7 @@
 
                 
                 const grid = new THREE.GridHelper( 50, 50, 0xffffff, 0x7b7b7b );
-                scene.add( grid );
+                //scene.add( grid );
                 
 
                 renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -703,26 +674,19 @@
         
             
             /*Debug*/
-                let showDebug=false
                 function runDebug(dt){
                     
-                    if(!showDebug){return;}
-                    
-                    ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
-                    ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
-                    ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
-                    ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
-                    ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
-                    ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
-                    ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
-                    ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
-                    ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
-                    ui_ctx.fillText('Grounded: '+player.grounded,10,150)
-                    ui_ctx.fillText('Total Time: '+~~((Date.now()-programStart)*0.1),10,165)
-                    //ctx.fillText('Grappling: '+g.active,10,180)
-                    //ctx.fillText('Grapple X: '+g.x.toFixed(2),10,195)
-                    //ctx.fillText('Grapple Y: '+g.y.toFixed(2),10,210)
-                    //ctx.fillText('Grapple Z: '+enemies.length,10,225)
+                                ui_ctx.fillStyle = 'white';
+                                ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+                                ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
+                                ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
+                                ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
+                                ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
+                                ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
+                                ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
+                                ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                                ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
+                                ui_ctx.fillText('Grounded: '+player.grounded,10,150)
                     
                 }
 
@@ -747,8 +711,8 @@
 
                     return line;
                     }
-                let plats = [], cubes = [];
-
+                
+                let plats = [], cubes = [], spheres = [];
                 function addPlatform (pos, rot, size, shape, color) {
                     //console.log('hi');
                     let rttx = rot.x * pi/180
@@ -801,9 +765,56 @@
                     scene.add(mesh);
                     return { mesh, rigid, update, num, colliderDesc };
                  }
+
+                function addPBall(x, y, z) {
+                    const radius = 0.25;
+                    const density = 20;
+
+                    // Physics
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
+
+                    // Mesh
+                    const geometry = new THREE.SphereGeometry(radius, 32, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x0000ff,
+                        flatShading: true
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+
+                    let num = spheres.length;
+
+                    function update() {
+                        if (rigid !== undefined) {
+                            rigid.resetForces(true);
+                            let { x, y, z } = rigid.translation();
+                            let rot = rigid.rotation();
+                            let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
+
+                            if (rigid.linvel().y > -20) {
+                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y - 0.25, rigid.linvel().z));
+                            }
+
+                            mesh.position.set(x, y, z);
+                            mesh.quaternion.set(xr, yr, zr, wr);
+
+                            if (y < -100) {
+                                world.removeRigidBody(rigid);
+                                scene.remove(mesh);
+                                spheres[num] = null;
+                            }
+                        }
+                    }
+
+                    spheres.push({ mesh, rigid, update });
+                    scene.add(mesh);
+                    return { mesh, rigid, update };
+                 }
                 function addPCube(x,y,z) {
 
-                    const range = 6;
+                    const range = 7;
                     const density = 20;
                     // physics
                     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
@@ -853,7 +864,7 @@
                     scene.add(mesh);
                     return { mesh, rigid, update };
                  }
-                 function updateCubes(){
+                 function updatePhysicsObjects(){
                     for (var i = 0; i < cubes.length; i++) {
                         if (cubes[i] !== null && cubes.length !== 0) {
                             cubes[i].update();
@@ -862,6 +873,11 @@
                     for (var i = 0; i < plats.length; i++) {
                         if (plats[i] !== null && plats.length !== 0) {
                             plats[i].update();
+                        }
+                    }
+                    for (var i = 0; i < spheres.length; i++) {
+                        if (spheres[i] !== null && spheres.length !== 0) {
+                            spheres[i].update();
                         }
                     }
                  }
@@ -991,7 +1007,7 @@
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                             
                                 world.createCollider(out.colliderDesc, out.body);
-                                addPointerLock(camera, document.body);
+                                addPointerLock(camera, uiCanvas);
                                 if (debug) {scene.add(out.debugmesh);}
                             }
                             out.prevPos;       
@@ -1175,7 +1191,7 @@
                             
                             controls.mousePressed=true
                             controls.mouseClicked=true
-                            uiCanvas.requestPointerLock()
+                            //uiCanvas.requestPointerLock()
                         }
                         
                         uiCanvas.onmouseup=function(){
@@ -1186,7 +1202,7 @@
                         document.onkeydown=function(e){
                             
                             controls.keys[e.key.toString()]=true
-                            showDebug=controls.keys.f?!showDebug:showDebug
+                            //showDebug=controls.keys.f?!showDebug:showDebug
                             
                         }
                         
@@ -1202,7 +1218,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'test';
+                level.curLevel = 'ballPit';
                 let restart;
                 function clearWorld(world) {
                     rigidBodies.forEach((body, index) => {
@@ -1231,8 +1247,8 @@
                     scene.children = scene.children.filter(child => !(child.isMesh));
                 }
                 function clearText() {
-                    document.querySelectorAll('.absolute-text').forEach(el => el.remove()); // Remove text elements
-                    document.querySelectorAll('.menu-block').forEach(el => el.remove()); // Remove background blocks
+                    texts.length = 0; // Empty the texts array
+                    redrawUI(); // Refresh the canvas without text
                 }
                 let currentScene = 'menu';
                 let scenes = {};
@@ -1253,9 +1269,9 @@
 
                     out.update = function() {
                         out.setBackground();
-                        drawText('Gunnarson 3D', 'center', windowHeight  * 1/18, '200px', 'red', 'Afacad', 'normal', true, '1', document.body);
-                        drawButton('Play', 'center', windowHeight  * 6/18, '100px', 'red', 'Afacad', 'normal', true, '2', document.body, function(){currentScene = 'play'});
-                        drawButton('Options', 'center', windowHeight  * 10/18, '100px', 'red', 'Afacad', 'normal', true, '3', document.body, function(){currentScene = 'options'});
+                        drawText('Gunnarson 3D', 'center', windowHeight  * 2/18, '125px', 'red', 'Afacad', 'normal', true);
+                        drawButton('Play', 'center', windowHeight  * 8/18, '100px', 'red', 'Afacad', 'normal', true, function(){currentScene = 'play'});
+                        drawButton('Options', 'center', windowHeight  * 12/18, '100px', 'red', 'Afacad', 'normal', true, function(){currentScene = 'options'});
                     }
                     
                     return out
@@ -1273,6 +1289,37 @@
                 
 
                 let levels = {};
+                levels.testBallPit = function(debug=false) {
+                    clearWorld(world);
+                    clearText();
+
+                    if (debug === false) {
+                        player.setPlayer(0,1,0,fpscamera,world);
+                        player.restart = world.takeSnapshot();
+                    } else {
+                        addOrbit(fpscamera, document.body);    
+                        player.setPlayer(0,1,0,bupcamera,world);
+                    }
+
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+                    
+                    addSkybox(85);
+                    addPlatform({x: 0, y:0, z:0},{x:0, y:0, z:0}, {x:16,y:1,z:16},"SQRE","GRAY");
+                    addPlatform({x: 8, y:0, z: 0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
+                    addPlatform({x:0, y:0, z: 8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
+                    addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
+                    addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
+
+                    for (var i = 0; i < 2000; i++) {
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7));
+                    }
+                    
+
+                }
                 levels.testLevel1 = function(debug=false) {
                     clearWorld(world);
                     clearText();
@@ -1281,7 +1328,7 @@
                         player.setPlayer(0,10,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
-                        addOrbit(fpscamera, renderer.domElement);    
+                        addOrbit(fpscamera, document.body);    
                         player.setPlayer(0,10,0,bupcamera,world);
                     }
 
@@ -1309,26 +1356,38 @@
                     addPCube(-10, 20, 10);
                     addPCube(-10, 20,-10);
                     addPCube( 10, 20,-10);
-                    console.log('testLevel1');
+
+                    addPBall( 0, 20,   0);
+                    addPBall( 10, 20, 10);
+                    addPBall( 10, 20,-10);
+                    addPBall(-10, 20,-10);
+                    addPBall(-10, 20, 10);
+
+                    //console.log('testLevel1');
 
 
                     //C U B E S
                     for (var i = 0; i < 500; i++) {
                         addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                    } 
+                    for (var i = 0; i < 500; i++) {
+                        addPBall(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
 
 
-                 scenes.levelSetup = function(debug) {
+                scenes.levelSetup = function(debug) {
                     if (level.startup === true || level.update === true) {
                         switch (level.curLevel) {
                             case 'test': levels.testLevel1(debug);
+                            break;
+                            case 'ballPit': levels.testBallPit(debug);
                         } 
                         level.startup = false;
                         level.update = false;
                     }
                     if (level.hasCube === true) {
-                        updateCubes();
+                        updatePhysicsObjects();
                     }
                 }
                 scenes.menu.count = 0;
@@ -1346,12 +1405,16 @@
                             scenes.menu.update();
                             scenes.menu.count ++;
                     }
+                    document.getElementById("ui-canvas").style.zIndex = "2";
                     } else if (currentScene === 'play') {
                         scenes.levelSetup(debug);
+                        document.getElementById("ui-canvas").style.zIndex = "-1";
                     } else if (currentScene === 'pause') {
                         scenes.pause.update();
+                        document.getElementById("ui-canvas").style.zIndex = "2";
                     } else if (currentScene === 'options') {
                         scenes.options.update();
+                        document.getElementById("ui-canvas").style.zIndex = "2";
                     }
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
@@ -1362,9 +1425,11 @@
                     if (debug === false && player.playerIsExistent === true) {                    
                         renderer.render( scene, player.camera );
                     } else {
-                        console.log('debug');
+                        //console.log('debug');
                         renderer.render( scene, fpscamera );
                     }
+                    if (debug&&currentScene==='play') {runDebug(dt);}
+
                  }
 
             /*nessecities*/
@@ -1381,19 +1446,14 @@
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
                     //render(debug);
+                    scenes.menu.count = 0;
 
                  }
      
                 function animationLoop() {
-
                     UPDATE(debug);
-                    //render(debug);
                     stats.update();
-                
-                    world.step( )//player.collideEvent );
-
-
-
+                    world.step();
                  }
 		</script>
 	</body>
