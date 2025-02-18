@@ -449,7 +449,7 @@
                 let boardCanvas=document.getElementById('board-canvas');
                 let board_ctx=boardCanvas.getContext('2d');
 
-                const gravity = { x: 0.0, y: 0, z: 0.0 };
+                const gravity = { x: 0.0, y: -9.81, z: 0.0 };
                 let world = new RAPIER.World(gravity);
 
                 let rigidBodies = [];
@@ -692,9 +692,10 @@
 
             /*Main Functions*/
 
-                let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [], lines = [];
+                let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
-                
+
+                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [];
                 function drawDebugLine(scene, points, color = 0xffffff, num = lines.length) {
                     const geometry = new THREE.BufferGeometry();
                     geometry.setFromPoints( points );
@@ -712,7 +713,6 @@
                     return line;
                     }
                 
-                let plats = [], cubes = [], spheres = [];
                 function addPlatform (pos, rot, size, shape, color) {
                     //console.log('hi');
                     let rttx = rot.x * pi/180
@@ -775,6 +775,7 @@
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
                     world.createCollider(colliderDesc, rigid);
+                    rigid.wakeUp();
 
                     // Mesh
                     const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -786,16 +787,13 @@
 
                     let num = spheres.length;
 
+
                     function update() {
                         if (rigid !== undefined) {
                             rigid.resetForces(true);
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
                             let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
-
-                            if (rigid.linvel().y > -20) {
-                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y - 0.25, rigid.linvel().z));
-                            }
 
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(xr, yr, zr, wr);
@@ -808,9 +806,9 @@
                         }
                     }
 
-                    spheres.push({ mesh, rigid, update });
+                    spheres.push({ mesh, rigid, colliderDesc,update });
                     scene.add(mesh);
-                    return { mesh, rigid, update };
+                    return { mesh, rigid, colliderDesc,update };
                  }
                 function addPCube(x,y,z) {
 
@@ -822,6 +820,7 @@
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
                     world.createCollider(colliderDesc, rigid);
+                    rigid.wakeUp();
                 
                     //Mesh
                     
@@ -844,11 +843,6 @@
                             let rot = rigid.rotation();
                             let xr = rot.x, yr = rot.y, zr = rot.z, wr = rot.w;
                             let pos = new THREE.Vector3(x, y, z);
-
-                            if (rigid.linvel().y > -20) { 
-                                rigid.setLinvel(new RAPIER.Vector3(rigid.linvel().x, rigid.linvel().y-0.25, rigid.linvel().z));
-                            }
-
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(xr, yr, zr, wr);
 
@@ -860,11 +854,73 @@
 
                         }
                     }
-                    cubes.push({ mesh, rigid, update });
+                    cubes.push({ mesh, rigid, colliderDesc, update });
                     scene.add(mesh);
-                    return { mesh, rigid, update };
+                    return { mesh, rigid, colliderDesc, update };
                  }
-                 function updatePhysicsObjects(){
+                function sendBullet(camera) {
+                    const radius = 0.2;
+                    const halfHeight = 0.5;
+                    const density = 10;
+                    const speed = 10;
+
+                    // Get camera position and forward direction
+                    const cameraPosition = camera.position;
+                    const direction = new THREE.Vector3();
+                    camera.getWorldDirection(direction);
+                    
+                    // Set initial spawn position slightly in front of the camera
+                    const spawnOffset = 1.5;
+                    const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(spawnOffset));
+
+                    // Create physics body
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
+
+                    // Apply initial velocity in camera direction
+                    const initialVelocity = direction.clone().multiplyScalar(speed);
+                    rigid.setLinvel(new RAPIER.Vector3(initialVelocity.x, initialVelocity.y, initialVelocity.z));
+
+                    // Create Three.js mesh
+                    const geometry = new THREE.CapsuleGeometry(radius, halfHeight * 2, 16, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x00ff00,
+                        flatShading: true
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.copy(spawnPosition);
+                    scene.add(mesh);
+
+                    function update() {
+                        if (rigid !== undefined) {
+                            let { x, y, z } = rigid.translation();
+                            let rot = rigid.rotation();
+                            mesh.position.set(x, y, z);
+                            mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+                        }
+                    }
+
+                    function destroy() {
+                        world.removeRigidBody(rigid);
+                        scene.remove(mesh);
+                        projectiles = projectiles.filter(p => p !== projectile); // Remove from array
+                    }
+
+                    // Collision check
+                    function checkCollision() {
+                        let contacts = world.contactsWith(rigid.handle);
+                        if (contacts.length > 0) {
+                            destroy();
+                        }
+                    }
+
+                    let projectile = { mesh, rigid, update, checkCollision, destroy };
+                    projectiles.push(projectile);
+                 }
+
+                function updatePhysicsObjects(){
                     for (var i = 0; i < cubes.length; i++) {
                         if (cubes[i] !== null && cubes.length !== 0) {
                             cubes[i].update();
@@ -881,6 +937,7 @@
                         }
                     }
                  }
+                
                 function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
@@ -1042,28 +1099,28 @@
                                     let s=(out.walkSpeed/(out.grounded?out.fric:out.airFric))*dt
                                     
                                     let moved = false;
-                                    if(user.keys.r){
+                                    if(user.keysHeld.r){
                                         out.dead = true;
                                     }
-                                    if(user.keys.d){
+                                    if(user.keysHeld.d){
                                         moved = true;
                                         out.vx+=cdir*s
                                         out.vz-=sdir*s
                                     }
                                     
-                                    if(user.keys.w){
+                                    if(user.keysHeld.w){
                                         moved = true;
                                         out.vx-=sdir*s
                                         out.vz-=cdir*s
                                     }
                                     
-                                    if(user.keys.a){
+                                    if(user.keysHeld.a){
                                         moved = true;
                                         out.vx-=cdir*s
                                         out.vz+=sdir*s
                                     }
                                     
-                                    if(user.keys.s){
+                                    if(user.keysHeld.s){
                                         moved = true;
                                         out.vx+=sdir*s
                                         out.vz+=cdir*s
@@ -1113,7 +1170,7 @@
                                         out.vz*=out.fric
                                         out.vy = 0
                                         
-                                        if(user.keys[' ']){
+                                        if(user.keysHeld[' ']){
                                             
                                             out.vy = out.jumpPower * 25
                                             out.grounded=false
@@ -1172,12 +1229,13 @@
                             return out
                         })({})
                         
-
+                /*user*/
                     const user=(function(controls){
                         
                         controls.mouseX=controls.mouseY=0
                         controls.mousePressed=controls.mouseClicked=false
-                        controls.keys={}
+                        controls.keysHeld={}
+                        controls.keysPressed={}
 
                         uiCanvas.onmousemove=function(e){
                             
@@ -1200,17 +1258,27 @@
                         }
                         
                         document.onkeydown=function(e){
-                            
-                            controls.keys[e.key.toString()]=true
-                            //showDebug=controls.keys.f?!showDebug:showDebug
-                            
+                            controls.keysHeld[e.key.toString()]=true
                         }
                         
                         document.onkeyup=function(e){
-                            
-                            controls.keys[e.key.toString()]=false
+                            controls.keysHeld[e.key.toString()]=false
                         }
-                        
+
+                        document.addEventListener("keydown", (e) => {
+                            controls.keysPressed[e.key.toString()] = true;
+                        });
+
+                        document.addEventListener("keyup", (e) => {
+                            controls.keysPressed[e.key.toString()] = false;
+                        });
+
+                        controls.update = function() {
+                            Object.keys(keyJustPressed).forEach((key) => {
+                                delete keyJustPressed[key]; 
+                            });
+                        }
+                                                
                         return controls
                         
                     })({})
@@ -1218,7 +1286,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'ballPit';
+                level.curLevel = 'test';
                 let restart;
                 function clearWorld(world) {
                     rigidBodies.forEach((body, index) => {
@@ -1238,7 +1306,33 @@
                         }
                     });
 
+                    cubes.forEach(cube => {
+                        if (cube.colliderDesc) {
+                            world.removeCollider(cube.colliderDesc); // Remove physics collider
+                        }
+                        if (cube.rigid) {
+                            world.removeRigidBody(cube.rigid); // Remove physics body
+                        }
+                        if (cube.mesh) {
+                            scene.remove(cube.mesh); // Remove mesh from scene
+                        }
+                    });
+
+                    spheres.forEach(sphere => {
+                        if (sphere.colliderDesc) {
+                            world.removeCollider(sphere.colliderDesc); // Remove physics collider
+                        }
+                        if (sphere.rigid) {
+                            world.removeRigidBody(sphere.rigid); // Remove physics body
+                        }
+                        if (sphere.mesh) {
+                            scene.remove(sphere.mesh); // Remove mesh from scene
+                        }
+                    });
+
                     plats = []; // Clear the array
+                    cubes = []; // Clear the array
+                    spheres = []; // Clear the array
                     
 
                     rigidBodies = []; // Clear the array
@@ -1388,6 +1482,14 @@
                     }
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
+                    }
+                    if (user.keysPressed.q){
+                        level.update = true;
+                        if (level.curLevel === 'test') {
+                            level.curLevel = 'ballPit';
+                        } else {
+                            level.curLevel = 'test';
+                        }
                     }
                 }
                 scenes.menu.count = 0;
