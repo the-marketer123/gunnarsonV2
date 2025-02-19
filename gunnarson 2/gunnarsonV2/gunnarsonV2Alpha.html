@@ -899,6 +899,7 @@
                             let rot = rigid.rotation();
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+			    checkCollision();
                         }
                     }
 
@@ -936,6 +937,11 @@
                             spheres[i].update();
                         }
                     }
+		    for (var i = 0; i < projectiles.length; i++) {
+			if (projectiles[i]!==null && spheres.length!==0) {
+				spheres[i].update();
+			}
+		    }
                  }
                 
                 function addSkybox(angle) {
@@ -1091,6 +1097,9 @@
                                 ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
                                 ui_ctx.fillText('Grounded: '+player.grounded,10,150)
                             }
+			    out.shoot = function(){
+				    sendBullet(out.camera);
+			    }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
                                 
@@ -1189,7 +1198,9 @@
                                     if (out.vz < 0.001 && out.vz > -0.001){
                                         out.vz = 0;
                                     }
-                                    
+                                    if (user.mousePressed) {
+					    out.shoot();
+				    }
                         
 
                                     if (out.body.translation().y < -10) {
@@ -1274,9 +1285,7 @@
                         });
 
                         controls.update = function() {
-                            Object.keys(keyJustPressed).forEach((key) => {
-                                delete keyJustPressed[key]; 
-                            });
+                            controls.keysPressed={}
                         }
                                                 
                         return controls
