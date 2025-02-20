@@ -809,8 +809,8 @@
                     return { mesh, rigid, update, num, colliderDesc };
                  }
 
-                function addPBall(x, y, z) {
-                    const radius = 0.25;
+                function addPBall(x, y, z,radius=0.25) {
+                    const radius = radius;
                     const density = 20;
 
                     // Physics
@@ -1471,7 +1471,7 @@
                     addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
 
                     for (var i = 0; i < 2000; i++) {
-                        addPBall(random(-7, 7), random(5, 10), random(-7, 7));
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.01);
                     }
                     
 
