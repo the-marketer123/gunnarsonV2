@@ -230,6 +230,8 @@
                 const debug = false;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
+                const eventQueue = new RAPIER.EventQueue(true);
+
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.width = window.innerWidth
@@ -902,7 +904,7 @@
                  }
                 function sendBullet(camera) {
                     const radius = 0.2;
-                    const halfHeight = 0.5;
+                    const halfHeight = 0.01;
                     const density = 10;
                     const speed = 10;
 
@@ -912,14 +914,14 @@
                     camera.getWorldDirection(direction);
                     
                     // Set initial spawn position slightly in front of the camera
-                    const spawnOffset = 2.5;
+                    const spawnOffset = 1.5;
                     const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(spawnOffset));
 
                     // Create physics body
                     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
                     let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density);
-                    world.createCollider(colliderDesc, rigid);
+                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
+                    let collider = world.createCollider(colliderDesc, rigid);
 
                     // Apply initial velocity in camera direction
                     const initialVelocity = direction.clone().multiplyScalar(speed);
@@ -935,10 +937,17 @@
                     mesh.position.copy(spawnPosition);
                     scene.add(mesh);
 
+                    let num = projectiles.length;
+
                     function update() {
-                        if (rigid !== undefined) {
+                        if (mesh.parent !== undefined) {
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
+
+                            let quaternion = new THREE.Quaternion();
+                            quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                        
+                            rigid.setRotation(quaternion);
 
                             //console.log(initialVelocity);
                             rigid.setLinvel(initialVelocity);
@@ -951,40 +960,23 @@
                     function destroy() {
                         world.removeRigidBody(rigid);
                         scene.remove(mesh);
-                        projectiles = projectiles.filter(p => p !== projectile); // Remove from array
+                        projectiles[num] = undefined; // Remove from array
                     }
 
                     // Collision check
                     function checkCollision() {
+                        if (!rigid || !mesh || !mesh.parent) return;
 
-                        world.forEachCollider((otherCollider) => {
-                            if (rigid && mesh && mesh.parent) {
-                                if (otherCollider !== colliderDesc && otherCollider !== player.colliderDesc) {
-                                    let otherPos = otherCollider.translation();
-                                    let capsulePos = rigid.translation();
-
-                                    // Calculate distance
-                                    let distance = Math.sqrt(
-                                        Math.pow(otherPos.x - capsulePos.x, 2) +
-                                        Math.pow(otherPos.y - capsulePos.y, 2) +
-                                        Math.pow(otherPos.z - capsulePos.z, 2)
-                                    );
-
-                                    if (distance < radius + halfHeight) { // Collision threshold
-                                        
-                                        destroy();
-                                        return;
-                                    }
-                                }
-                            }
-                            
+                        world.intersectionsWith(collider, (otherCollider) => {
+                            if (otherCollider == player.colliderDesc) {return;}
+                            destroy(); 
+                            return;
                         });
                     }
 
                     let projectile = { mesh, rigid, update, checkCollision, destroy };
                     projectiles.push(projectile);
-                 }
-
+                 }                
                 function updatePhysicsObjects(){
                     for (var i = 0; i < cubes.length; i++) {
                         if (cubes[i] !== undefined && cubes.length !== 0) {
@@ -1150,7 +1142,7 @@
                                 ui_ctx.fillText('Grounded: '+player.grounded,10,150)
                             }
                             out.shoot = function() {
-                                sendBullet(out.camera);
+                                guns.pistol.shoot();
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
@@ -1251,8 +1243,8 @@
                                         out.vz = 0;
                                     }
                                     if (user.mousePressed) {
-					    out.shoot();
-				    }
+                                        out.shoot();
+                                    }
                         
 
                                     if (out.body.translation().y < -10) {
@@ -1344,6 +1336,95 @@
                         
                     })({})
 
+
+            /*Guns*/
+                    let guns = {
+                        pistol: {}
+
+                    };
+                    guns.pistol.shoot = function() {
+                        const camera = fpscamera; // Assuming fpscamera is your main camera
+                        sendBullet(camera); // Reusing the existing bullet function
+                    }/*(function(out){
+
+                    
+                    out.radius = 0.2;
+                    out.halfHeight = 0.1;
+                    out.density = 10;
+                    out.speed = 50;
+
+                    // Get camera position and forward direction
+                    out.cameraPosition = fpscamera.position;
+                    out.direction = new THREE.Vector3();
+                    fpscamera.getWorldDirection(out.direction);
+                    
+                    // Set initial spawn position slightly in front of the camera
+                    out.spawnOffset = 2.5;
+                    out.spawnPosition = out.cameraPosition.clone().add(out.direction.clone().multiplyScalar(out.spawnOffset));
+
+                    // Create physics body
+                    out.rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(out.spawnPosition.x, out.spawnPosition.y, out.spawnPosition.z);
+                    out.rigid = world.createRigidBody(out.rigidBodyDesc);
+                    out.colliderDesc = RAPIER.ColliderDesc.capsule(out.halfHeight, out.radius).setDensity(out.density).setSensor(true);
+                    out.collider = world.createCollider(out.colliderDesc, out.rigid);
+
+                    // Apply initial velocity in camera direction
+                    out.initialVelocity = out.direction.clone().multiplyScalar(out.speed);
+                    out.rigid.setLinvel(out.initialVelocity);
+
+                    // Create Three.js mesh
+                    out.geometry = new THREE.CapsuleGeometry(out.radius, out.halfHeight * 2, 16, 32);
+                    out.material = new THREE.MeshStandardMaterial({
+                        color: 0x00ff00,
+                        flatShading: true
+                    });
+                    out.mesh = new THREE.Mesh(out.geometry, out.material);
+                    out.mesh.position.copy(out.spawnPosition);
+                    scene.add(out.mesh);
+
+                    out.update = function() {
+                        if (out.rigid !== undefined) {
+                            let { x, y, z } = out.rigid.translation();
+                            let rot = out.rigid.rotation();
+
+                            let quaternion = new THREE.Quaternion();
+                            quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                            out.rigid.setRotation(quaternion);
+
+                            out.rigid.setLinvel(out.initialVelocity);
+                            out.mesh.position.set(x, y, z);
+                            out.mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+			                out.checkCollision();
+
+                            if (x > 200 || x < -200 || z < -200 ||z > 200){
+                                out.destroy();
+                            }
+                        }
+                    }
+
+                    out.destroy = function() {
+                        world.removeRigidBody(out.rigid);
+                        scene.remove(out.mesh);
+                        projectiles = projectiles.filter(p => p !== out.projectile); // Remove from array
+                    }
+
+                    // Collision check
+                    out.checkCollision = function() {
+                        if (!out.rigid || !out.mesh || !out.mesh.parent) return;
+
+                        world.intersectionsWith(out.collider, (otherCollider) => {
+                            out.destroy();
+                        });
+                    }
+
+                    out.projectile = { mesh: out.mesh, rigid: out.rigid, update: out.update, checkCollision: out.checkCollision, destroy: out.destroy };
+                    projectiles.push(out.projectile);
+
+                    return out;
+                 })({})*/
+
+
+ 
 
             /*Levels*/
 
@@ -1617,7 +1698,7 @@
                 function animationLoop() {
                     UPDATE(debug);
                     stats.update();
-                    world.step();
+                    world.step(eventQueue);
                  }
 		</script>
 	</body>
