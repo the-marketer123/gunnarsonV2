@@ -230,7 +230,6 @@
                 const debug = false;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
-                const eventQueue = new RAPIER.EventQueue(true);
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.width = window.innerWidth
@@ -810,8 +809,7 @@
                     return { mesh, rigid, update, num, colliderDesc };
                  }
 
-                function addPBall(x, y, z) {
-                    const radius = 0.25;
+                function addPBall(x, y, z,radius=0.25) {
                     const density = 20;
 
                     // Physics
@@ -904,7 +902,7 @@
                  }
                 function sendBullet(camera) {
                     const radius = 0.2;
-                    const halfHeight = 0.1;
+                    const halfHeight = 0.5;
                     const density = 10;
                     const speed = 10;
 
@@ -920,8 +918,8 @@
                     // Create physics body
                     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
                     let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);;
-                    let collider = world.createCollider(colliderDesc, rigid);
+                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
 
                     // Apply initial velocity in camera direction
                     const initialVelocity = direction.clone().multiplyScalar(speed);
@@ -936,69 +934,52 @@
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.copy(spawnPosition);
                     scene.add(mesh);
-                    let num = projectiles.length;
 
                     function update() {
-                        if (projectiles[num] !== undefined) {
-
-                            let quaternion = new THREE.Quaternion();
-                            quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
-                            rigid.setRotation(quaternion);
+                        if (rigid !== undefined) {
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
 
+                            //console.log(initialVelocity);
                             rigid.setLinvel(initialVelocity);
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
 			                checkCollision();
-
-                            if (x > 200 || z > 200 || x < -200 || z < -200) {
-                                destroy();
-                            } 
                         }
                     }
 
                     function destroy() {
                         world.removeRigidBody(rigid);
                         scene.remove(mesh);
-                        projectiles[num] = undefined;
+                        projectiles = projectiles.filter(p => p !== projectile); // Remove from array
                     }
 
-                    // Collision check'
-                    function checkCollision() {
-                        if (!rigid || !mesh || !mesh.parent) return;
-                        eventQueue.drainCollisionEvents((handle1, handle2, started) => {
-                            if (!started) return; // Ignore collision end events
-
-                            // Check if this bullet is one of the colliding objects
-                            if (handle1 === collider.handle || handle2 === collider.handle) {
-                                destroy();
-                            }
-                        });
-                    }
-                    /*
+                    // Collision check
                     function checkCollision() {
 
                         world.forEachCollider((otherCollider) => {
-                            if (!rigid || !mesh || !mesh.parent || !projectiles[num]) return;
+                            if (rigid && mesh && mesh.parent) {
+                                if (otherCollider !== colliderDesc && otherCollider !== player.colliderDesc) {
+                                    let otherPos = otherCollider.translation();
+                                    let capsulePos = rigid.translation();
 
-                            if (otherCollider === collider) return; 
+                                    // Calculate distance
+                                    let distance = Math.sqrt(
+                                        Math.pow(otherPos.x - capsulePos.x, 2) +
+                                        Math.pow(otherPos.y - capsulePos.y, 2) +
+                                        Math.pow(otherPos.z - capsulePos.z, 2)
+                                    );
 
-                            let otherPos = otherCollider.translation();
-                            let capsulePos = rigid.translation();
-
-                            let distance = Math.sqrt(
-                                Math.pow(otherPos.x - capsulePos.x, 2) +
-                                Math.pow(otherPos.y - capsulePos.y, 2) +
-                                Math.pow(otherPos.z - capsulePos.z, 2)
-                            );
-
-                            if (distance < radius + halfHeight) { 
-                                destroy();
-                                return;
+                                    if (distance < radius + halfHeight) { // Collision threshold
+                                        
+                                        destroy();
+                                        return;
+                                    }
+                                }
                             }
+                            
                         });
-                    }*/
+                    }
 
                     let projectile = { mesh, rigid, update, checkCollision, destroy };
                     projectiles.push(projectile);
@@ -1270,8 +1251,8 @@
                                         out.vz = 0;
                                     }
                                     if (user.mousePressed) {
-                                        out.shoot();
-                                    }
+					    out.shoot();
+				    }
                         
 
                                     if (out.body.translation().y < -10) {
@@ -1488,8 +1469,8 @@
                     addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
                     addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
 
-                    for (var i = 0; i < 2000; i++) {
-                        addPBall(random(-7, 7), random(5, 10), random(-7, 7));
+                    for (var i = 0; i < 10000; i++) {
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.15);
                     }
                     
 
@@ -1560,8 +1541,9 @@
                         level.startup = false;
                         level.update = false;
                     }
-                    updatePhysicsObjects();
-                    
+                    if (level.hasCube === true) {
+                        updatePhysicsObjects();
+                    }
                     if (user.keysPressed.q){
                         level.update = true;
                         if (level.curLevel === 'test') {
@@ -1635,7 +1617,7 @@
                 function animationLoop() {
                     UPDATE(debug);
                     stats.update();
-                    world.step(eventQueue);
+                    world.step();
                  }
 		</script>
 	</body>
