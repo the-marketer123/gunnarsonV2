@@ -230,6 +230,7 @@
                 const debug = false;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
+                const eventQueue = new RAPIER.EventQueue(true);
 
                 let glCanvas=document.getElementById('gl-canvas')
                 glCanvas.width = window.innerWidth
@@ -903,7 +904,7 @@
                  }
                 function sendBullet(camera) {
                     const radius = 0.2;
-                    const halfHeight = 0.5;
+                    const halfHeight = 0.1;
                     const density = 10;
                     const speed = 10;
 
@@ -919,8 +920,8 @@
                     // Create physics body
                     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
                     let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density);
-                    world.createCollider(colliderDesc, rigid);
+                    let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);;
+                    let collider = world.createCollider(colliderDesc, rigid);
 
                     // Apply initial velocity in camera direction
                     const initialVelocity = direction.clone().multiplyScalar(speed);
@@ -935,52 +936,69 @@
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.copy(spawnPosition);
                     scene.add(mesh);
+                    let num = projectiles.length;
 
                     function update() {
-                        if (rigid !== undefined) {
+                        if (projectiles[num] !== undefined) {
+
+                            let quaternion = new THREE.Quaternion();
+                            quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                            rigid.setRotation(quaternion);
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
 
-                            console.log(initialVelocity);
                             rigid.setLinvel(initialVelocity);
                             mesh.position.set(x, y, z);
                             mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
 			                checkCollision();
+
+                            if (x > 200 || z > 200 || x < -200 || z < -200) {
+                                destroy();
+                            } 
                         }
                     }
 
                     function destroy() {
                         world.removeRigidBody(rigid);
                         scene.remove(mesh);
-                        projectiles = projectiles.filter(p => p !== projectile); // Remove from array
+                        projectiles[num] = undefined;
                     }
 
-                    // Collision check
+                    // Collision check'
+                    function checkCollision() {
+                        if (!rigid || !mesh || !mesh.parent) return;
+                        eventQueue.drainCollisionEvents((handle1, handle2, started) => {
+                            if (!started) return; // Ignore collision end events
+
+                            // Check if this bullet is one of the colliding objects
+                            if (handle1 === collider.handle || handle2 === collider.handle) {
+                                destroy();
+                            }
+                        });
+                    }
+                    /*
                     function checkCollision() {
 
                         world.forEachCollider((otherCollider) => {
-                            if (rigid && mesh && mesh.parent) {
-                                if (otherCollider !== colliderDesc && otherCollider !== player.colliderDesc) {
-                                    let otherPos = otherCollider.translation();
-                                    let capsulePos = rigid.translation();
+                            if (!rigid || !mesh || !mesh.parent || !projectiles[num]) return;
 
-                                    // Calculate distance
-                                    let distance = Math.sqrt(
-                                        Math.pow(otherPos.x - capsulePos.x, 2) +
-                                        Math.pow(otherPos.y - capsulePos.y, 2) +
-                                        Math.pow(otherPos.z - capsulePos.z, 2)
-                                    );
+                            if (otherCollider === collider) return; 
 
-                                    if (distance < radius + halfHeight) { // Collision threshold
-                                        
-                                        destroy();
-                                        return;
-                                    }
-                                }
+                            let otherPos = otherCollider.translation();
+                            let capsulePos = rigid.translation();
+
+                            let distance = Math.sqrt(
+                                Math.pow(otherPos.x - capsulePos.x, 2) +
+                                Math.pow(otherPos.y - capsulePos.y, 2) +
+                                Math.pow(otherPos.z - capsulePos.z, 2)
+                            );
+
+                            if (distance < radius + halfHeight) { 
+                                destroy();
+                                return;
                             }
-                            
                         });
-                    }
+                    }*/
 
                     let projectile = { mesh, rigid, update, checkCollision, destroy };
                     projectiles.push(projectile);
@@ -1252,8 +1270,8 @@
                                         out.vz = 0;
                                     }
                                     if (user.mousePressed) {
-					    out.shoot();
-				    }
+                                        out.shoot();
+                                    }
                         
 
                                     if (out.body.translation().y < -10) {
@@ -1542,9 +1560,8 @@
                         level.startup = false;
                         level.update = false;
                     }
-                    if (level.hasCube === true) {
-                        updatePhysicsObjects();
-                    }
+                    updatePhysicsObjects();
+                    
                     if (user.keysPressed.q){
                         level.update = true;
                         if (level.curLevel === 'test') {
@@ -1618,7 +1635,7 @@
                 function animationLoop() {
                     UPDATE(debug);
                     stats.update();
-                    world.step();
+                    world.step(eventQueue);
                  }
 		</script>
 	</body>
