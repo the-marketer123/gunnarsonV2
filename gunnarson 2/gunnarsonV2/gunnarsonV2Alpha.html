@@ -242,6 +242,29 @@
                 uiCanvas.width = window.innerWidth
                 uiCanvas.height = window.innerHeight
 
+                let cooldowns = [];
+                let cooldown = (function(out){
+                    out.createCooldown= function(id, length) {
+                    cooldowns[id].num = 0;
+                    cooldowns[id].time = length;
+
+                    }
+                    out.updateCooldowns = function() {
+                        for (var i = 0; i < cooldowns.length; i++){
+                            cooldowns[i].num ++;
+                            if (cooldowns[i].num === cooldowns[i].time){
+                                cooldowns[i].num = 0;
+                            }
+
+                        }
+                    }
+                    out.checkCooldown = function(id) {
+                        return cooldowns[id].true
+                    }
+
+                })({})
+                
+
                 function resize( object, scaleX, scaleY, scaleZ, updateUV ) {
                     object.scale.set( scaleX, scaleY, scaleZ );
                 
@@ -262,7 +285,7 @@
                         }
                         uv.needsUpdate = true;
                     }
-                }           
+                 }           
 
                 function getTextWidth(text, fontSize = "12px", fontFamily = "Arial", fontWeight = "normal") {
                     const canvas = document.createElement("canvas");
@@ -272,7 +295,7 @@
                     context.font = `${fontWeight} ${fontSize} ${fontFamily}`;
 
                     return context.measureText(text).width; // Return width directly
-                }
+                 }
 
                 const buttons = [];
                 const texts = [];
@@ -283,7 +306,7 @@
 
                     // Draw the text immediately
                     drawTextInstance({ text, x, y, size, color, font, bold, cool });
-                }
+                 }
 
                 function drawTextInstance(textObj) {
                     ui_ctx.font = `${textObj.bold} ${textObj.size} ${textObj.font}`;
@@ -308,7 +331,7 @@
                         ui_ctx.fillStyle = textObj.color;
                         ui_ctx.fillText(textObj.text, textObj.x, textObj.y);
                     }
-                }
+                 }
 
                 function drawButton(text, x, y, size = "16px", tcolor = "black", font = "Arial", bold = "normal", cool = false, callback = null, padding = 10) {
                     ui_ctx.font = `${bold} ${size} ${font}`;
@@ -333,7 +356,7 @@
                     buttons.push(button);
 
                     drawButtonInstance(button);
-                }
+                 }
 
                 function drawButtonInstance(button) {
                     ui_ctx.font = `${button.bold} ${button.size} ${button.font}`;
@@ -363,7 +386,7 @@
                         ui_ctx.fillStyle = button.tcolor;
                         ui_ctx.fillText(button.text, textX, textY);
                     }
-                }
+                 }
 
                 function redrawUI() {
                     // Clear the entire UI canvas
@@ -374,8 +397,9 @@
 
                     // Redraw all buttons
                     buttons.forEach(button => drawButtonInstance(button));
-                }
+                 }
 
+                
                 let ctkl = true;
                 uiCanvas.addEventListener("mousemove", function(event) {
                     const rect = uiCanvas.getBoundingClientRect();
@@ -395,7 +419,7 @@
                         redrawUI();
                         ctkl = false;
                     }
-                });
+                 });
 
                 uiCanvas.addEventListener("click", function(event) {
                     const rect = uiCanvas.getBoundingClientRect();
@@ -410,7 +434,7 @@
                         }
                         }
                     });
-                });
+                 });
 
 
 
@@ -741,6 +765,37 @@
                 })({})
                 console.log(crosshair);
 
+                function explosion(position, force, radius) {
+                    // Loop through all rigid bodies to find nearby ones
+                    rigidBodies.forEach(rb => {
+                        const rbPosition = rb.translation();
+                        const distance = Math.sqrt(
+                            Math.pow(rbPosition.x - position.x, 2) +
+                            Math.pow(rbPosition.y - position.y, 2) +
+                            Math.pow(rbPosition.z - position.z, 2)
+                        );
+                        
+                        if (distance < radius) {
+                            // Calculate force direction
+                            const direction = {
+                                x: (rbPosition.x - position.x) / distance,
+                                y: (rbPosition.y - position.y) / distance,
+                                z: (rbPosition.z - position.z) / distance
+                            };
+                            
+                            // Scale the impulse based on distance
+                            const impulseStrength = force * (1 - distance / radius);
+                            const impulse = new RAPIER.Vector3(
+                                direction.x * impulseStrength,
+                                direction.y * impulseStrength,
+                                direction.z * impulseStrength
+                            );
+                            
+                            // Apply impulse to the rigid body
+                            rb.applyImpulse(impulse, true);
+                        }
+                    });
+                }
                 function drawDebugLine(scene, points, color = 0xffffff, num = lines.length) {
                     const geometry = new THREE.BufferGeometry();
                     geometry.setFromPoints( points );
@@ -1037,7 +1092,7 @@
                                 out.restart= 1
                                 out.grounded= false
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
-                            
+                                out.gun = 'pistol'
                                 world.createCollider(out.colliderDesc, out.body);
                                 addPointerLock(camera, uiCanvas);
                                 if (debug) {scene.add(out.debugmesh);}
@@ -1067,7 +1122,11 @@
                                 ui_ctx.fillText('Grounded: '+player.grounded,10,150)
                             }
                             out.shoot = function() {
-                                guns.pistol.shoot();
+                                if (out.gun === 'pistol') {
+                                    if (cooldown(1,guns.pistol.cooldown)) {
+                                        guns.pistol.shoot();
+                                    }
+                                }
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
@@ -1268,85 +1327,87 @@
                         pistol: {}
 
                     };
-                    guns.pistol.shoot = function() {
-                        const radius = 0.2;
-                        const halfHeight = 0.01;
-                        const density = 10;
-                        const speed = 10;
+                    guns.pistol = (function(out){
+                        out.cooldown = 10;
 
-                        // Get camera position and forward direction
-                        const cameraPosition = fpscamera.position;
-                        const direction = new THREE.Vector3();
-                        fpscamera.getWorldDirection(direction);
-                        
-                        // Set initial spawn position slightly in front of the camera
-                        const spawnOffset = 1.5;
-                        const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(spawnOffset));
+                        out.shoot = function() {
+                            const radius = 0.2;
+                            const halfHeight = 0.01;
+                            const density = 10;
+                            const speed = 10;
 
-                        // Create physics body
-                        let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
-                        let rigid = world.createRigidBody(rigidBodyDesc);
-                        let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
-                        let collider = world.createCollider(colliderDesc, rigid);
-
-                        // Apply initial velocity in camera direction
-                        const initialVelocity = direction.clone().multiplyScalar(speed);
-                        rigid.setLinvel(initialVelocity);
-
-                        // Create Three.js mesh
-                        const geometry = new THREE.CapsuleGeometry(radius, halfHeight * 2, 16, 32);
-                        const material = new THREE.MeshStandardMaterial({
-                            color: 0x00ff00,
-                            flatShading: true
-                        });
-                        const mesh = new THREE.Mesh(geometry, material);
-                        mesh.position.copy(spawnPosition);
-                        scene.add(mesh);
-
-                        let num = projectiles.length;
-
-                        function update() {
-                            if (mesh.parent !== undefined) {
-                                let { x, y, z } = rigid.translation();
-                                let rot = rigid.rotation();
-
-                                let quaternion = new THREE.Quaternion();
-                                quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                            // Get camera position and forward direction
+                            const cameraPosition = fpscamera.position;
+                            const direction = new THREE.Vector3();
+                            fpscamera.getWorldDirection(direction);
                             
-                                rigid.setRotation(quaternion);
+                            // Set initial spawn position slightly in front of the camera
+                            const spawnOffset = 1.5;
+                            const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(spawnOffset));
 
-                                //console.log(initialVelocity);
-                                rigid.setLinvel(initialVelocity);
-                                mesh.position.set(x, y, z);
-                                mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
-                                checkCollision();
-                            }
-                        }
+                            // Create physics body
+                            let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+                            let rigid = world.createRigidBody(rigidBodyDesc);
+                            let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
+                            let collider = world.createCollider(colliderDesc, rigid);
 
-                        function destroy() {
-                            world.removeRigidBody(rigid);
-                            scene.remove(mesh);
-                            projectiles[num] = undefined; // Remove from array
-                        }
+                            // Apply initial velocity in camera direction
+                            const initialVelocity = direction.clone().multiplyScalar(speed);
+                            rigid.setLinvel(initialVelocity);
 
-                        // Collision check
-                        function checkCollision() {
-                            if (!rigid || !mesh || !mesh.parent) return;
-
-                            world.intersectionsWith(collider, (otherCollider) => {
-                                if (otherCollider == player.colliderDesc) {return;}
-                                destroy(); 
-                                return;
+                            // Create Three.js mesh
+                            const geometry = new THREE.CapsuleGeometry(radius, halfHeight * 2, 16, 32);
+                            const material = new THREE.MeshStandardMaterial({
+                                color: 0x00ff00,
+                                flatShading: true
                             });
-                        }
+                            const mesh = new THREE.Mesh(geometry, material);
+                            mesh.position.copy(spawnPosition);
+                            scene.add(mesh);
 
-                        let projectile = { mesh, rigid, update, checkCollision, destroy };
-                        projectiles.push(projectile);
+                            let num = projectiles.length;
+
+                            function update() {
+                                if (mesh.parent !== undefined) {
+                                    let { x, y, z } = rigid.translation();
+                                    let rot = rigid.rotation();
+
+                                    let quaternion = new THREE.Quaternion();
+                                    quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                                 
-                    }
+                                    rigid.setRotation(quaternion);
 
+                                    //console.log(initialVelocity);
+                                    rigid.setLinvel(initialVelocity);
+                                    mesh.position.set(x, y, z);
+                                    mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+                                    checkCollision();
+                                }
+                            }
 
- 
+                            function destroy() {
+                                explosion(rigid.translation, 10, 5);
+                                world.removeRigidBody(rigid);
+                                scene.remove(mesh);
+                                projectiles[num] = undefined; 
+                            }
+
+                            // Collision check
+                            function checkCollision() {
+                                if (!rigid || !mesh || !mesh.parent) return;
+
+                                world.intersectionsWith(collider, (otherCollider) => {
+                                    if (otherCollider == player.colliderDesc) {return;}
+                                    destroy(); 
+                                    return;
+                                });
+                            }
+
+                            let projectile = { mesh, rigid, update, checkCollision, destroy };
+                            projectiles.push(projectile);
+                                    
+                        }
+                    })({}) 
 
             /*Levels*/
 
