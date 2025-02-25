@@ -243,25 +243,35 @@
                 uiCanvas.height = window.innerHeight
 
                 let cooldowns = [];
-                let cooldown = (function(out){
+                const cooldown = (function(out){
                     out.createCooldown= function(id, length) {
-                    cooldowns[id].num = 0;
-                    cooldowns[id].time = length;
+                        cooldowns[id] = {num: 0, time: length * 10, run: false, check: true};
+                        return {id, length}
 
+                    }
+                    out.activateCooldown = function(id) {
+                        cooldowns[id].run = true
+                        cooldowns[id].check = false
                     }
                     out.updateCooldowns = function() {
                         for (var i = 0; i < cooldowns.length; i++){
-                            cooldowns[i].num ++;
-                            if (cooldowns[i].num === cooldowns[i].time){
-                                cooldowns[i].num = 0;
+                            if (cooldowns.length > 0 && cooldowns[i] !== undefined) {
+                                if (cooldowns[i].run === true) {
+                                    cooldowns[i].num ++;
+                                    if (cooldowns[i].num === cooldowns[i].time){
+                                        cooldowns[i].num = 0;
+                                        cooldowns[i].run = false;
+                                        cooldowns[i].check = true;
+                                    }
+                                }
                             }
-
                         }
                     }
                     out.checkCooldown = function(id) {
-                        return cooldowns[id].true
+                        console.log(cooldowns[id].num);
+                        return cooldowns[id].check
                     }
-
+                    return out;
                 })({})
                 
 
@@ -1096,7 +1106,7 @@
                                 world.createCollider(out.colliderDesc, out.body);
                                 addPointerLock(camera, uiCanvas);
                                 if (debug) {scene.add(out.debugmesh);}
-                            }
+                             }
                             out.prevPos;       
                             out.runPlayerDebug = function (dt, rayOrigin) {
                                 out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
@@ -1120,10 +1130,12 @@
                                 ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
                                 ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
                                 ui_ctx.fillText('Grounded: '+player.grounded,10,150)
-                            }
+                             }
                             out.shoot = function() {
-                                if (out.gun === 'pistol') {
-                                    if (cooldown(1,guns.pistol.cooldown)) {
+                                if (out.gun === 'pistol') {                                        
+                                    console.log(cooldown.checkCooldown(guns.pistol.cooldown.id));
+
+                                    if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
                                         guns.pistol.shoot();
                                     }
                                 }
@@ -1264,7 +1276,7 @@
                                         out.runPlayerDebug(dt, rayOrigin);
                                     }
                                 }
-                            }
+                             }
                             return out
                         })({})
                         
@@ -1328,9 +1340,10 @@
 
                     };
                     guns.pistol = (function(out){
-                        out.cooldown = 10;
-
+                        out.cooldown = cooldown.createCooldown(1,10);
+                        
                         out.shoot = function() {
+                            cooldown.activateCooldown(out.cooldown.id);
                             const radius = 0.2;
                             const halfHeight = 0.01;
                             const density = 10;
@@ -1407,6 +1420,7 @@
                             projectiles.push(projectile);
                                     
                         }
+                        return out;
                     })({}) 
 
             /*Levels*/
@@ -1619,7 +1633,7 @@
                 }
                 scenes.menu.count = 0;
 
-            /*Main*/
+            /*Update*/
                                 
                 window.addEventListener( 'resize', onWindowResize );
                 
@@ -1658,6 +1672,7 @@
                     }
                     if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
+                    cooldown.updateCooldowns();
                  }
 
             /*nessecities*/
