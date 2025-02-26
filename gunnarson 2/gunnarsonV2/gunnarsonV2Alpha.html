@@ -224,7 +224,7 @@
                 const RAPIER = await import('https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.11.2');
                 await RAPIER.init();
 
-
+                let objectsToRemove=[]
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
                 const debug = false;
@@ -775,37 +775,32 @@
                 })({})
                 console.log(crosshair);
 
-                function explosion(position, force, radius) {
-                    // Loop through all rigid bodies to find nearby ones
-                    rigidBodies.forEach(rb => {
-                        const rbPosition = rb.translation();
-                        const distance = Math.sqrt(
-                            Math.pow(rbPosition.x - position.x, 2) +
-                            Math.pow(rbPosition.y - position.y, 2) +
-                            Math.pow(rbPosition.z - position.z, 2)
-                        );
-                        
-                        if (distance < radius) {
-                            // Calculate force direction
-                            const direction = {
-                                x: (rbPosition.x - position.x) / distance,
-                                y: (rbPosition.y - position.y) / distance,
-                                z: (rbPosition.z - position.z) / distance
-                            };
-                            
-                            // Scale the impulse based on distance
-                            const impulseStrength = force * (1 - distance / radius);
-                            const impulse = new RAPIER.Vector3(
-                                direction.x * impulseStrength,
-                                direction.y * impulseStrength,
-                                direction.z * impulseStrength
-                            );
-                            
-                            // Apply impulse to the rigid body
-                            rb.applyImpulse(impulse, true);
-                        }
+                function explosion(position, power, range) {
+                    world.forEachRigidBody((body) => { 
+                        if (!body) return;
+                        console.log('hie1')
+
+                        const bodyPosition = body.translation();  
+                        const distance = position.distanceTo(bodyPosition);
+
+
+                        console.log(distance);
+                        if (distance > range || distance === 0) return; // Ignore if out of range or at the explosion center
+                        console.log('hi3')
+
+                        // Calculate explosion force
+                        const forceDirection = bodyPosition.sub(position).normalize();
+                        const forceMagnitude = (1 - distance / range) * power; // Linear falloff
+                        const force = forceDirection.multiplyScalar(forceMagnitude);
+
+                        // Apply impulse to the body
+                        body.applyImpulse({ x: force.x, y: force.y, z: force.z }, true);
                     });
+                    console.log('hi4')
+
                 }
+
+
                 function drawDebugLine(scene, points, color = 0xffffff, num = lines.length) {
                     const geometry = new THREE.BufferGeometry();
                     geometry.setFromPoints( points );
@@ -1086,8 +1081,8 @@
                                 out.zWidth= zwidth / 2
                                 out.fric=0.85
                                 out.airFric=0.9
-                                out.walkSpeed= 4
-                                out.jumpPower= .35
+                                out.walkSpeed= 3.5
+                                out.jumpPower= 0.2
                                 out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
@@ -1259,8 +1254,11 @@
                                     let quaternion = new THREE.Quaternion();
                                     quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                         
-                                    out.body.setLinvel({x: out.vx*dt, y: out.vy*dt, z: out.vz*dt});
-                                    out.body.setRotation(quaternion);
+                                    let newVelocity = { x: out.vx * dt, y: out.vy * dt, z: out.vz * dt };
+                                    setTimeout(() => {
+                                        //out.body.setLinvel(newVelocity);
+                                    }, 0);                                    
+                                    //out.body.setRotation(quaternion);
                                     
         
                                     let cam = pointerLocks[out.camera.pointerLockNum].object
@@ -1277,10 +1275,28 @@
                                     }
                                 }
                              }
+                             out.vel = function() {
+                             }
                             return out
                         })({})
                         
                 /*user*/
+                    function vel (dt) {
+                        if (player.playerIsExistent) {
+                            let newVelocity = { x: player.vx * dt * 7.5, y: player.vy * dt * 4, z: player.vz * dt * 7.5};
+                            player.body.setLinvel(newVelocity);
+                            let quaternion = new THREE.Quaternion();
+                            quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                            player.body.setRotation(quaternion);
+                            for (let i = 0; i < objectsToRemove.length; i++) {
+                                let body = objectsToRemove[i];
+                                console.log("Removing object:", body);
+                                world.removeRigidBody(body);
+                            }
+                            objectsToRemove = []; // Clear queue
+
+                        }
+                    }
                     const user=(function(controls){
                         
                         controls.mouseX=controls.mouseY=0
@@ -1359,7 +1375,7 @@
                             const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(spawnOffset));
 
                             // Create physics body
-                            let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+                            let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(spawnPosition.x, spawnPosition.y, spawnPosition.z).setGravityScale(0);
                             let rigid = world.createRigidBody(rigidBodyDesc);
                             let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
                             let collider = world.createCollider(colliderDesc, rigid);
@@ -1391,18 +1407,18 @@
                                     rigid.setRotation(quaternion);
 
                                     //console.log(initialVelocity);
-                                    rigid.setLinvel(initialVelocity);
+                                    ///rigid.setLinvel(initialVelocity);
                                     mesh.position.set(x, y, z);
                                     mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
                                     checkCollision();
                                 }
                             }
 
-                            function destroy() {
+                            function destroy() {                                
                                 explosion(rigid.translation, 10, 5);
-                                world.removeRigidBody(rigid);
                                 scene.remove(mesh);
-                                projectiles[num] = undefined; 
+                                projectiles[num] = undefined;                                        
+                                objectsToRemove.push(rigid); 
                             }
 
                             // Collision check
@@ -1696,7 +1712,8 @@
                 function animationLoop() {
                     UPDATE(debug);
                     stats.update();
-                    world.step(eventQueue);
+                    world.step();
+                    vel(Math.min( 0.05, clock.getDelta() ) * 35);
                  }
 		</script>
 	</body>
