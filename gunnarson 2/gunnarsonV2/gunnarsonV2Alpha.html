@@ -268,7 +268,7 @@
                         }
                     }
                     out.checkCooldown = function(id) {
-                        console.log(cooldowns[id].num);
+                        //console.log(cooldowns[id].num);
                         return cooldowns[id].check
                     }
                     return out;
@@ -773,30 +773,27 @@
                     }
                     return out;
                 })({})
-                console.log(crosshair);
+                //console.log(crosshair);
 
                 function explosion(position, power, range) {
                     world.forEachRigidBody((body) => { 
                         if (!body) return;
-                        console.log('hie1')
 
-                        const bodyPosition = body.translation();  
-                        const distance = position.distanceTo(bodyPosition);
+                        const explosionCenter = new THREE.Vector3(position.x, position.y, position.z);                         
+                        const bodyPosition = body.translation();                         
+                        const bodyVector = new THREE.Vector3(bodyPosition.x, bodyPosition.y, bodyPosition.z);                         
+                        const distance = explosionCenter.distanceTo(bodyVector);                      
 
-
-                        console.log(distance);
                         if (distance > range || distance === 0) return; // Ignore if out of range or at the explosion center
-                        console.log('hi3')
 
                         // Calculate explosion force
-                        const forceDirection = bodyPosition.sub(position).normalize();
+                        const forceDirection = bodyVector.sub(explosionCenter).normalize();
                         const forceMagnitude = (1 - distance / range) * power; // Linear falloff
                         const force = forceDirection.multiplyScalar(forceMagnitude);
 
                         // Apply impulse to the body
                         body.applyImpulse({ x: force.x, y: force.y, z: force.z }, true);
-                    });
-                    console.log('hi4')
+                        });
 
                 }
 
@@ -1082,7 +1079,7 @@
                                 out.fric=0.85
                                 out.airFric=0.9
                                 out.walkSpeed= 3.5
-                                out.jumpPower= 0.2
+                                out.jumpPower= 0.25
                                 out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
@@ -1128,7 +1125,7 @@
                              }
                             out.shoot = function() {
                                 if (out.gun === 'pistol') {                                        
-                                    console.log(cooldown.checkCooldown(guns.pistol.cooldown.id));
+                                    //console.log(cooldown.checkCooldown(guns.pistol.cooldown.id));
 
                                     if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
                                         guns.pistol.shoot();
@@ -1281,22 +1278,25 @@
                         })({})
                         
                 /*user*/
-                    function vel (dt) {
+                    function vel(dt) {
                         if (player.playerIsExistent) {
                             let newVelocity = { x: player.vx * dt * 7.5, y: player.vy * dt * 4, z: player.vz * dt * 7.5};
                             player.body.setLinvel(newVelocity);
                             let quaternion = new THREE.Quaternion();
                             quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                             player.body.setRotation(quaternion);
+                            
                             for (let i = 0; i < objectsToRemove.length; i++) {
                                 let body = objectsToRemove[i];
-                                console.log("Removing object:", body);
-                                world.removeRigidBody(body);
+                                if (body && world.getRigidBody(body.handle)) { // Ensure body exists
+                                    console.log(`Removing body: ${body}`);
+                                    world.removeRigidBody(body);
+                                }
                             }
-                            objectsToRemove = []; // Clear queue
-
+                            objectsToRemove = [];
                         }
                     }
+
                     const user=(function(controls){
                         
                         controls.mouseX=controls.mouseY=0
@@ -1415,10 +1415,13 @@
                             }
 
                             function destroy() {                                
-                                explosion(rigid.translation, 10, 5);
+                                explosion(rigid.translation(), 100, 1);
                                 scene.remove(mesh);
                                 projectiles[num] = undefined;                                        
-                                objectsToRemove.push(rigid); 
+                                if (!objectsToRemove.includes(rigid)) {
+                                    objectsToRemove.push(rigid);
+                                }
+                                rigid = null;               
                             }
 
                             // Collision check
@@ -1441,7 +1444,7 @@
 
             /*Levels*/
 
-                level.curLevel = 'test';
+                level.curLevel = 1;
                 let restart;
                 function clearWorld(world) {
                     rigidBodies.forEach((body, index) => {
@@ -1462,26 +1465,30 @@
                     });
 
                     cubes.forEach(cube => {
-                        if (cube.colliderDesc) {
-                            world.removeCollider(cube.colliderDesc); // Remove physics collider
-                        }
-                        if (cube.rigid) {
-                            world.removeRigidBody(cube.rigid); // Remove physics body
-                        }
-                        if (cube.mesh) {
-                            scene.remove(cube.mesh); // Remove mesh from scene
+                        if (cube != undefined) {
+                            if (cube.colliderDesc) {
+                                world.removeCollider(cube.colliderDesc); // Remove physics collider
+                            }
+                            if (cube.rigid) {
+                                world.removeRigidBody(cube.rigid); // Remove physics body
+                            }
+                            if (cube.mesh) {
+                                scene.remove(cube.mesh); // Remove mesh from scene
+                            }
                         }
                     });
 
-                    spheres.forEach(sphere => {
-                        if (sphere.colliderDesc) {
-                            world.removeCollider(sphere.colliderDesc); // Remove physics collider
-                        }
-                        if (sphere.rigid) {
-                            world.removeRigidBody(sphere.rigid); // Remove physics body
-                        }
-                        if (sphere.mesh) {
-                            scene.remove(sphere.mesh); // Remove mesh from scene
+                    spheres.forEach(sphere => {                        
+                        if (sphere != undefined) {
+                            if (sphere.colliderDesc) {
+                                world.removeCollider(sphere.colliderDesc); // Remove physics collider
+                            }
+                            if (sphere.rigid) {
+                                world.removeRigidBody(sphere.rigid); // Remove physics body
+                            }
+                            if (sphere.mesh) {
+                                scene.remove(sphere.mesh); // Remove mesh from scene
+                            }
                         }
                     });
 
@@ -1537,39 +1544,9 @@
                 })({})
                 
 
-                let levels = {};
-                levels.testBallPit = function(debug=false) {
-                    clearWorld(world);
-                    clearText();
-
-                    if (debug === false) {
-                        player.setPlayer(0,1,0,fpscamera,world);
-                        player.restart = world.takeSnapshot();
-                    } else {
-                        addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,1,0,bupcamera,world);
-                    }
-
-                    level.hasCube = true;
-                    level.hasEnem = false;
-                    level.hasGuns = false;
-                    level.hasMvTl = false;
-                    level.hasExpl = false;
+                let levels = [];
+                levels[1] = function(debug=false){
                     
-                    addSkybox(85);
-                    addPlatform({x: 0, y:0, z:0},{x:0, y:0, z:0}, {x:16,y:1,z:16},"SQRE","GRAY");
-                    addPlatform({x: 8, y:0, z: 0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
-                    addPlatform({x:0, y:0, z: 8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
-                    addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
-                    addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
-
-                    for (var i = 0; i < 10000; i++) {
-                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.15);
-                    }
-                    
-
-                }
-                levels.testLevel1 = function(debug=false) {
                     clearWorld(world);
                     clearText();
 
@@ -1586,6 +1563,66 @@
                     level.hasGuns = false;
                     level.hasMvTl = false;
                     level.hasExpl = false;
+                    level.id = '1';
+
+                    addSkybox(85);
+                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 5, y: 1, z: 5 },"SQRE","GRAY"); // Starting platform
+                    addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); // Small jump
+                    addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); // Higher jump
+                    addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); // Side jump
+                    addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); // More vertical movement
+
+                }
+                levels[2] = function(debug=false) {
+                    clearWorld(world);
+                    clearText();
+
+                    if (debug === false) {
+                        player.setPlayer(0,1,0,fpscamera,world);
+                        player.restart = world.takeSnapshot();
+                    } else {
+                        addOrbit(fpscamera, document.body);    
+                        player.setPlayer(0,1,0,bupcamera,world);
+                    }
+
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+                    level.id = 'ballpit'
+                    
+                    addSkybox(85);
+                    addPlatform({x: 0, y:0, z:0},{x:0, y:0, z:0}, {x:16,y:1,z:16},"SQRE","GRAY");
+                    addPlatform({x: 8, y:0, z: 0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
+                    addPlatform({x:0, y:0, z: 8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
+                    addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
+                    addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
+
+                    for (var i = 0; i < 10000; i++) {
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.15);
+                    }
+                    
+
+                }
+                levels[3] = function(debug=false) {
+                    clearWorld(world);
+                    clearText();
+
+                    if (debug === false) {
+                        player.setPlayer(0,10,0,fpscamera,world);
+                        player.restart = world.takeSnapshot();
+                    } else {
+                        addOrbit(fpscamera, document.body);    
+                        player.setPlayer(0,10,0,bupcamera,world);
+                    }
+
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+                    level.id = 'test';
                     
                     addSkybox(85);
                     addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
@@ -1617,21 +1654,17 @@
 
                     //C U B E S
                     for (var i = 0; i < 500; i++) {
-                        addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                        //addPCube(random(-15, 15), random(10, 20), random(-15, 15));
                     } 
                     for (var i = 0; i < 500; i++) {
-                        addPBall(random(-15, 15), random(10, 20), random(-15, 15));
+                        //addPBall(random(-15, 15), random(10, 20), random(-15, 15));
                     }
                  }
 
 
                 scenes.levelSetup = function(debug) {
                     if (level.startup === true || level.update === true) {
-                        switch (level.curLevel) {
-                            case 'test': levels.testLevel1(debug);
-                            break;
-                            case 'ballPit': levels.testBallPit(debug);
-                        } 
+                        levels[level.curLevel]();
                         level.startup = false;
                         level.update = false;
                     }
@@ -1640,10 +1673,10 @@
                     }
                     if (user.keysPressed.q){
                         level.update = true;
-                        if (level.curLevel === 'test') {
-                            level.curLevel = 'ballPit';
+                        if (level.curLevel < levels.length - 1){
+                            level.curLevel++
                         } else {
-                            level.curLevel = 'test';
+                            level.curLevel = 1;
                         }
                     }
                 }
