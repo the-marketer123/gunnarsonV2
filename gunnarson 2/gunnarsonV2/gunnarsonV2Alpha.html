@@ -1125,8 +1125,6 @@
                              }
                             out.shoot = function() {
                                 if (out.gun === 'pistol') {                                        
-                                    //console.log(cooldown.checkCooldown(guns.pistol.cooldown.id));
-
                                     if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
                                         guns.pistol.shoot();
                                     }
