@@ -1138,10 +1138,11 @@
 			                // Set initial spawn position slightly in front of the camera
 			                const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
 					let blockRay = new RAPIER.Ray(spawnPosition, spawnPosition.multiplyScalar(5));
-					let hit = world.castRay(blockRay, 1.1, true);
+					let hit = world.castRay(blockRay, 10, true);
 					
-					if (out.hits[0] && out.hits[0].collider && out.hits[0].toi < 0.1) { //out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
-                                    	}  
+					if (hit && hit.collider && 0.1 < hit.toi && hit.toi < 10) { 
+						hit.collider.parent.setTranslation(spawnPosition);
+					}  
 					
 				}
                             }
