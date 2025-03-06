@@ -1094,7 +1094,7 @@
                                 out.restart= 1
                                 out.grounded= false
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
-                                out.gun = 'pistol'
+                                out.gun = 'hand'
                                 world.createCollider(out.colliderDesc, out.body);
                                 addPointerLock(camera, uiCanvas);
                                 if (debug) {scene.add(out.debugmesh);}
