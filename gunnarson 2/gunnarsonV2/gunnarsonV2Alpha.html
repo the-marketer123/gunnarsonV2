@@ -1076,10 +1076,10 @@
                                 out.height= height / 2
                                 out.xWidth= xwidth / 2
                                 out.zWidth= zwidth / 2
-                                out.fric=0.85
-                                out.airFric=0.9
-                                out.walkSpeed= 3.5
-                                out.jumpPower= 1.25
+                                out.fric=1.7
+                                out.airFric=out.airResistance=0.1
+                                out.walkSpeed= 5.5
+                                out.jumpPower= 25
                                 out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
@@ -1093,6 +1093,8 @@
                                 out.playerIsExistent= true
                                 out.restart= 1
                                 out.grounded= false
+                                out.crouching=false
+                                out.crouch_friction=0.45
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                                 out.gun = 'pistol'
                                 world.createCollider(out.colliderDesc, out.body);
@@ -1129,54 +1131,109 @@
                                         guns.pistol.shoot();
                                     }
                                 } else {
-					const cameraPosition = out.camera.position;
-			        	const direction = new THREE.Vector3();
-			                out.camera.getWorldDirection(direction);
-			                            
-			                // Set initial spawn position slightly in front of the camera
-			                const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
-					let blockRay = new RAPIER.Ray(spawnPosition, spawnPosition.multiplyScalar(5));
-					let hit = world.castRay(blockRay, 10, true);
-					
-					if (hit && hit.collider && 0.1 < hit.toi && hit.toi < 10) { 
-						hit.collider.parent.setTranslation(spawnPosition);
-					}  
-					
-				}
+                                    const cameraPosition = out.camera.position;
+                                    const direction = new THREE.Vector3();
+                                    out.camera.getWorldDirection(direction);
+                                                        
+                                    // Set initial spawn position slightly in front of the camera
+                                    const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
+                                    let blockRay = new RAPIER.Ray(spawnPosition, spawnPosition.multiplyScalar(5));
+                                    let hit = world.castRay(blockRay, 10, true);
+                                    
+                                    if (hit && hit.collider && 0.1 < hit.toi && hit.toi < 10) { 
+                                        hit.collider.parent.setTranslation(spawnPosition);
+                                    }  
+                                    
+                                }
                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
                                 
-                                    let sdir=Math.sin(out.yaw)
-                                    let cdir=Math.cos(out.yaw)
-                                    let s=(out.walkSpeed/(out.grounded?out.fric:out.airFric))*dt
+                                    out.cosPitch=Math.cos(-out.pitch)
+                                    out.sinPitch=Math.sin(-out.pitch)
+                                    out.cosYaw=Math.cos(-out.yaw)
+                                    out.sinYaw=Math.sin(-out.yaw)
+                                    
+                                    let sdir=out.sinYaw,
+                                        cdir=-out.cosYaw,
+                                        s=-out.walkSpeed*(out.crouching?(out.grounded?0.35:0.1):1)*(out.grounded?1:0.0975)*dt,
+                                        i = 5
+                                    
+                                    if(user.keysHeld.d){
+                                        
+                                        out.vx+=cdir*s*i
+                                        out.vz-=sdir*s*i
+                                    }
+                                    
+                                    if(user.keysHeld.w){
+                                        
+                                        out.vx-=sdir*s*i
+                                        out.vz-=cdir*s*i
+                                    }
+                                    
+                                    if(user.keysHeld.a){
+                                        
+                                        out.vx-=cdir*s*i
+                                        out.vz+=sdir*s*i
+                                    }
+                                    
+                                    if(user.keysHeld.s){
+                                        
+                                        out.vx+=sdir*s*i
+                                        out.vz+=cdir*s*i
+                                    }
+                                    
+                                    if(out.grounded){
+                                        if (out.vy < 0) out.vy = 0;
+                                        if(user.keysHeld[' ']){
+                                            
+                                            out.vy=out.jumpPower*(out.crouching?1.15:1)
+                                            out.grounded=false
+                                        }
+                                        
+                                        if(out.crouching){
+                                            
+                                            let fx=out.vx*out.crouch_friction,
+                                                fz=out.vz*out.crouch_friction
+                                            
+                                            out.vx-=fx*dt
+                                            out.vz-=fz*dt
+                                            
+                                        } else {
+                                            
+                                            let fx=out.vx*out.fric,
+                                                fz=out.vz*out.fric
+                                            
+                                            out.vx-=fx*dt
+                                            out.vz-=fz*dt
+                                        }
+
+                                        
+                                    } else {
+                                        
+                                        out.vy-=(out.gravity*dt*40)/2;
+                                        
+                                        if(!out.crouching){
+                                            
+                                            let fx=out.vx*out.airResistance,
+                                                fz=out.vz*out.airResistance
+                                            
+                                            out.vx-=fx*dt
+                                            out.vz-=fz*dt
+                                            
+                                        } else {
+                                            
+                                            let fx=out.vx*0,
+                                                fz=out.vz*0
+                                            
+                                            out.vx-=fx*dt
+                                            out.vz-=fz*dt
+                                        }
+                                    }
                                     
                                     let moved = false;
                                     if(user.keysHeld.r){
                                         out.dead = true;
-                                    }
-                                    if(user.keysHeld.d){
-                                        moved = true;
-                                        out.vx+=cdir*s
-                                        out.vz-=sdir*s
-                                    }
-                                    
-                                    if(user.keysHeld.w){
-                                        moved = true;
-                                        out.vx-=sdir*s
-                                        out.vz-=cdir*s
-                                    }
-                                    
-                                    if(user.keysHeld.a){
-                                        moved = true;
-                                        out.vx-=cdir*s
-                                        out.vz+=sdir*s
-                                    }
-                                    
-                                    if(user.keysHeld.s){
-                                        moved = true;
-                                        out.vx+=sdir*s
-                                        out.vz+=cdir*s
                                     }
                                     
                                     let rayOrigin = out.body.translation();
@@ -1217,25 +1274,6 @@
                                         out.grounded = false;
                                     }
 
-                                    if(out.grounded){
-                                        
-                                        out.vx*=out.fric
-                                        out.vz*=out.fric
-                                        out.vy = 0
-                                        
-                                        if(user.keysHeld[' ']){
-                                            
-                                            out.vy = out.jumpPower * 25
-                                            out.grounded=false
-                                        }
-                                        
-                                    } else {
-                                        
-                                        out.vx*=out.airFric
-                                        out.vz*=out.airFric      
-                                        out.vy-=out.gravity*dt*5;
-                                    
-                                    }
                                     if (out.vx < 0.001 && out.vx > -0.001){
                                         out.vx = 0;
                                     }
@@ -1269,6 +1307,7 @@
                                     }, 0);                                    
                                     //out.body.setRotation(quaternion);
                                     
+                                    console.log('vx: ' + out.vx + 'vy: ' + out.vy + 'vz: ' + out.vz);
         
                                     let cam = pointerLocks[out.camera.pointerLockNum].object
                                     cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
@@ -1721,6 +1760,7 @@
                     }
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 35;
+                    if (dt < 1 / 60) dt = 1 / 60;
                     if (player.playerIsExistent === true) {                    
                         player.runPlayerPhysics(dt);
                     }
@@ -1733,14 +1773,7 @@
                     }
                     if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
                     cooldown.updateCooldowns();
-=======
-=======
->>>>>>> Stashed changes
-
->>>>>>> Stashed changes
                  }
 
             /*nessecities*/
