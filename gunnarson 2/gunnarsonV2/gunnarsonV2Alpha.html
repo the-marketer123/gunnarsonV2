@@ -845,7 +845,7 @@
                             .setRotation(mesh.quaternion);
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.cuboid(size.x/2, size.y/2, size.z/2);
-                    world.createCollider(colliderDesc, rigid);
+                    let collider = world.createCollider(colliderDesc, rigid);
                     let num = plats.length;
                     collider.userData = { id: "unmovable_object" }; 
 
@@ -922,7 +922,7 @@
                             .setTranslation(x, y, z)
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
-                    world.createCollider(colliderDesc, rigid);
+                    let collider = world.createCollider(colliderDesc, rigid);
                     rigid.wakeUp();
                     collider.userData = { id: "movable_object" }; 
                 
@@ -1101,8 +1101,8 @@
                                 out.crouch_friction=0.45
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                                 out.gun = 'hand'
-                                out.holding = false
-                                world.createCollider(out.colliderDesc, out.body);
+                                out.holding = {ch:false, coll: undefined, body: undefined}
+                                out.collider = world.createCollider(out.colliderDesc, out.body);
                                 addPointerLock(camera, uiCanvas);
                                 if (debug) {scene.add(out.debugmesh);}
                              }
@@ -1136,33 +1136,54 @@
                                         guns.pistol.shoot();
                                     }
                                 } else {
-                                    if (!user.mousePressed) holding = false;
 
-                                    if (holding) {
-                                        const cameraPosition = out.camera.position;
-                                        const direction = new THREE.Vector3();
-                                        out.camera.getWorldDirection(direction);
+                                    const cameraPosition = out.camera.position;
+                                    const direction = new THREE.Vector3();
+                                    out.camera.getWorldDirection(direction);
                                                             
-                                        // Set initial spawn position slightly in front of the camera
-                                        const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
+                                    const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
+                                    if (!out.holding.ch) { 
+
                                         let rayDirection = direction.clone().multiplyScalar(5);
                                         let blockRay = new RAPIER.Ray(spawnPosition, rayDirection);                                    
                                         let hit = world.castRay(blockRay, 10, true);
                                         
-                                        if (hit && hit.collider && 0.01 < hit.toi && hit.toi < 10) {                                    //console.log('check1'); 
+                                        if (hit && hit.collider && hit.toi < 2) {                                    
                                             let body = hit.collider.parent();console.log(hit.collider);
-                                            if (hit.collider.userData && hit.collider.userData.id) {                               //                                console.log('check2');                               
-                                                if (hit.collider.userData.id === "movable_object") {                                   // console.log('check3');
+                                            if (hit.collider.userData && hit.collider.userData.id) {                                          
+                                                if (hit.collider.userData.id === "movable_object") {                                   
                                                     body.setTranslation(spawnPosition);
+                                                    out.holding.ch = true;
+                                                    out.holding.coll = hit.collider
+                                                    out.holding.body = body
                                                 }
                                             }
                                         }  
-                                    } else {
+                                    } else if (out.holding.body) { 
+                                        const rect = document.createElement("div");
+                                        rect.style.position = "fixed";
+                                        rect.style.top = "50px";
+                                        rect.style.left = "50px";
+                                        rect.style.width = "25px";
+                                        rect.style.height = "25px";
+                                        rect.style.background = "rgba(0, 255, 0, 0.5)"; // Semi-transparent black
+                                        rect.style.zIndex = "9999"; // Ensure it's on top
+                                        rect.style.pointerEvents = "none"; // Allows clicking elements underneath
+                                        rect.style.borderRadius = "5px"; // Rounded edges
+                                        rect.id = "overlay";
                                         
-                                    }
+                                        // Add it to the page
+                                        document.body.appendChild(rect);
+
+                                        out.holding.body.setTranslation(spawnPosition);
+                                        out.holding.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+                                        out.holding.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+                                    }                                   
+
+
                                     
                                 }
-                            }
+                             }
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
                                 
@@ -1297,6 +1318,7 @@
                                     if (out.vz < 0.001 && out.vz > -0.001){
                                         out.vz = 0;
                                     }
+                                    document.getElementById("overlay")?.remove();
                                     if (user.mousePressed) {
                                         out.shoot();
                                     }
@@ -1338,6 +1360,8 @@
                                     if (debug === true) {
                                         out.runPlayerDebug(dt, rayOrigin);
                                     }
+                                    if (!user.mousePressed) {out.holding.ch = false;}                                    
+
                                 }
                              }
                              out.vel = function() {
@@ -1519,7 +1543,9 @@
                         world.removeCollider(body.collider);
                         world.removeRigidBody(body);
                     });
-
+                    if (player.playerIsExistent) {
+                        world.removeCollider(player.collider)
+                    }
                     plats.forEach(plat => {
                         if (plat.colliderDesc) {
                             world.removeCollider(plat.colliderDesc); // Remove physics collider
@@ -1569,11 +1595,11 @@
 
                     // Remove corresponding meshes from the scene
                     scene.children = scene.children.filter(child => !(child.isMesh));
-                }
+                 }
                 function clearText() {
                     texts.length = 0; // Empty the texts array
                     redrawUI(); // Refresh the canvas without text
-                }
+                 }
                 let currentScene = 'menu';
                 let scenes = {};
 
@@ -1599,7 +1625,7 @@
                     }
                     
                     return out
-                })({})                
+                 })({})                
                 scenes.levelSelect = (function(out){
                     out.update = function() {
                         scenes.menu.setBackground();
@@ -1609,7 +1635,7 @@
                     }
                     
                     return out
-                })({})
+                 })({})
                 
 
                 let levels = [];
@@ -1640,7 +1666,7 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); // Side jump
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); // More vertical movement
 
-                }
+                 }
                 levels[2] = function(debug=false) {
                     clearWorld(world);
                     clearText();
@@ -1667,12 +1693,12 @@
                     addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
                     addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
 
-                    for (var i = 0; i < 1000; i++) {
-                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.15);
+                    for (var i = 0; i < 1500; i++) {
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
                     }
                     
 
-                }
+                 }
                 levels[3] = function(debug=false) {
                     clearWorld(world);
                     clearText();
@@ -1747,7 +1773,7 @@
                             level.curLevel = 1;
                         }
                     }
-                }
+                 }
                 scenes.menu.count = 0;
 
             /*Update*/
