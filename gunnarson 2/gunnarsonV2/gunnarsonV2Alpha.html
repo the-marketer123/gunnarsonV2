@@ -1098,7 +1098,7 @@
                                 out.restart= 1
                                 out.grounded= false
                                 out.crouching=false
-                                out.crouch_friction=0.45
+                                out.crouch_friction=2.2
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                                 out.gun = 'hand'
                                 out.holding = {ch:false, coll: undefined, body: undefined}
@@ -1196,7 +1196,12 @@
                                         cdir=-out.cosYaw,
                                         s=-out.walkSpeed*(out.crouching?(out.grounded?0.35:0.1):1)*(out.grounded?1:0.0975)*dt,
                                         i = 5
-                                    
+                                    if(user.keysHeld.Shift){
+                                        out.crouching = true;
+                                    } else {
+                                        out.crouching = false;
+                                    }
+
                                     if(user.keysHeld.d){
                                         
                                         out.vx+=cdir*s*i
@@ -1349,7 +1354,8 @@
                                     //console.log('vx: ' + out.vx + 'vy: ' + out.vy + 'vz: ' + out.vz);
         
                                     let cam = pointerLocks[out.camera.pointerLockNum].object
-                                    cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                                    if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
+                                    else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
                                     let q = cam.quaternion;
                                     
                                     let euler = new THREE.Euler();
