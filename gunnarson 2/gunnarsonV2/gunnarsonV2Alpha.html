@@ -730,6 +730,23 @@
 
                 let pcubeBodys = [], pcubeColliders = [], cubeMeshes = [];
                 const sceneMiddle = new THREE.Vector3(0, 0, 0);
+                const maxInstances = 1500; // Set a maximum number of instances
+                
+                //stuff
+                const sphereGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+                const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+
+                const sphereInstancedMesh = new THREE.InstancedMesh(sphereGeometry, material, maxInstances);
+                const boxInstancedMesh = new THREE.InstancedMesh(boxGeometry, material, maxInstances);
+                sphereInstancedMesh.instanceMatrix.needsUpdate = true;
+                boxInstancedMesh.instanceMatrix.needsUpdate = true;
+                scene.add(sphereInstancedMesh);
+                scene.add(boxInstancedMesh);
+
+                let sphereCount = 0;
+                let boxCount = 0;
+                // stuff
 
                 let plats = [], cubes = [], spheres = [], lines = [], projectiles = [];
                 let crosshair = (function(out) {
@@ -869,11 +886,11 @@
                     return { mesh, rigid, update, num, colliderDesc };
                  }
 
-                function addPBall(x, y, z,radius=0.25) {
+                /*function addPBall(x, y, z,radius=0.25) {
                     const density = 20;
 
                     // Physics
-                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z).setCanSleep(true);
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
                     let collider = world.createCollider(colliderDesc, rigid);
@@ -918,8 +935,7 @@
                     const range = 7;
                     const density = 20;
                     // physics
-                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
-                            .setTranslation(x, y, z)
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z).setCanSleep(true)
                     let rigid = world.createRigidBody(rigidBodyDesc);
                     let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(density);
                     let collider = world.createCollider(colliderDesc, rigid);
@@ -962,7 +978,8 @@
                     scene.add(mesh);
                     return { mesh, rigid, colliderDesc, update };
                  }
-                                function updatePhysicsObjects(){
+                    */
+                function updatePhysicsObjects(){
                     for (var i = 0; i < cubes.length; i++) {
                         if (cubes[i] !== undefined && cubes.length !== 0) {
                             cubes[i].update();
@@ -985,7 +1002,46 @@
                     }
                  }
                 
-                function addSkybox(angle) {
+                
+                function addPBall(x, y, z, radius = 0.25) {
+                    if (sphereCount >= maxInstances) return;
+
+                    const density = 20;
+
+                    // Physics
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
+                    rigid.wakeUp();
+
+                    // Set instance matrix
+                    let matrix = new THREE.Matrix4();
+                    matrix.setPosition(x, y, z);
+                    sphereInstancedMesh.setMatrixAt(sphereCount, matrix);
+                    sphereCount++;
+
+                 }
+
+                function addPCube(x, y, z) {
+                    if (boxCount >= maxInstances) return;
+
+                    const density = 20;
+
+                    // Physics
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25, 0.25, 0.25).setDensity(density);
+                    world.createCollider(colliderDesc, rigid);
+                    rigid.wakeUp();
+
+                    // Set instance matrix
+                    let matrix = new THREE.Matrix4();
+                    matrix.setPosition(x, y, z);
+                    boxInstancedMesh.setMatrixAt(boxCount, matrix);
+                    boxCount++;
+                 }
+               function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
 
@@ -1254,7 +1310,7 @@
                                         
                                     } else {
                                         
-                                        out.vy-=(out.gravity*dt*40)/2;
+                                        out.vy -= (out.gravity * dt * 20);  
                                         
                                         if(!out.crouching){
                                             
@@ -1808,16 +1864,16 @@
                         document.getElementById("ui-canvas").style.zIndex = "2";
                     }
 
-                    let dt = Math.min( 0.05, clock.getDelta() ) * 35;
-                    if (dt < 1 / 60) dt = 1 / 60;
-                    if (player.playerIsExistent === true) {                    
+                    let dt = Math.min( 0.05, clock.getDelta() ) * 13;
+                    if (dt < (1 / 60)*13) {dt = 1 / 60 * 13;}
+
+                    if (player.playerIsExistent === true) {   
                         player.runPlayerPhysics(dt);
                     }
 
                     if (debug === false && player.playerIsExistent === true) {                    
                         renderer.render( scene, player.camera );
                     } else {
-                        //console.log('debug');
                         renderer.render( scene, fpscamera );
                     }
                     if (debug&&currentScene==='play') {runDebug(dt);}
@@ -1842,12 +1898,15 @@
                     scenes.menu.count = 0;
 
                  }
-     
-                function animationLoop() {
-                    UPDATE(debug);
-                    stats.update();
-                    world.step();
-                    vel(Math.min( 0.05, clock.getDelta() ) * 35);
+                let lastTime=0
+                function animationLoop(now) {
+                    //if (now - lastTime >= 1000 / 70) {
+                        lastTime = now;
+                        UPDATE(debug);
+                        stats.update();
+                        world.step();
+                        vel(Math.min( 0.05, clock.getDelta() ) * 35);
+                    //}
                  }
 		</script>
 	</body>
