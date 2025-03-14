@@ -564,114 +564,7 @@
                 
 
 
-            /*Textures*/
-                
-                    //OUTDATED     
-                    function initTextures() {
-                        // Prepare the board canvas
-                        board_ctx.fillStyle = 'rgb(0,0,0)';
-                        board_ctx.fillRect(0, 0, 512, 512);
-                        board_ctx.lineWidth = 3;
-
-                        // Draw the cross lines
-                        board_ctx.beginPath();
-                        board_ctx.moveTo(256, 0);
-                        board_ctx.lineTo(256, 512);
-                        board_ctx.closePath();
-                        board_ctx.strokeStyle = 'rgb(255,255,255)';
-                        board_ctx.stroke();
-
-                        board_ctx.beginPath();
-                        board_ctx.moveTo(0, 256);
-                        board_ctx.lineTo(512, 256);
-                        board_ctx.closePath();
-                        board_ctx.strokeStyle = 'rgb(255,255,255)';
-                        board_ctx.stroke();
-
-                        // Draw text and borders
-                        board_ctx.fillStyle = 'rgb(255,255,255)';
-                        board_ctx.font = 'bold 40px arial';
-                        board_ctx.fillText('Prototype', 20, 50);
-                        board_ctx.fillText('5 x 5 ft.', 20, 100);
-                        board_ctx.fillRect(0, 0, 7, 512);
-                        board_ctx.fillRect(512, 0, -7, 512);
-                        board_ctx.fillRect(0, 0, 512, 7);
-                        board_ctx.fillRect(0, 512, 512, -7);
-
-                        // Create the first texture
-                        const boxTexture = new THREE.Texture(boardCanvas);
-                        boxTexture.needsUpdate = true;
-
-                        // Clear and draw the second texture
-                        board_ctx.clearRect(0, 0, 1500, 1500);
-                        board_ctx.font = 'bold 30px arial';
-                        board_ctx.fillStyle = 'rgb(0,0,0)';
-                        board_ctx.fillText('WASD to move', 10, 30);
-                        board_ctx.fillText('SPACE to jump', 10, 65);
-                        board_ctx.fillText('Shoot the enemy!', 10, 125);
-                        board_ctx.fillText('Drop your weapon', 10, 190);
-                        board_ctx.fillText('& hold down your', 12, 220);
-                        board_ctx.fillText('mouse to move the', 7, 250);
-                        board_ctx.fillText('boxes and spheres!', 5, 280);
-                        board_ctx.fillText('SHIFT to crouch', 20, 340);
-                        board_ctx.fillText('Hold jump while', 20, 400);
-                        board_ctx.fillText('touching a wall', 20, 430);
-                        board_ctx.fillText('to walljump!', 50, 460);
-                        board_ctx.fillText('Use the cube to', 20, 500);
-                        board_ctx.fillText('break the glass', 20, 530);
-                        board_ctx.fillText('& kill the enemy', 20, 560);
-                        board_ctx.fillText('Press E to drop', 20, 605);
-                        board_ctx.fillText('your weapon!', 35, 640);
-                        board_ctx.fillText('OWO', 90, 700);
-                        board_ctx.fillText('whta r u doign hre?', 3, 730);
-                        board_ctx.fillText('Congratulations!', 20, 780);
-                        board_ctx.fillText('You are now an', 27, 810);
-                        board_ctx.fillText('EPIC GAMER!!!!', 27, 845);
-                        board_ctx.fillText('Thx 4 playing!!!', 30, 900);
-                        board_ctx.fillText('More games to come!', 4, 1012);
-                        board_ctx.font = 'bold 20px arial';
-                        board_ctx.fillText('The end of a game...', 40, 949);
-                        board_ctx.font = 'bold 15px arial';
-                        board_ctx.fillText('The beginning of the best games on KA', 10, 969);
-
-                        // Create the second texture
-                        const messagesTexture = new THREE.Texture(boardCanvas);
-                        messagesTexture.needsUpdate = true;
-
-                        // Define texture bounds
-                        const bounds = [
-                            [0, 0, 235, 90],
-                            [0, 95, 275, 50],
-                            [0, 160, 295, 140],
-                            [0, 370, 275, 100],
-                            [0, 470, 275, 110],
-                            [0, 580, 275, 80],
-                            [0, 310, 275, 35],
-                            [0, 671, 285, 75],
-                            [0, 750, 319, 280],
-                        ];
-
-                        bounds.forEach(bound => {
-                            bound[0] /= 1500;
-                            bound[1] /= 1500;
-                            bound[2] /= 1500;
-                            bound[3] /= 1500;
-                        });
-
-                        boxTexture.needsUpdate = true;
-                        boxTexture.wrapS = THREE.RepeatWrapping;
-                        boxTexture.wrapT = THREE.RepeatWrapping;
-    
-                        return {
-                            boxTexture,
-                            messagesTexture,
-                            bounds,
-                        };
-                    }
-
-                    const textures = initTextures();
-                
-
+           
             /*Assets*/
                 
 
@@ -709,22 +602,7 @@
  
         
             
-            /*Debug*/
-                function runDebug(dt){
-                    
-                                ui_ctx.fillStyle = 'white';
-                                ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
-                                ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
-                                ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
-                                ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
-                                ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
-                                ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
-                                ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
-                                ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
-                                ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
-                                ui_ctx.fillText('Grounded: '+player.grounded,10,150)
-                    
-                }
+            
 
             /*Main Functions*/
 
@@ -886,7 +764,7 @@
                     return { mesh, rigid, update, num, colliderDesc };
                  }
 
-                /*function addPBall(x, y, z,radius=0.25) {
+                function addPBall(x, y, z,radius=0.25) {
                     const density = 20;
 
                     // Physics
@@ -978,7 +856,7 @@
                     scene.add(mesh);
                     return { mesh, rigid, colliderDesc, update };
                  }
-                    */
+                    
                 function updatePhysicsObjects(){
                     for (var i = 0; i < cubes.length; i++) {
                         if (cubes[i] !== undefined && cubes.length !== 0) {
@@ -1003,7 +881,7 @@
                  }
                 
                 
-                function addPBall(x, y, z, radius = 0.25) {
+                /*function addPBall(x, y, z, radius = 0.25) {
                     if (sphereCount >= maxInstances) return;
 
                     const density = 20;
@@ -1041,7 +919,7 @@
                     boxInstancedMesh.setMatrixAt(boxCount, matrix);
                     boxCount++;
                  }
-               function addSkybox(angle) {
+               */function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
 
@@ -1126,19 +1004,18 @@
                                 out.sz=z
                                 out.x=x
                                 out.y=y
-                                out.z=z
-                                out.vx=0
-                                out.vy=0
-                                out.vz=0                                
+                                out.z=z                   
                                 out.camera= camera
                                 out.world= world
                                 out.height= height / 2
                                 out.xWidth= xwidth / 2
                                 out.zWidth= zwidth / 2
-                                out.fric=1.7
-                                out.airFric=out.airResistance=0.15
+                                out.fric=0.7
+                                out.airFric=0.15
+                                out.crouching=false
+                                out.crouch_friction=0.9                                
                                 out.walkSpeed= 5.5
-                                out.jumpPower= 25
+                                out.jumpPower= 27
                                 out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
@@ -1146,15 +1023,13 @@
                                 out.fov=70
                                 out.radius=0.5
                                 out.dead= false
-                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z)//.setGravityScale(50.0)
+                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.25)
                                 out.body = out.world.createRigidBody(out.rigid);
                                 out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
                                 out.colliderDesc.userData = { id: "unmovable_object" }; 
                                 out.playerIsExistent= true
                                 out.restart= 1
                                 out.grounded= false
-                                out.crouching=false
-                                out.crouch_friction=2.2
                                 out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
                                 out.gun = 'hand'
                                 out.holding = {ch:false, coll: undefined, body: undefined}
@@ -1176,15 +1051,15 @@
 
                                 ui_ctx.fillStyle = 'white';
                                 ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
-                                ui_ctx.fillText('X Pos: '+player.x.toFixed(2),10,30)
-                                ui_ctx.fillText('Y Pos: '+player.y.toFixed(2),10,45)
-                                ui_ctx.fillText('Z Pos: '+player.z.toFixed(2),10,60)
-                                ui_ctx.fillText('X Vel: '+player.vx.toFixed(2),10,75)
-                                ui_ctx.fillText('Y Vel: '+player.vy.toFixed(2),10,90)
-                                ui_ctx.fillText('Z Vel: '+player.vz.toFixed(2),10,105)
-                                ui_ctx.fillText('Yaw: '+(-player.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
-                                ui_ctx.fillText('Pitch: '+player.pitch.toFixed(2),10,135)
-                                ui_ctx.fillText('Grounded: '+player.grounded,10,150)
+                                ui_ctx.fillText('X Pos: '+out.x.toFixed(2),10,30)
+                                ui_ctx.fillText('Y Pos: '+out.y.toFixed(2),10,45)
+                                ui_ctx.fillText('Z Pos: '+out.z.toFixed(2),10,60)
+                                ui_ctx.fillText('X Vel: '+out.body.linvel().x,10,75)
+                                ui_ctx.fillText('Y Vel: '+out.body.linvel().y,10,90)
+                                ui_ctx.fillText('Z Vel: '+out.body.linvel().z,10,105)
+                                ui_ctx.fillText('Yaw: '+(-out.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                                ui_ctx.fillText('Pitch: '+out.pitch.toFixed(2),10,135)
+                                ui_ctx.fillText('Grounded: '+out.grounded,10,150)
                              }
                             out.shoot = function() {
                                 if (out.gun === 'pistol') {                                        
@@ -1243,92 +1118,113 @@
                             out.runPlayerPhysics = function (dt){
                                 if (out.playerIsExistent) {
                                 
-                                    out.cosPitch=Math.cos(-out.pitch)
-                                    out.sinPitch=Math.sin(-out.pitch)
-                                    out.cosYaw=Math.cos(-out.yaw)
-                                    out.sinYaw=Math.sin(-out.yaw)
-                                    
-                                    let sdir=out.sinYaw,
-                                        cdir=-out.cosYaw,
-                                        s=-out.walkSpeed*(out.crouching?(out.grounded?0.35:0.1):1)*(out.grounded?1:0.0975)*dt,
-                                        i = 5
-                                    if(user.keysHeld.Shift){
+                                    out.cosPitch = Math.cos(-out.pitch);
+                                    out.sinPitch = Math.sin(-out.pitch);
+                                    out.cosYaw = Math.cos(-out.yaw);
+                                    out.sinYaw = Math.sin(-out.yaw);
+
+                                    let sdir = out.sinYaw,
+                                        cdir = -out.cosYaw,
+                                        speed = -out.walkSpeed * (out.crouching ? (out.grounded ? 0.75 : 0.5) : 1) * (out.grounded ? 1 : 0.85);
+
+                                    let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
+
+                                    let e = 5
+                                    if (user.keysHeld.Shift){
                                         out.crouching = true;
                                     } else {
                                         out.crouching = false;
                                     }
+                                    let moving = false
+                                    if (user.keysHeld.d) {
+                                        impulse.x += cdir * speed;
+                                        impulse.z -= sdir * speed;
+                                        moving = true
+                                    }
 
-                                    if(user.keysHeld.d){
-                                        
-                                        out.vx+=cdir*s*i
-                                        out.vz-=sdir*s*i
+                                    if (user.keysHeld.w) {
+                                        impulse.x -= sdir * speed;
+                                        impulse.z -= cdir * speed;
+                                        moving = true
                                     }
-                                    
-                                    if(user.keysHeld.w){
-                                        
-                                        out.vx-=sdir*s*i
-                                        out.vz-=cdir*s*i
+
+                                    if (user.keysHeld.a) {
+                                        impulse.x -= cdir * speed;
+                                        impulse.z += sdir * speed;
+                                        moving = true
                                     }
-                                    
-                                    if(user.keysHeld.a){
-                                        
-                                        out.vx-=cdir*s*i
-                                        out.vz+=sdir*s*i
+
+                                    if (user.keysHeld.s) {
+                                        impulse.x += sdir * speed;
+                                        impulse.z += cdir * speed;
+                                        moving = true
                                     }
-                                    
-                                    if(user.keysHeld.s){
-                                        
-                                        out.vx+=sdir*s*i
-                                        out.vz+=cdir*s*i
-                                    }
-                                    
-                                    if(out.grounded){
-                                        if (out.vy < 0) out.vy = 0;
-                                        if(user.keysHeld[' ']){
-                                            
-                                            out.vy=out.jumpPower*(out.crouching?1.15:1)
-                                            out.grounded=false
+                                    let velocity = out.body.linvel();
+                                    let frictionImpulse = {
+                                        x: -velocity.x * 0.2, // Adjust multiplier to control slowdown rate
+                                        y: 0,
+                                        z: -velocity.z * 0.2
+                                    };
+
+                                    if (!moving && out.grounded) out.body.applyImpulse(frictionImpulse, true);
+
+                                    // Apply impulse to the player body
+                                    if (impulse.x !== 0 || impulse.z !== 0) {
+                                        if (out.body.linvel().x < e && out.body.linvel().x > -e && out.body.linvel().z < e && out.body.linvel().z > -e){
+                                            out.body.applyImpulse(impulse, true);
                                         }
-                                        
+                                    }
+
+                                    if (out.grounded) {
+                                        if (impulse.y < 0) impulse.y = 0;
+                                        if (user.keysHeld[' ']) {
+                                            impulse.y = out.jumpPower * (out.crouching ? 1.15 : 1);
+                                            out.grounded = false;
+                                            out.body.applyImpulse({ x: 0, y: out.jumpPower * 1.1, z: 0 }, true);
+                                        }
                                         if(out.crouching){
                                             
-                                            let fx=out.vx*out.crouch_friction,
-                                                fz=out.vz*out.crouch_friction
+                                            //let fx=impulse.x*out.crouch_friction,
+                                             //   fz=impulse.z*out.crouch_friction
+                                             let fx=impulse.x*out.fric,
+                                                fz=impulse.z*out.fric
                                             
-                                            out.vx-=fx*dt
-                                            out.vz-=fz*dt
+                                            impulse.x-=fx*dt
+                                            impulse.z-=fz*dt
                                             
                                         } else {
                                             
-                                            let fx=out.vx*out.fric,
-                                                fz=out.vz*out.fric
+                                            let fx=impulse.x*out.fric,
+                                                fz=impulse.z*out.fric
                                             
-                                            out.vx-=fx*dt
-                                            out.vz-=fz*dt
+                                            impulse.x-=fx*dt
+                                            impulse.z-=fz*dt
                                         }
 
-                                        
-                                    } else {
-                                        
-                                        out.vy -= (out.gravity * dt * 20);  
+                                     } else {
+                                        impulse.y-=(out.gravity*dt*40)/2;
                                         
                                         if(!out.crouching){
                                             
-                                            let fx=out.vx*out.airResistance,
-                                                fz=out.vz*out.airResistance
+                                            let fx=impulse.x*out.airFric,
+                                                fz=impulse.z*out.airFric
                                             
-                                            out.vx-=fx*dt
-                                            out.vz-=fz*dt
+                                            impulse.x-=fx*dt
+                                            impulse.z-=fz*dt
                                             
                                         } else {
                                             
-                                            let fx=out.vx*0,
-                                                fz=out.vz*0
+                                            let fx=impulse.x*0,
+                                                fz=impulse.z*0
                                             
-                                            out.vx-=fx*dt
-                                            out.vz-=fz*dt
+                                            impulse.x-=fx*dt
+                                            impulse.z-=fz*dt
                                         }
-                                    }
+                                     }
+                                    
+                                   
+                                
+                                   
                                     
                                     let moved = false;
                                     if(user.keysHeld.r){
@@ -1373,12 +1269,6 @@
                                         out.grounded = false;
                                     }
 
-                                    if (out.vx < 0.001 && out.vx > -0.001){
-                                        out.vx = 0;
-                                    }
-                                    if (out.vz < 0.001 && out.vz > -0.001){
-                                        out.vz = 0;
-                                    }
                                     document.getElementById("overlay")?.remove();
                                     if (user.mousePressed) {
                                         out.shoot();
@@ -1390,10 +1280,8 @@
                                     }
                                                         
                                     if (out.dead === true) {
+                                        out.body.setLinvel({x:0,y:0,z:0})
                                         out.body.setTranslation({x: out.sz, y: 10, z: out.sz});
-                                        out.vy = 0;
-                                        out.vx = 0;
-                                        out.vz = 0;
                                         out.dead = false;
                                         
                                     }
@@ -1401,14 +1289,6 @@
                                     let quaternion = new THREE.Quaternion();
                                     quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                         
-                                    let newVelocity = { x: out.vx * dt, y: out.vy * dt, z: out.vz * dt };
-                                    setTimeout(() => {
-                                        //out.body.setLinvel(newVelocity);
-                                    }, 0);                                    
-                                    //out.body.setRotation(quaternion);
-                                    
-                                    //console.log('vx: ' + out.vx + 'vy: ' + out.vy + 'vz: ' + out.vz);
-        
                                     let cam = pointerLocks[out.camera.pointerLockNum].object
                                     if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
                                     else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
@@ -1426,16 +1306,13 @@
 
                                 }
                              }
-                             out.vel = function() {
-                             }
+                             
                             return out
                         })({})
                         
                 /*user*/
                     function vel(dt) {
                         if (player.playerIsExistent) {
-                            let newVelocity = { x: player.vx * dt * 7.5, y: player.vy * dt * 4, z: player.vz * dt * 7.5};
-                            player.body.setLinvel(newVelocity);
                             let quaternion = new THREE.Quaternion();
                             quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                             player.body.setRotation(quaternion);
@@ -1722,11 +1599,11 @@
                     level.id = '1';
 
                     addSkybox(85);
-                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 5, y: 1, z: 5 },"SQRE","GRAY"); // Starting platform
-                    addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); // Small jump
-                    addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); // Higher jump
-                    addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); // Side jump
-                    addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); // More vertical movement
+                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 10, y: 1, z: 10 },"SQRE","GRAY"); 
+                    addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); 
+                    addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
+                    addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
+                    addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
                  }
                 levels[2] = function(debug=false) {
@@ -1756,7 +1633,7 @@
                     addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
 
                     for (var i = 0; i < 1500; i++) {
-                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
+                        //addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
                     }
                     
 
@@ -1815,6 +1692,94 @@
                     for (var i = 0; i < 500; i++) {
                         //addPBall(random(-15, 15), random(10, 20), random(-15, 15));
                     }
+                  }
+
+
+                levels[4] = function(debug=false) {
+                    clearWorld(world);
+                    clearText();
+
+                    if (debug === false) {
+                        player.setPlayer(0,10,0,fpscamera,world);
+                        player.restart = world.takeSnapshot();
+                    } else {
+                        addOrbit(fpscamera, document.body);    
+                        player.setPlayer(0,10,0,bupcamera,world);
+                    }
+
+                    level.hasCube = true;
+                    level.hasEnem = false;
+                    level.hasGuns = false;
+                    level.hasMvTl = false;
+                    level.hasExpl = false;
+                    level.id = 'test';
+                    
+                    addSkybox(85);
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    
+                    //addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    //addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    //addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    //addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+
+                    //addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+
+                    addPCube(0,20,0);
+                    addPCube( 10, 20, 10);
+                    addPCube(-10, 20, 10);
+                    addPCube(-10, 20,-10);
+                    addPCube( 10, 20,-10);
+
+                    addPBall( 0, 20,   0);
+                    addPBall( 10, 20, 10);
+                    addPBall( 10, 20,-10);
+                    addPBall(-10, 20,-10);
+                    addPBall(-10, 20, 10);
+
+                    //console.log('testLevel1');
+
+                    for (var x = 0; x < 20; x++) {
+                        for (var z = 0; z < 20; z++) {
+                            if (x !== 0 && z !== 0){
+                                addPlatform({x: 20 * x, y:0, z:   20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
+                                addPlatform({x: 20 * -x, y:0, z:  20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
+                                addPlatform({x: 20 * -x, y:0, z:  20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
+                                addPlatform({x: 20 * x, y:0, z:   20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
+                            }
+                        }
+                    }
+                    for (var x = -19; x < 20; x++) {
+                        x *= 20;
+                        addPlatform({x: x, y:0, z:0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                        x = x / 20;
+                    }
+                    for (var z = -19; z < 20; z++) {
+                        z *= 20;
+                        addPlatform({x: 0, y:0, z:z},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                        z = z / 20;
+                    }
+                    for (var x = 0; x < 20; x++) {
+                        for (var z = 0; z < 20; z++) {
+                            
+                            addPlatform({x: 20 *  x + 10, y:0, z:  20 *  z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 * -x + 10, y:0, z:  20 *  z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 *  x + 10, y:0, z:  20 * -z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 * -x + 10, y:0, z:  20 * -z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            
+                            
+                        }
+                    }
+
+                    //C U B E S
+                    for (var i = 0; i < 500; i++) {
+                        //addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                    } 
+                    for (var i = 0; i < 500; i++) {
+                        //addPBall(random(-15, 15), random(10, 20), random(-15, 15));
+                    }
                  }
 
 
@@ -1865,7 +1830,7 @@
                     }
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 13;
-                    if (dt < (1 / 60)*13) {dt = 1 / 60 * 13;}
+                    //if (dt < (1 / 60)*13) {dt = 1 / 60 * 13;}
 
                     if (player.playerIsExistent === true) {   
                         player.runPlayerPhysics(dt);
