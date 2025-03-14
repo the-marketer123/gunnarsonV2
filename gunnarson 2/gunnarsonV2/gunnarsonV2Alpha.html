@@ -1010,7 +1010,7 @@
                                 out.height= height / 2
                                 out.xWidth= xwidth / 2
                                 out.zWidth= zwidth / 2
-                                out.fric=0.7
+                                out.fric=0.9
                                 out.airFric=0.15
                                 out.crouching=false
                                 out.crouch_friction=0.9                                
@@ -1130,31 +1130,32 @@
                                     let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
 
                                     let e = 5
-                                    if (user.keysHeld.Shift){
+                                    if (user.shift){
                                         out.crouching = true;
                                     } else {
                                         out.crouching = false;
                                     }
                                     let moving = false
-                                    if (user.keysHeld.d) {
+                                    if (user.keysHeld.d||user.keysHeld.D) {
                                         impulse.x += cdir * speed;
                                         impulse.z -= sdir * speed;
                                         moving = true
                                     }
 
-                                    if (user.keysHeld.w) {
+                                    if (user.keysHeld.w||user.keysHeld.W) {
+                                        console.log(out.crouching)
                                         impulse.x -= sdir * speed;
                                         impulse.z -= cdir * speed;
                                         moving = true
                                     }
 
-                                    if (user.keysHeld.a) {
+                                    if (user.keysHeld.a||user.keysHeld.A) {
                                         impulse.x -= cdir * speed;
                                         impulse.z += sdir * speed;
                                         moving = true
                                     }
 
-                                    if (user.keysHeld.s) {
+                                    if (user.keysHeld.s||user.keysHeld.S) {
                                         impulse.x += sdir * speed;
                                         impulse.z += cdir * speed;
                                         moving = true
@@ -1184,10 +1185,8 @@
                                         }
                                         if(out.crouching){
                                             
-                                            //let fx=impulse.x*out.crouch_friction,
-                                             //   fz=impulse.z*out.crouch_friction
-                                             let fx=impulse.x*out.fric,
-                                                fz=impulse.z*out.fric
+                                            let fx=impulse.x*out.crouch_friction,
+                                                fz=impulse.z*out.crouch_friction
                                             
                                             impulse.x-=fx*dt
                                             impulse.z-=fz*dt
@@ -1214,8 +1213,8 @@
                                             
                                         } else {
                                             
-                                            let fx=impulse.x*0,
-                                                fz=impulse.z*0
+                                            let fx=impulse.x*out.airFric*1.2,
+                                                fz=impulse.z*out.airFric*1.2
                                             
                                             impulse.x-=fx*dt
                                             impulse.z-=fz*dt
@@ -1334,6 +1333,7 @@
                         controls.mousePressed=controls.mouseClicked=false
                         controls.keysHeld={}
                         controls.keysPressed={}
+                        controls.shift=false
 
                         uiCanvas.onmousemove=function(e){
                             
@@ -1356,11 +1356,21 @@
                         }
                         
                         document.onkeydown=function(e){
-                            controls.keysHeld[e.key.toString()]=true
+                            console.log(e.key.toString() + '  on')
+                            if (e.key.toString() !== 'Shift') {
+                                controls.keysHeld[e.key.toString()]=true
+                            } else {
+                                controls.shift = true
+                            }
                         }
                         
                         document.onkeyup=function(e){
-                            controls.keysHeld[e.key.toString()]=false
+                            console.log(e.key.toString() + '  off')
+                            if (e.key.toString() !== 'Shift') {
+                                controls.keysHeld[e.key.toString()]=false
+                            } else {
+                                controls.shift = false
+                            }
                         }
 
                         document.addEventListener("keydown", (e) => {
