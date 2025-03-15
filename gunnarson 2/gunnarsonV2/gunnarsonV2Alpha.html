@@ -626,7 +626,7 @@
                 let boxCount = 0;
                 // stuff
 
-                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [], enemies = [];
+                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [], ragEnemies = [];
                 let crosshair = (function(out) {
                     out.crosshairCanvas = document.createElement("canvas");
                     out.ctx = out.crosshairCanvas.getContext("2d");
@@ -670,14 +670,14 @@
                  })({})
                  //console.log(crosshair);
 
-                function spawnEnemy(position = { x: 0, y: 5, z: 0 }) {
+                function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
                     let enemy = new THREE.Group();
                     let physicsBodies = [];
 
                     // Define sizes
-                    const torsoSize = { x: 1, y: 2, z: 0.5 };
-                    const limbSize = { x: 0.5, y: 1.5, z: 0.5 };
-                    const headRadius = 0.6;
+                    const torsoSize = { x: 0.5, y: 1, z: 0.25 };
+                    const limbSize = { x: 0.25, y: 0.75, z: 0.25 };
+                    const headRadius = 0.3;
 
                     // Create physics world reference
                     let bodyDesc, colliderDesc, rigidBody;
@@ -692,6 +692,7 @@
                         // Create physics body
                         bodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z);
                         rigidBody = world.createRigidBody(bodyDesc);
+                        rigidBody.wakeUp()
                         colliderDesc = RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2);
                         let collider = world.createCollider(colliderDesc, rigidBody);
                         physicsBodies.push({ rigidBody, collider });
@@ -709,6 +710,7 @@
                         // Create physics body
                         bodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z);
                         rigidBody = world.createRigidBody(bodyDesc);
+                        rigidBody.wakeUp()
                         colliderDesc = RAPIER.ColliderDesc.ball(radius);
                         let collider = world.createCollider(colliderDesc, rigidBody);
                         physicsBodies.push({ rigidBody, collider });
@@ -716,52 +718,44 @@
                         return rigidBody;
                      }
 
-                    // Create body parts
-                    let torso = createBox(torsoSize, { x: position.x, y: position.y, z: position.z }, 0xff0000);
-                    let leftLeg = createBox(limbSize, { x: position.x - 0.5, y: position.y - 2, z: position.z }, 0x00ff00);
-                    let rightLeg = createBox(limbSize, { x: position.x + 0.5, y: position.y - 2, z: position.z }, 0x00ff00);
-                    let leftArm = createBox(limbSize, { x: position.x - 1.2, y: position.y + 0.5, z: position.z }, 0x0000ff);
-                    let rightArm = createBox(limbSize, { x: position.x + 1.2, y: position.y + 0.5, z: position.z }, 0x0000ff);
-                    let head = createSphere(headRadius, { x: position.x, y: position.y + 2, z: position.z }, 0xffff00);
+                     // Create half-sized body parts
+                    let torso = createBox(torsoSize, { x: position.x, y: position.y, z: position.z }, 0x0000ff);
+                    let leftLeg = createBox(limbSize, { x: position.x - 0.25, y: position.y - 1, z: position.z }, 0x0000ff);
+                    let rightLeg = createBox(limbSize, { x: position.x + 0.25, y: position.y - 1, z: position.z }, 0x0000ff);
+                    let leftArm = createBox(limbSize, { x: position.x - 0.6, y: position.y + 0.1, z: position.z }, 0x0000ff);
+                    let rightArm = createBox(limbSize, { x: position.x + 0.6, y: position.y + 0.1, z: position.z }, 0x0000ff);
+                    let head = createSphere(headRadius, { x: position.x, y: position.y + 1, z: position.z }, 0x0000ff);
 
                     // Add joints to connect parts
                     function createJoint(bodyA, bodyB, anchorA, anchorB) {
-                        let identityRotation = { x: 0, y: 0, z: 0, w: 1 }; // No rotation
-                        let params = RAPIER.JointData.fixed(anchorA, identityRotation, anchorB, identityRotation);
+                        let params = RAPIER.JointData.spherical(anchorA, anchorB); // Use a spherical joint
                         world.createImpulseJoint(params, bodyA, bodyB, true);
                     }
                     function update () {
-                        let { rigidBody, collider } = physicsBodies[i];
-                        let position = rigidBody.translation();
-                        let rotation = rigidBody.rotation();
-                        enemy.children[i].position.set(position.x, position.y, position.z);
-                        enemy.children[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-                    }
+                        for (let i = 0; i < physicsBodies.length; i++) {
+                            let { rigidBody } = physicsBodies[i];
 
-                    createJoint(torso, leftLeg, { x: -0.5, y: -1, z: 0 }, { x: 0, y: 0.75, z: 0 });
-                    createJoint(torso, rightLeg, { x: 0.5, y: -1, z: 0 }, { x: 0, y: 0.75, z: 0 });
-                    createJoint(torso, leftArm, { x: -0.6, y: 0.5, z: 0 }, { x: 0.25, y: 0, z: 0 });
-                    createJoint(torso, rightArm, { x: 0.6, y: 0.5, z: 0 }, { x: -0.25, y: 0, z: 0 });
-                    createJoint(torso, head, { x: 0, y: 1, z: 0 }, { x: 0, y: -0.6, z: 0 });
-                    enemies.push({enemy, physicsBodies, update})
-                    scene.add( enemy );
-                    return { enemy, physicsBodies, update};
-                 }
-                function updateEnemy(enemyData) {
-                    console.log(enemyData)
-                    for (let g = 0; g < enemyData.length; g++){
-                        for (let i = 0; i < enemyData[g].physicsBodies.length; i++) {
-                            let { rigidBody, collider } = enemyData.physicsBodies[i];
+                            if (enemy.children[i]) {
+                                    
+                                    let position = rigidBody.translation();
+                                    let rotation = rigidBody.rotation();
 
-                            // Get position from Rapier body
-                            let position = rigidBody.translation();
-                            let rotation = rigidBody.rotation();
-
-                            // Apply to corresponding Three.js mesh
-                            enemyData.enemy.children[i].position.set(position.x, position.y, position.z);
-                            enemyData.enemy.children[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                                    enemy.children[i].position.set(position.x, position.y, position.z);
+                                    enemy.children[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                                
+                            }
                         }
                     }
+
+                    createJoint(torso, leftLeg, { x: -0.25, y: -0.5, z: 0 }, { x: 0, y: 0.375, z: 0 });
+                    createJoint(torso, rightLeg, { x: 0.25, y: -0.5, z: 0 }, { x: 0, y: 0.375, z: 0 });
+                    createJoint(torso, leftArm, { x: -0.3, y: 0.25, z: 0 }, { x: 0.125, y: 0, z: 0 });
+                    createJoint(torso, rightArm, { x: 0.3, y: 0.25, z: 0 }, { x: -0.125, y: 0, z: 0 });
+                    createJoint(torso, head, { x: 0, y: 0.5, z: 0 }, { x: 0, y: -0.3, z: 0 });
+
+                    ragEnemies.push({enemy, physicsBodies, update})
+                    scene.add( enemy );
+                    return { enemy, physicsBodies, update};
                  }
                 function explosion(position, power, range) {
                     world.forEachRigidBody((body) => { 
@@ -971,9 +965,9 @@
                             projectiles[i].update();
                         }
                     }
-                    for (var i = 0; i < enemies.length; i++) {
-                        if (enemies[i]!==undefined && enemies.length!==0) {
-                            enemies[i].update();
+                    for (var i = 0; i < ragEnemies.length; i++) {
+                        if (ragEnemies[i]!==undefined && ragEnemies.length!==0) {
+                            ragEnemies[i].update();
                         }
                     }
                  }
@@ -1651,11 +1645,12 @@
                     clearText();
 
                     if (debug === false) {
-                        player.setPlayer(0,10,0,fpscamera,world);
+                        player.setPlayer(0,1,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
+                        fpscamera.lookAt(new THREE.Vector3(-2,5,-2))
                     } else {
                         addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,10,0,bupcamera,world);
+                        player.setPlayer(0,1,0,bupcamera,world);
                     }
 
                     level.hasCube = true;
@@ -1672,7 +1667,7 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
-                    //spawnEnemy()
+                    spawnEnemyRag({x:-2,y:10,z:-2})
 
                  }
                 levels[2] = function(debug=false) {
@@ -1860,7 +1855,6 @@
                     }
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
-                        updateEnemy(enemies)
                     }
                     if (user.keysPressed.q){
                         level.update = true;
