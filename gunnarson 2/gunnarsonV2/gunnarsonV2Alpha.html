@@ -626,7 +626,7 @@
                 let boxCount = 0;
                 // stuff
 
-                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [];
+                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [], enemies = [];
                 let crosshair = (function(out) {
                     out.crosshairCanvas = document.createElement("canvas");
                     out.ctx = out.crosshairCanvas.getContext("2d");
@@ -667,9 +667,102 @@
                         out.ctx.stroke();
                     }
                     return out;
-                })({})
-                //console.log(crosshair);
+                 })({})
+                 //console.log(crosshair);
 
+                function spawnEnemy(position = { x: 0, y: 5, z: 0 }) {
+                    let enemy = new THREE.Group();
+                    let physicsBodies = [];
+
+                    // Define sizes
+                    const torsoSize = { x: 1, y: 2, z: 0.5 };
+                    const limbSize = { x: 0.5, y: 1.5, z: 0.5 };
+                    const headRadius = 0.6;
+
+                    // Create physics world reference
+                    let bodyDesc, colliderDesc, rigidBody;
+                    
+                    function createBox(size, pos, color) {
+                        let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+                        let material = new THREE.MeshStandardMaterial({ color });
+                        let mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.set(pos.x, pos.y, pos.z);
+                        enemy.add(mesh);
+
+                        // Create physics body
+                        bodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z);
+                        rigidBody = world.createRigidBody(bodyDesc);
+                        colliderDesc = RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2);
+                        let collider = world.createCollider(colliderDesc, rigidBody);
+                        physicsBodies.push({ rigidBody, collider });
+
+                        return rigidBody;
+                     }
+
+                    function createSphere(radius, pos, color) {
+                        let geometry = new THREE.SphereGeometry(radius);
+                        let material = new THREE.MeshStandardMaterial({ color });
+                        let mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.set(pos.x, pos.y, pos.z);
+                        enemy.add(mesh);
+
+                        // Create physics body
+                        bodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z);
+                        rigidBody = world.createRigidBody(bodyDesc);
+                        colliderDesc = RAPIER.ColliderDesc.ball(radius);
+                        let collider = world.createCollider(colliderDesc, rigidBody);
+                        physicsBodies.push({ rigidBody, collider });
+
+                        return rigidBody;
+                     }
+
+                    // Create body parts
+                    let torso = createBox(torsoSize, { x: position.x, y: position.y, z: position.z }, 0xff0000);
+                    let leftLeg = createBox(limbSize, { x: position.x - 0.5, y: position.y - 2, z: position.z }, 0x00ff00);
+                    let rightLeg = createBox(limbSize, { x: position.x + 0.5, y: position.y - 2, z: position.z }, 0x00ff00);
+                    let leftArm = createBox(limbSize, { x: position.x - 1.2, y: position.y + 0.5, z: position.z }, 0x0000ff);
+                    let rightArm = createBox(limbSize, { x: position.x + 1.2, y: position.y + 0.5, z: position.z }, 0x0000ff);
+                    let head = createSphere(headRadius, { x: position.x, y: position.y + 2, z: position.z }, 0xffff00);
+
+                    // Add joints to connect parts
+                    function createJoint(bodyA, bodyB, anchorA, anchorB) {
+                        let identityRotation = { x: 0, y: 0, z: 0, w: 1 }; // No rotation
+                        let params = RAPIER.JointData.fixed(anchorA, identityRotation, anchorB, identityRotation);
+                        world.createImpulseJoint(params, bodyA, bodyB, true);
+                    }
+                    function update () {
+                        let { rigidBody, collider } = physicsBodies[i];
+                        let position = rigidBody.translation();
+                        let rotation = rigidBody.rotation();
+                        enemy.children[i].position.set(position.x, position.y, position.z);
+                        enemy.children[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                    }
+
+                    createJoint(torso, leftLeg, { x: -0.5, y: -1, z: 0 }, { x: 0, y: 0.75, z: 0 });
+                    createJoint(torso, rightLeg, { x: 0.5, y: -1, z: 0 }, { x: 0, y: 0.75, z: 0 });
+                    createJoint(torso, leftArm, { x: -0.6, y: 0.5, z: 0 }, { x: 0.25, y: 0, z: 0 });
+                    createJoint(torso, rightArm, { x: 0.6, y: 0.5, z: 0 }, { x: -0.25, y: 0, z: 0 });
+                    createJoint(torso, head, { x: 0, y: 1, z: 0 }, { x: 0, y: -0.6, z: 0 });
+                    enemies.push({enemy, physicsBodies, update})
+                    scene.add( enemy );
+                    return { enemy, physicsBodies, update};
+                 }
+                function updateEnemy(enemyData) {
+                    console.log(enemyData)
+                    for (let g = 0; g < enemyData.length; g++){
+                        for (let i = 0; i < enemyData[g].physicsBodies.length; i++) {
+                            let { rigidBody, collider } = enemyData.physicsBodies[i];
+
+                            // Get position from Rapier body
+                            let position = rigidBody.translation();
+                            let rotation = rigidBody.rotation();
+
+                            // Apply to corresponding Three.js mesh
+                            enemyData.enemy.children[i].position.set(position.x, position.y, position.z);
+                            enemyData.enemy.children[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                        }
+                    }
+                 }
                 function explosion(position, power, range) {
                     world.forEachRigidBody((body) => { 
                         if (!body) return;
@@ -878,48 +971,16 @@
                             projectiles[i].update();
                         }
                     }
+                    for (var i = 0; i < enemies.length; i++) {
+                        if (enemies[i]!==undefined && enemies.length!==0) {
+                            enemies[i].update();
+                        }
+                    }
                  }
                 
                 
-                /*function addPBall(x, y, z, radius = 0.25) {
-                    if (sphereCount >= maxInstances) return;
-
-                    const density = 20;
-
-                    // Physics
-                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
-                    let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
-                    world.createCollider(colliderDesc, rigid);
-                    rigid.wakeUp();
-
-                    // Set instance matrix
-                    let matrix = new THREE.Matrix4();
-                    matrix.setPosition(x, y, z);
-                    sphereInstancedMesh.setMatrixAt(sphereCount, matrix);
-                    sphereCount++;
-
-                 }
-
-                function addPCube(x, y, z) {
-                    if (boxCount >= maxInstances) return;
-
-                    const density = 20;
-
-                    // Physics
-                    let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z);
-                    let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25, 0.25, 0.25).setDensity(density);
-                    world.createCollider(colliderDesc, rigid);
-                    rigid.wakeUp();
-
-                    // Set instance matrix
-                    let matrix = new THREE.Matrix4();
-                    matrix.setPosition(x, y, z);
-                    boxInstancedMesh.setMatrixAt(boxCount, matrix);
-                    boxCount++;
-                 }
-               */function addSkybox(angle) {
+               
+                function addSkybox(angle) {
                     const sky = new Sky();
                     sky.scale.setScalar( 450000 );
 
@@ -1130,44 +1191,51 @@
                                     let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
 
                                     let e = 5
-                                    if (user.shift){
+                                    if (user.keysHeld.shift){
                                         out.crouching = true;
                                     } else {
                                         out.crouching = false;
                                     }
                                     let moving = false
-                                    if (user.keysHeld.d||user.keysHeld.D) {
+                                    if (user.keysHeld.d) {
                                         impulse.x += cdir * speed;
                                         impulse.z -= sdir * speed;
                                         moving = true
-                                    }
-
-                                    if (user.keysHeld.w||user.keysHeld.W) {
-                                        console.log(out.crouching)
-                                        impulse.x -= sdir * speed;
-                                        impulse.z -= cdir * speed;
-                                        moving = true
-                                    }
-
-                                    if (user.keysHeld.a||user.keysHeld.A) {
+                                    } else if (user.keysHeld.a) {
                                         impulse.x -= cdir * speed;
                                         impulse.z += sdir * speed;
                                         moving = true
                                     }
 
-                                    if (user.keysHeld.s||user.keysHeld.S) {
+                                    if (user.keysHeld.w) {
+                                        console.log(out.crouching)
+                                        impulse.x -= sdir * speed;
+                                        impulse.z -= cdir * speed;
+                                        moving = true
+                                    } else if (user.keysHeld.s) {
                                         impulse.x += sdir * speed;
                                         impulse.z += cdir * speed;
                                         moving = true
                                     }
                                     let velocity = out.body.linvel();
-                                    let frictionImpulse = {
-                                        x: -velocity.x * 0.2, // Adjust multiplier to control slowdown rate
+                                    let groundFrictionImpulse = {
+                                        x: -velocity.x * 2, // Adjust multiplier to control slowdown rate
                                         y: 0,
-                                        z: -velocity.z * 0.2
+                                        z: -velocity.z * 2
+                                    };
+                                    let airFrictionImpulse = {
+                                        x: -velocity.x * 0.5, // Adjust multiplier to control slowdown rate
+                                        y: 0,
+                                        z: -velocity.z * 0.5
                                     };
 
-                                    if (!moving && out.grounded) out.body.applyImpulse(frictionImpulse, true);
+                                    if (!moving && out.grounded) 
+                                    {
+                                        out.body.applyImpulse(groundFrictionImpulse, true);
+                                    } else if (!moving && !out.ground)                                     
+                                    {
+                                        out.body.applyImpulse(airFrictionImpulse, true);
+                                    }
 
                                     // Apply impulse to the player body
                                     if (impulse.x !== 0 || impulse.z !== 0) {
@@ -1351,34 +1419,23 @@
                         }
                         
                         uiCanvas.onmouseup=function(){
-                            
                             controls.mousePressed=false
                         }
                         
                         document.onkeydown=function(e){
-                            console.log(e.key.toString() + '  on')
-                            if (e.key.toString() !== 'Shift') {
-                                controls.keysHeld[e.key.toString()]=true
-                            } else {
-                                controls.shift = true
-                            }
+                            controls.keysHeld[e.key.toLowerCase()]=true
                         }
                         
                         document.onkeyup=function(e){
-                            console.log(e.key.toString() + '  off')
-                            if (e.key.toString() !== 'Shift') {
-                                controls.keysHeld[e.key.toString()]=false
-                            } else {
-                                controls.shift = false
-                            }
+                            controls.keysHeld[e.key.toLowerCase()]=false
                         }
 
                         document.addEventListener("keydown", (e) => {
-                            controls.keysPressed[e.key.toString()] = true;
+                            controls.keysPressed[e.key.toLowerCase()] = true;
                         });
 
                         document.addEventListener("keyup", (e) => {
-                            controls.keysPressed[e.key.toString()] = false;
+                            controls.keysPressed[e.key.toLowerCase()] = false;
                         });
 
                         controls.update = function() {
@@ -1615,6 +1672,8 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
+                    //spawnEnemy()
+
                  }
                 levels[2] = function(debug=false) {
                     clearWorld(world);
@@ -1643,7 +1702,7 @@
                     addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
 
                     for (var i = 0; i < 1500; i++) {
-                        //addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
+                        addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
                     }
                     
 
@@ -1801,6 +1860,7 @@
                     }
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
+                        updateEnemy(enemies)
                     }
                     if (user.keysPressed.q){
                         level.update = true;
