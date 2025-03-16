@@ -670,6 +670,59 @@
                  })({})
                  //console.log(crosshair);
 
+                function spawnEnemy (position = { x: 0, y: 5, z: 0 }) {
+                    //let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+                    //let material = new THREE.MeshStandardMaterial({ color });
+                    let enemy = new THREE.Group();
+
+                    const torsoSize = { x: 0.5, y: 0.75, z: 0.25 };
+                    const limbSize = { x: 0.25, y: 0.75, z: 0.25 };
+                    const headRadius = 0.3;
+
+                    function createBox(size, pos, color=0x0000ff, rot=new THREE.Quaternion(0,0,0,1)) {
+                        let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+                        let material = new THREE.MeshStandardMaterial({ color });
+                        let mesh = new THREE.Mesh(geometry, material);
+                        mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w)
+                        mesh.position.set(pos.x, pos.y, pos.z);
+                        enemy.add(mesh);
+
+                        return mesh
+                     }
+
+                    function createSphere(radius, pos, color=0x0000ff, rot=new THREE.Quaternion(0,0,0,1)) {
+                        let geometry = new THREE.SphereGeometry(radius);
+                        let material = new THREE.MeshStandardMaterial({ color });
+                        let mesh = new THREE.Mesh(geometry, material);
+                        mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w)
+                        mesh.position.set(pos.x, pos.y, pos.z);
+                        enemy.add(mesh);
+
+                        return mesh
+                     }
+
+                    let quaternion1 = new THREE.Quaternion();
+                    let quaternion2 = new THREE.Quaternion();
+                    let axis = new THREE.Vector3(0, 1, 0); // Y-axis
+                    let angle1 = THREE.MathUtils.degToRad(-25); // Convert 45 degrees to radians
+                    let angle2 = THREE.MathUtils.degToRad(25); // Convert 45 degrees to radians
+                    quaternion1.setFromAxisAngle(axis, angle1);
+                    quaternion2.setFromAxisAngle(axis, angle2);
+
+                    let torso = createBox(torsoSize, { x: position.x          , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
+                    let leftLeg = createBox(limbSize, { x: position.x - (1/6) , y: position.y - 0.75, z: position.z }, 0x0000ff,quaternion1);
+                    let rightLeg = createBox(limbSize, { x: position.x + (1/6), y: position.y - 0.75, z: position.z }, 0x0000ff,quaternion2);
+                    let leftArm = createBox(limbSize, { x: position.x - 0.4  , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
+                    let rightArm = createBox(limbSize, { x: position.x + 0.4 , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
+                    let head = createSphere(headRadius, { x: position.x       , y: position.y + 0.65, z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
+
+                    scene.add( enemy )
+
+                    function update () {
+
+                     }
+                    
+                }
                 function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
                     let enemy = new THREE.Group();
                     let physicsBodies = [];
@@ -1667,7 +1720,7 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
-                    spawnEnemyRag({x:-2,y:10,z:-2})
+                    spawnEnemy({x:-2,y:10,z:-2})
 
                  }
                 levels[2] = function(debug=false) {
