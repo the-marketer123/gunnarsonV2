@@ -626,7 +626,7 @@
                 let boxCount = 0;
                 // stuff
 
-                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [], ragEnemies = [];
+                let plats = [], cubes = [], spheres = [], lines = [], projectiles = [], enemies=[],enemyMeshes = [],ragEnemies = [];
                 let crosshair = (function(out) {
                     out.crosshairCanvas = document.createElement("canvas");
                     out.ctx = out.crosshairCanvas.getContext("2d");
@@ -669,10 +669,27 @@
                     return out;
                  })({})
                  //console.log(crosshair);
+                function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gun='hand') {
+                    let rigid,collider,mesh;
+                    function init () {
+                        let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true)
+                        rigid = world.createRigidBody(rigidBodyDesc);
+                        let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(1).setSensor(true);
+                        collider = world.createCollider(colliderDesc, rigid);
+                        collider.userData = { id: "enemy" }; 
+                        rigid.wakeUp();
 
-                function spawnEnemy (position = { x: 0, y: 5, z: 0 }) {
-                    //let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-                    //let material = new THREE.MeshStandardMaterial({ color });
+                        mesh = drawEnemy(pos,0)
+                    }
+                    init()
+                    function update() {
+
+                        mesh.update()
+                    }
+                    enemies.push({rigid,collider,mesh,update})
+                    return {rigid,collider,mesh,update}
+                 }
+                function drawEnemy (position = { x: 0, y: 5, z: 0 },pose=0) {
                     let enemy = new THREE.Group();
 
                     const torsoSize = { x: 0.5, y: 0.75, z: 0.25 };
@@ -715,14 +732,72 @@
                     let leftArm = createBox(limbSize, { x: position.x - 0.4  , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
                     let rightArm = createBox(limbSize, { x: position.x + 0.4 , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
                     let head = createSphere(headRadius, { x: position.x       , y: position.y + 0.65, z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
+                    
 
                     scene.add( enemy )
+                    function applyPos(pose=0) {
+                        let pos = torso.position
+                        let rot = torso.quaternion
 
-                    function update () {
+                        // Define relative positions for limbs and head
+                        const leftLegOffset = new THREE.Vector3(-1 / 6, -0.75, 0);
+                        const rightLegOffset = new THREE.Vector3(1 / 6, -0.75, 0);
+                        const leftArmOffset = new THREE.Vector3(-0.4, 0, 0);
+                        const rightArmOffset = new THREE.Vector3(0.4, 0, 0);
+                        const headOffset = new THREE.Vector3(0, 0.65, 0);
+
+                        // Apply torso rotation to the offsets
+                        leftLegOffset.applyQuaternion(rot);
+                        rightLegOffset.applyQuaternion(rot);
+                        leftArmOffset.applyQuaternion(rot);
+                        rightArmOffset.applyQuaternion(rot);
+                        headOffset.applyQuaternion(rot);
+
+                        // Set positions based on torso
+                        leftLeg.position.set(pos.x + leftLegOffset.x, pos.y + leftLegOffset.y, pos.z + leftLegOffset.z);
+                        rightLeg.position.set(pos.x + rightLegOffset.x, pos.y + rightLegOffset.y, pos.z + rightLegOffset.z);
+                        leftArm.position.set(pos.x + leftArmOffset.x, pos.y + leftArmOffset.y, pos.z + leftArmOffset.z);
+                        rightArm.position.set(pos.x + rightArmOffset.x, pos.y + rightArmOffset.y, pos.z + rightArmOffset.z);
+                        head.position.set(pos.x + headOffset.x, pos.y + headOffset.y, pos.z + headOffset.z);
+
+                        // Apply rotation to maintain alignment
+                        leftLeg.quaternion.copy(rot);
+                        rightLeg.quaternion.copy(rot);
+                        leftArm.quaternion.copy(rot);
+                        rightArm.quaternion.copy(rot);
+                        head.quaternion.copy(rot);
+
+                        const rightLegTiltAngle = Math.PI / -12;                   
+                        const leftLegTiltAngle = Math.PI /   12; 
+                        const rightLegTiltQuaternion = new THREE.Quaternion();
+                        const leftLegTiltQuaternion = new THREE.Quaternion();
+                        rightLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rightLegTiltAngle); 
+                        leftLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), leftLegTiltAngle); 
+
+                        leftLeg.quaternion.multiply(leftLegTiltQuaternion);
+                        rightLeg.quaternion.multiply(rightLegTiltQuaternion);
+                    }
+                    let somevar = 0;
+                    function update (pose=0) {
+                        applyPos()
+
+                        let targetPosition = new THREE.Vector3(player.body.translation().x, torso.position.y, player.body.translation().z);
+                        torso.lookAt(targetPosition); 
+                        
+
+                        //stuff
+                        //torso.position.set(-2,2,somevar)
+                        //if (somevar < 0.01) {somevar +=0.1;} else {somevar = 0}
+                        //stuff
+
 
                      }
+                     enemyMeshes.push({ enemy , update })
+                     console.log(enemy)
+
+                     return { enemy , update }
                     
-                }
+                 }
                 function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
                     let enemy = new THREE.Group();
                     let physicsBodies = [];
@@ -748,6 +823,7 @@
                         rigidBody.wakeUp()
                         colliderDesc = RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2);
                         let collider = world.createCollider(colliderDesc, rigidBody);
+                        collider.userData = { id: "movable_object" }; 
                         physicsBodies.push({ rigidBody, collider });
 
                         return rigidBody;
@@ -766,6 +842,7 @@
                         rigidBody.wakeUp()
                         colliderDesc = RAPIER.ColliderDesc.ball(radius);
                         let collider = world.createCollider(colliderDesc, rigidBody);
+                        collider.userData = { id: "movable_object" }; 
                         physicsBodies.push({ rigidBody, collider });
 
                         return rigidBody;
@@ -1023,6 +1100,11 @@
                             ragEnemies[i].update();
                         }
                     }
+                    for (var i = 0; i < enemies.length; i++) {
+                        if (enemies[i]!==undefined && enemies.length!==0) {
+                            enemies[i].mesh.update();
+                        }
+                    }
                  }
                 
                 
@@ -1188,7 +1270,7 @@
                                         let hit = world.castRay(blockRay, 10, true);
                                         
                                         if (hit && hit.collider && hit.toi < 2) {                                    
-                                            let body = hit.collider.parent();console.log(hit.collider);
+                                            let body = hit.collider.parent();
                                             if (hit.collider.userData && hit.collider.userData.id) {                                          
                                                 if (hit.collider.userData.id === "movable_object") {                                   
                                                     body.setTranslation(spawnPosition);
@@ -1255,7 +1337,6 @@
                                     }
 
                                     if (user.keysHeld.w) {
-                                        console.log(out.crouching)
                                         impulse.x -= sdir * speed;
                                         impulse.z -= cdir * speed;
                                         moving = true
@@ -1395,7 +1476,7 @@
                                                         
                                     if (out.dead === true) {
                                         out.body.setLinvel({x:0,y:0,z:0})
-                                        out.body.setTranslation({x: out.sz, y: 10, z: out.sz});
+                                        out.body.setTranslation({x: out.sz, y: out.sy, z: out.sz});
                                         out.dead = false;
                                         
                                     }
@@ -1434,7 +1515,6 @@
                             for (let i = 0; i < objectsToRemove.length; i++) {
                                 let body = objectsToRemove[i];
                                 if (body && world.getRigidBody(body.handle)) { // Ensure body exists
-                                    console.log(`Removing body: ${body}`);
                                     world.removeRigidBody(body);
                                 }
                             }
@@ -1524,6 +1604,8 @@
                             let rigid = world.createRigidBody(rigidBodyDesc);
                             let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
                             let collider = world.createCollider(colliderDesc, rigid);
+                            collider.userData = { id: 'bullet' }
+
 
                             // Apply initial velocity in camera direction
                             const initialVelocity = direction.clone().multiplyScalar(speed);
@@ -1638,10 +1720,30 @@
                             }
                         }
                     });
+                    enemies.forEach(enemy => {                        
+                        if (enemy != undefined) {
+                            if (enemy.collider) {
+                                world.removeCollider(enemy.collider); 
+                            }
+                            if (enemy.rigid) {
+                                world.removeRigidBody(enemy.rigid); 
+                            }
+                            if (enemy.mesh) {
+                                while (enemy.mesh.enemy.children.length > 0) {
+                                    let child = enemy.mesh.enemy.children[0];
+                                    scene.remove(child);
+                                    enemy.mesh.enemy.remove(child);
+                                }
+                            }
+                        }
+                    });
 
                     plats = []; // Clear the array
                     cubes = []; // Clear the array
                     spheres = []; // Clear the array
+                    enemies = []; // Clear the array
+                    ragEnemies = []; // Clear the array
+                    enemyMeshes = []; // Clear the arrayenemyMeshes = [],ragEnemies = []
                     
 
                     rigidBodies = []; // Clear the array
@@ -1720,7 +1822,7 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
-                    spawnEnemy({x:-2,y:10,z:-2})
+                    spawnEnemy({x:-2,y:2,z:-2})
 
                  }
                 levels[2] = function(debug=false) {
@@ -1817,11 +1919,11 @@
                     clearText();
 
                     if (debug === false) {
-                        player.setPlayer(0,10,0,fpscamera,world);
+                        player.setPlayer(0,100,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
                         addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,10,0,bupcamera,world);
+                        player.setPlayer(0,100,0,bupcamera,world);
                     }
 
                     level.hasCube = true;
@@ -1837,10 +1939,10 @@
                     addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
                     
-                    //addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    //addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    //addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    //addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
                     //addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
 
@@ -1878,24 +1980,22 @@
                         addPlatform({x: 0, y:0, z:z},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
                         z = z / 20;
                     }
-                    for (var x = 0; x < 20; x++) {
-                        for (var z = 0; z < 20; z++) {
-                            
-                            addPlatform({x: 20 *  x + 10, y:0, z:  20 *  z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 * -x + 10, y:0, z:  20 *  z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 *  x + 10, y:0, z:  20 * -z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 * -x + 10, y:0, z:  20 * -z + 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            
-                            
+                    for (var x = 0; x < 19; x++) {
+                        for (var z = 0; z < 9; z++) {
+                            let y=30
+                            addPlatform({x: 20 *  x + y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 * -x - y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 *  x + y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 * -x - y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
                         }
                     }
 
                     //C U B E S
-                    for (var i = 0; i < 500; i++) {
-                        //addPCube(random(-15, 15), random(10, 20), random(-15, 15));
+                    for (var i = 0; i < 5000; i++) {
+                        addPCube(random(-600, 600), random(10, 20), random(-600, 600));
                     } 
                     for (var i = 0; i < 500; i++) {
-                        //addPBall(random(-15, 15), random(10, 20), random(-15, 15));
+                        addPBall(random(-600, 600), random(10, 20), random(-600, 600));
                     }
                  }
 
