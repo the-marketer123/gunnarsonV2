@@ -1210,7 +1210,6 @@
                                 out.crouch_friction=0.9                                
                                 out.walkSpeed= 5.5
                                 out.jumpPower= 27
-                                out.gravity=0.065
                                 out.yaw=0
                                 out.pitch=0
                                 out.sensitivity=0.005
@@ -2062,8 +2061,8 @@
                     if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
                     cooldown.updateCooldowns();
-                    console.log('FPS:   '+ fps)
-                    //world.timestep = 0.008; // Faster physics (120 FPS)
+
+                    world.timestep = 1 / fps; // Faster physics (120 FPS)
 
                  }
 
