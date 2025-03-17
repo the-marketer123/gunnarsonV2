@@ -1192,330 +1192,326 @@
                 /*player*/
 
                     let player=(function(out){
-                            out.setPlayer = function(x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
-                                out.sx=x
-                                out.sy=y
-                                out.sz=z
-                                out.x=x
-                                out.y=y
-                                out.z=z                   
-                                out.camera= camera
-                                out.world= world
-                                out.height= height / 2
-                                out.xWidth= xwidth / 2
-                                out.zWidth= zwidth / 2
-                                out.fric=0.9
-                                out.airFric=0.15
-                                out.crouching=false
-                                out.crouch_friction=0.9                                
-                                out.walkSpeed= 5.5
-                                out.jumpPower= 27
-                                out.yaw=0
-                                out.pitch=0
-                                out.sensitivity=0.005
-                                out.fov=70
-                                out.radius=0.5
-                                out.dead= false
-                                out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.25)
-                                out.body = out.world.createRigidBody(out.rigid);
-                                out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
-                                out.colliderDesc.userData = { id: "unmovable_object" }; 
-                                out.playerIsExistent= true
-                                out.restart= 1
-                                out.grounded= false
-                                out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
-                                out.gun = 'hand'
-                                out.holding = {ch:false, coll: undefined, body: undefined}
-                                out.collider = world.createCollider(out.colliderDesc, out.body);
-                                addPointerLock(camera, uiCanvas);
-                                if (debug) {scene.add(out.debugmesh);}
-                             }
-                            out.prevPos;       
-                            out.runPlayerDebug = function (dt, rayOrigin) {
-                                out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
-                                for (var i = 0; i < lines.length; i++) {
-                                    scene.remove(lines[i]);
+                        out.setPlayer = function(x,y,z,camera,world, xwidth=1, height=2, zwidth=1) {
+                            out.sx=x
+                            out.sy=y
+                            out.sz=z
+                            out.x=x
+                            out.y=y
+                            out.z=z                   
+                            out.camera= camera
+                            out.world= world
+                            out.height= height / 2
+                            out.xWidth= xwidth / 2
+                            out.zWidth= zwidth / 2
+                            out.fric=0.9
+                            out.airFric=0.15
+                            out.crouching=false
+                            out.crouch_friction=0.9                                
+                            out.walkSpeed= 5.5
+                            out.jumpPower= 27
+                            out.yaw=0
+                            out.pitch=0
+                            out.sensitivity=0.005
+                            out.fov=70
+                            out.radius=0.5
+                            out.dead= false
+                            out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.3)
+                            out.body = out.world.createRigidBody(out.rigid);
+                            out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
+                            out.colliderDesc.userData = { id: "unmovable_object" }; 
+                            out.playerIsExistent= true
+                            out.restart= 1
+                            out.grounded= false
+                            out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
+                            out.gun = 'hand'
+                            out.holding = {ch:false, coll: undefined, body: undefined}
+                            out.collider = world.createCollider(out.colliderDesc, out.body);
+                            addPointerLock(camera, uiCanvas);
+                            if (debug) {scene.add(out.debugmesh);}
+                            }
+                        out.prevPos;       
+                        out.runPlayerDebug = function (dt, rayOrigin) {
+                            out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
+                            for (var i = 0; i < lines.length; i++) {
+                                scene.remove(lines[i]);
+                            }
+                            drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x, rayOrigin.y   - 1.001, rayOrigin.z),   new THREE.Vector3(rayOrigin.x, rayOrigin.y - 2.001, rayOrigin.z)    ]);
+                            drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
+                            drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
+                            drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
+                            drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
+
+                            ui_ctx.fillStyle = 'white';
+                            ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
+                            ui_ctx.fillText('X Pos: '+out.x.toFixed(2),10,30)
+                            ui_ctx.fillText('Y Pos: '+out.y.toFixed(2),10,45)
+                            ui_ctx.fillText('Z Pos: '+out.z.toFixed(2),10,60)
+                            ui_ctx.fillText('X Vel: '+out.body.linvel().x,10,75)
+                            ui_ctx.fillText('Y Vel: '+out.body.linvel().y,10,90)
+                            ui_ctx.fillText('Z Vel: '+out.body.linvel().z,10,105)
+                            ui_ctx.fillText('Yaw: '+(-out.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
+                            ui_ctx.fillText('Pitch: '+out.pitch.toFixed(2),10,135)
+                            ui_ctx.fillText('Grounded: '+out.grounded,10,150)
+                            }
+                        out.shoot = function() {
+                            if (out.gun === 'pistol') {                                        
+                                if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
+                                    guns.pistol.shoot();
                                 }
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x, rayOrigin.y   - 1.001, rayOrigin.z),   new THREE.Vector3(rayOrigin.x, rayOrigin.y - 2.001, rayOrigin.z)    ]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z - 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
-                                drawDebugLine(scene, [new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 2.001, rayOrigin.z + 0.5)]);
+                            } else {
 
-                                ui_ctx.fillStyle = 'white';
-                                ui_ctx.fillText('FPS: '+(1/(dt*0.1)).toFixed(2),10,15)
-                                ui_ctx.fillText('X Pos: '+out.x.toFixed(2),10,30)
-                                ui_ctx.fillText('Y Pos: '+out.y.toFixed(2),10,45)
-                                ui_ctx.fillText('Z Pos: '+out.z.toFixed(2),10,60)
-                                ui_ctx.fillText('X Vel: '+out.body.linvel().x,10,75)
-                                ui_ctx.fillText('Y Vel: '+out.body.linvel().y,10,90)
-                                ui_ctx.fillText('Z Vel: '+out.body.linvel().z,10,105)
-                                ui_ctx.fillText('Yaw: '+(-out.yaw*10000%(Math.PI*20000)/10000).toFixed(2),10,120)
-                                ui_ctx.fillText('Pitch: '+out.pitch.toFixed(2),10,135)
-                                ui_ctx.fillText('Grounded: '+out.grounded,10,150)
-                             }
-                            out.shoot = function() {
-                                if (out.gun === 'pistol') {                                        
-                                    if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
-                                        guns.pistol.shoot();
-                                    }
-                                } else {
+                                const cameraPosition = out.camera.position;
+                                const direction = new THREE.Vector3();
+                                out.camera.getWorldDirection(direction);
+                                                        
+                                const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
+                                if (!out.holding.ch) { 
 
-                                    const cameraPosition = out.camera.position;
-                                    const direction = new THREE.Vector3();
-                                    out.camera.getWorldDirection(direction);
-                                                            
-                                    const spawnPosition = cameraPosition.clone().add(direction.clone().multiplyScalar(2));
-                                    if (!out.holding.ch) { 
-
-                                        let rayDirection = direction.clone().multiplyScalar(5);
-                                        let blockRay = new RAPIER.Ray(spawnPosition, rayDirection);                                    
-                                        let hit = world.castRay(blockRay, 10, true);
-                                        
-                                        if (hit && hit.collider && hit.toi < 2) {                                    
-                                            let body = hit.collider.parent();
-                                            if (hit.collider.userData && hit.collider.userData.id) {                                          
-                                                if (hit.collider.userData.id === "movable_object") {                                   
-                                                    body.setTranslation(spawnPosition);
-                                                    out.holding.ch = true;
-                                                    out.holding.coll = hit.collider
-                                                    out.holding.body = body
-                                                }
+                                    let rayDirection = direction.clone().multiplyScalar(5);
+                                    let blockRay = new RAPIER.Ray(spawnPosition, rayDirection);                                    
+                                    let hit = world.castRay(blockRay, 10, true);
+                                    
+                                    if (hit && hit.collider && hit.toi < 2) {                                    
+                                        let body = hit.collider.parent();
+                                        if (hit.collider.userData && hit.collider.userData.id) {                                          
+                                            if (hit.collider.userData.id === "movable_object") {                                   
+                                                body.setTranslation(spawnPosition);
+                                                out.holding.ch = true;
+                                                out.holding.coll = hit.collider
+                                                out.holding.body = body
                                             }
-                                        }  
-                                    } else if (out.holding.body) { 
-                                        const rect = document.createElement("div");
-                                        rect.style.position = "fixed";
-                                        rect.style.top = "50px";
-                                        rect.style.left = "50px";
-                                        rect.style.width = "25px";
-                                        rect.style.height = "25px";
-                                        rect.style.background = "rgba(0, 255, 0, 0.5)"; // Semi-transparent black
-                                        rect.style.zIndex = "9999"; // Ensure it's on top
-                                        rect.style.pointerEvents = "none"; // Allows clicking elements underneath
-                                        rect.style.borderRadius = "5px"; // Rounded edges
-                                        rect.id = "overlay";
-                                        
-                                        // Add it to the page
-                                        document.body.appendChild(rect);
-
-                                        out.holding.body.setTranslation(spawnPosition);
-                                        out.holding.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-                                        out.holding.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-                                    }                                   
-
-
+                                        }
+                                    }  
+                                } else if (out.holding.body) { 
+                                    const rect = document.createElement("div");
+                                    rect.style.position = "fixed";
+                                    rect.style.top = "50px";
+                                    rect.style.left = "50px";
+                                    rect.style.width = "25px";
+                                    rect.style.height = "25px";
+                                    rect.style.background = "rgba(0, 255, 0, 0.5)"; // Semi-transparent black
+                                    rect.style.zIndex = "9999"; // Ensure it's on top
+                                    rect.style.pointerEvents = "none"; // Allows clicking elements underneath
+                                    rect.style.borderRadius = "5px"; // Rounded edges
+                                    rect.id = "overlay";
                                     
-                                }
-                             }
-                            out.runPlayerPhysics = function (dt){
-                                if (out.playerIsExistent) {
+                                    // Add it to the page
+                                    document.body.appendChild(rect);
+
+                                    out.holding.body.setTranslation(spawnPosition);
+                                    out.holding.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+                                    out.holding.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+                                }                                   
+
+
                                 
-                                    out.cosPitch = Math.cos(-out.pitch);
-                                    out.sinPitch = Math.sin(-out.pitch);
-                                    out.cosYaw = Math.cos(-out.yaw);
-                                    out.sinYaw = Math.sin(-out.yaw);
+                            }
+                            }
+                        out.runPlayerPhysics = function (dt){
+                            if (out.playerIsExistent) {
+                            
+                                out.cosPitch = Math.cos(-out.pitch);
+                                out.sinPitch = Math.sin(-out.pitch);
+                                out.cosYaw = Math.cos(-out.yaw);
+                                out.sinYaw = Math.sin(-out.yaw);
 
-                                    let sdir = out.sinYaw,
-                                        cdir = -out.cosYaw,
-                                        speed = -out.walkSpeed * (out.crouching ? (out.grounded ? 0.75 : 0.5) : 1) * (out.grounded ? 1 : 0.85);
+                                let sdir = out.sinYaw,
+                                    cdir = -out.cosYaw,
+                                    speed = -out.walkSpeed * (out.crouching ? (out.grounded ? 0.75 : 0.5) : 1) * (out.grounded ? 1 : 0.85);
 
-                                    let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
+                                let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
 
-                                    let e = 5
-                                    if (user.keysHeld.shift){
-                                        out.crouching = true;
-                                    } else {
-                                        out.crouching = false;
-                                    }
-                                    let moving = false
-                                    
-                                    if (user.keysHeld.d) {
+                                let e = 5
+                                if (user.keysHeld.ShiftLeft){
+                                    out.crouching = true;
+                                } else {
+                                    out.crouching = false;
+                                }
+
+                                let movingX = !(user.keysHeld.KeyD && user.keysHeld.KeyA);
+                                let movingZ = !(user.keysHeld.KeyW && user.keysHeld.KeyS);
+
+                                if (movingX) {
+                                    if (user.keysHeld.KeyD) {
                                         impulse.x += cdir * speed;
                                         impulse.z -= sdir * speed;
-                                        moving = true
-                                    } 
-                                    if (user.keysHeld.a) {
+                                    }
+                                    if (user.keysHeld.KeyA) {
                                         impulse.x -= cdir * speed;
                                         impulse.z += sdir * speed;
-                                        moving = true
                                     }
-                                    if (user.keysHeld.d && user.keysHeld.a){
-                                        moving = false
-                                    } 
-                                    if (user.keysHeld.w) {
+                                }
+
+                                if (movingZ) {
+                                    if (user.keysHeld.KeyW) {
                                         impulse.x -= sdir * speed;
                                         impulse.z -= cdir * speed;
-                                        moving = true
-                                    } 
-                                    if (user.keysHeld.s) {
+                                    }
+                                    if (user.keysHeld.KeyS) {
                                         impulse.x += sdir * speed;
                                         impulse.z += cdir * speed;
-                                        moving = true
                                     }
-                                    if (user.keysHeld.w && user.keysHeld.s){
-                                        moving = false
-                                    }
-
-                                    let velocity = out.body.linvel();
-                                    let groundFrictionImpulse = {
-                                        x: -velocity.x * 2, // Adjust multiplier to control slowdown rate
-                                        y: 0,
-                                        z: -velocity.z * 2
-                                    };
-                                    let airFrictionImpulse = {
-                                        x: -velocity.x * 0.5, // Adjust multiplier to control slowdown rate
-                                        y: 0,
-                                        z: -velocity.z * 0.5
-                                    };
-
-                                    if (!moving && out.grounded) 
-                                    {
-                                        out.body.applyImpulse(groundFrictionImpulse, true);
-                                    } else if (!moving && !out.ground)                                     
-                                    {
-                                        out.body.applyImpulse(airFrictionImpulse, true);
-                                    }
-
-                                    // Apply impulse to the player body
-                                    if (impulse.x !== 0 || impulse.z !== 0) {
-                                        if (out.body.linvel().x < e && out.body.linvel().x > -e && out.body.linvel().z < e && out.body.linvel().z > -e){
-                                            out.body.applyImpulse(impulse, true);
-                                        }
-                                    }
-
-                                    if (out.grounded) {
-                                        if (impulse.y < 0) impulse.y = 0;
-                                        if (user.keysHeld[' ']) {
-                                            impulse.y = out.jumpPower * (out.crouching ? 1.15 : 1);
-                                            out.grounded = false;
-                                            out.body.applyImpulse({ x: 0, y: out.jumpPower * 1.1, z: 0 }, true);
-                                        }
-                                        if(out.crouching){
-                                            
-                                            let fx=impulse.x*out.crouch_friction,
-                                                fz=impulse.z*out.crouch_friction
-                                            
-                                            impulse.x-=fx*dt
-                                            impulse.z-=fz*dt
-                                            
-                                        } else {
-                                            
-                                            let fx=impulse.x*out.fric,
-                                                fz=impulse.z*out.fric
-                                            
-                                            impulse.x-=fx*dt
-                                            impulse.z-=fz*dt
-                                        }
-
-                                     } else {
-                                        impulse.y-=(out.gravity*dt*40)/2;
-                                        
-                                        if(!out.crouching){
-                                            
-                                            let fx=impulse.x*out.airFric,
-                                                fz=impulse.z*out.airFric
-                                            
-                                            impulse.x-=fx*dt
-                                            impulse.z-=fz*dt
-                                            
-                                        } else {
-                                            
-                                            let fx=impulse.x*out.airFric*1.2,
-                                                fz=impulse.z*out.airFric*1.2
-                                            
-                                            impulse.x-=fx*dt
-                                            impulse.z-=fz*dt
-                                        }
-                                     }
-                                    
-                                   
-                                
-                                   
-                                    
-                                    let moved = false;
-                                    if(user.keysHeld.r){
-                                        out.dead = true;
-                                    }
-                                    
-                                    let rayOrigin = out.body.translation();
-                                    out.rays = [];
-                                    out.rays[0] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   { x: 0, y: -1, z: 0 }));
-                                    out.rays[1] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
-                                    out.rays[2] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
-                                    out.rays[3] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
-                                    out.rays[4] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
-
-                                    out.hits = [];
-                                    out.hits[0] = world.castRay(out.rays[0], 1.1, true);
-                                    out.hits[1] = world.castRay(out.rays[1], 1.1, true);
-                                    out.hits[2] = world.castRay(out.rays[2], 1.1, true);
-                                    out.hits[3] = world.castRay(out.rays[3], 1.1, true);
-                                    out.hits[4] = world.castRay(out.rays[4], 1.1, true);
-
-                                    let trueHits = 0;
-                                    if (out.hits[0] && out.hits[0].collider && out.hits[0].toi < 0.1) { //out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
-                                        trueHits++;
-                                    }  
-                                    if (out.hits[1] && out.hits[1].collider && out.hits[1].toi < 0.1) { //out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
-                                        trueHits++;
-                                    }  
-                                    if (out.hits[2] && out.hits[2].collider && out.hits[2].toi < 0.1) { //out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
-                                        trueHits++;
-                                    } 
-                                    if (out.hits[3] && out.hits[3].collider && out.hits[3].toi < 0.1) { //out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
-                                        trueHits++;
-                                    } 
-                                    if (out.hits[4] && out.hits[4].collider && out.hits[4].toi < 0.1) { //out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
-                                        trueHits++;
-                                    }
-                                    //console.log(trueHits);
-                                    if (trueHits > 2) {
-                                        out.grounded = true;
-                                    } else {
-                                        out.grounded = false;
-                                    }
-
-                                    document.getElementById("overlay")?.remove();
-                                    if (user.mousePressed) {
-                                        out.shoot();
-                                    }
-                        
-
-                                    if (out.body.translation().y < -10) {
-                                        out.dead = true;
-                                    }
-                                                        
-                                    if (out.dead === true) {
-                                        out.body.setLinvel({x:0,y:0,z:0})
-                                        out.body.setTranslation({x: out.sz, y: out.sy, z: out.sz});
-                                        out.dead = false;
-                                        
-                                    }
-                        
-                                    let quaternion = new THREE.Quaternion();
-                                    quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
-                        
-                                    let cam = pointerLocks[out.camera.pointerLockNum].object
-                                    if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
-                                    else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
-                                    let q = cam.quaternion;
-                                    
-                                    let euler = new THREE.Euler();
-                                    euler.setFromQuaternion(q, 'YXZ');
-                                    out.yaw = euler.y;  
-                                    out.pitch = euler.x;    
-                                    
-                                    if (debug === true) {
-                                        out.runPlayerDebug(dt, rayOrigin);
-                                    }
-                                    if (!user.mousePressed) {out.holding.ch = false;}                                    
-
                                 }
-                             }
-                             
-                            return out
-                        })({})
+                                
+
+                                let velocity = out.body.linvel();
+                                let groundFrictionImpulse = {
+                                    x: -velocity.x * 0.125, // Adjust multiplier to control slowdown rate
+                                    y: 0,
+                                    z: -velocity.z * 0.125
+                                };
+                                let airFrictionImpulse = {
+                                    x: -velocity.x * 0.0625, // Adjust multiplier to control slowdown rate
+                                    y: 0,
+                                    z: -velocity.z * 0.0625
+                                };
+
+                                if ( out.grounded ) {
+                                    out.body.applyImpulse(groundFrictionImpulse, true);
+                                } else if ( !out.ground ) {
+                                    out.body.applyImpulse(airFrictionImpulse, true);
+                                }
+
+                                // Apply impulse to the player body
+                                if (impulse.x !== 0 || impulse.z !== 0) {
+                                    if (out.body.linvel().x < e && out.body.linvel().x > -e && out.body.linvel().z < e && out.body.linvel().z > -e){
+                                        out.body.applyImpulse(impulse, true);
+                                    }
+                                }
+
+                                if (out.grounded) {
+                                    if (impulse.y < 0) impulse.y = 0;
+                                    if (user.keysHeld.Space) {
+                                        impulse.y = out.jumpPower * (out.crouching ? 1.15 : 1);
+                                        out.grounded = false;
+                                        out.body.applyImpulse({ x: 0, y: out.jumpPower * 1.1, z: 0 }, true);
+                                    }
+                                    if(out.crouching){
+                                        
+                                        let fx=impulse.x*out.crouch_friction,
+                                            fz=impulse.z*out.crouch_friction
+                                        
+                                        impulse.x-=fx*dt
+                                        impulse.z-=fz*dt
+                                        
+                                    } else {
+                                        
+                                        let fx=impulse.x*out.fric,
+                                            fz=impulse.z*out.fric
+                                        
+                                        impulse.x-=fx*dt
+                                        impulse.z-=fz*dt
+                                    }
+
+                                    } else {
+                                    impulse.y-=(out.gravity*dt*40)/2;
+                                    
+                                    if(!out.crouching){
+                                        
+                                        let fx=impulse.x*out.airFric,
+                                            fz=impulse.z*out.airFric
+                                        
+                                        impulse.x-=fx*dt
+                                        impulse.z-=fz*dt
+                                        
+                                    } else {
+                                        
+                                        let fx=impulse.x*out.airFric*1.2,
+                                            fz=impulse.z*out.airFric*1.2
+                                        
+                                        impulse.x-=fx*dt
+                                        impulse.z-=fz*dt
+                                    }
+                                    }
+                                
+                                
+                            
+                                
+                                
+                                let moved = false;
+                                if(user.keysHeld.KeyR){
+                                    out.dead = true;
+                                }
+                                
+                                let rayOrigin = out.body.translation();
+                                out.rays = [];
+                                out.rays[0] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0, rayOrigin.y   - 1.001, rayOrigin.z - 0),   { x: 0, y: -1, z: 0 }));
+                                out.rays[1] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
+                                out.rays[2] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z - 0.5), { x: 0, y: -1, z: 0 }));
+                                out.rays[3] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x - 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
+                                out.rays[4] = (new RAPIER.Ray(new THREE.Vector3(rayOrigin.x + 0.5, rayOrigin.y - 1.001, rayOrigin.z + 0.5), { x: 0, y: -1, z: 0 }));
+
+                                out.hits = [];
+                                out.hits[0] = world.castRay(out.rays[0], 1.1, true);
+                                out.hits[1] = world.castRay(out.rays[1], 1.1, true);
+                                out.hits[2] = world.castRay(out.rays[2], 1.1, true);
+                                out.hits[3] = world.castRay(out.rays[3], 1.1, true);
+                                out.hits[4] = world.castRay(out.rays[4], 1.1, true);
+
+                                let trueHits = 0;
+                                if (out.hits[0] && out.hits[0].collider && out.hits[0].toi < 0.1) { //out.hits[0].toi > 0.001 && out.hits[0].toi < 0.1) {
+                                    trueHits++;
+                                }  
+                                if (out.hits[1] && out.hits[1].collider && out.hits[1].toi < 0.1) { //out.hits[1].toi > 0.001 && out.hits[1].toi < 0.1) {
+                                    trueHits++;
+                                }  
+                                if (out.hits[2] && out.hits[2].collider && out.hits[2].toi < 0.1) { //out.hits[2].toi > 0.001 && out.hits[2].toi < 0.1) {
+                                    trueHits++;
+                                } 
+                                if (out.hits[3] && out.hits[3].collider && out.hits[3].toi < 0.1) { //out.hits[3].toi > 0.001 && out.hits[3].toi < 0.1) {
+                                    trueHits++;
+                                } 
+                                if (out.hits[4] && out.hits[4].collider && out.hits[4].toi < 0.1) { //out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
+                                    trueHits++;
+                                }
+                                //console.log(trueHits);
+                                if (trueHits > 2) {
+                                    out.grounded = true;
+                                } else {
+                                    out.grounded = false;
+                                }
+
+                                document.getElementById("overlay")?.remove();
+                                if (user.mousePressed) {
+                                    out.shoot();
+                                }
+                    
+
+                                if (out.body.translation().y < -10) {
+                                    out.dead = true;
+                                }
+                                                    
+                                if (out.dead === true) {
+                                    out.body.setLinvel({x:0,y:0,z:0})
+                                    out.body.setTranslation({x: out.sz, y: out.sy, z: out.sz});
+                                    out.dead = false;
+                                    
+                                }
+                    
+                                let quaternion = new THREE.Quaternion();
+                                quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
+                    
+                                let cam = pointerLocks[out.camera.pointerLockNum].object
+                                if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
+                                else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
+                                let q = cam.quaternion;
+                                
+                                let euler = new THREE.Euler();
+                                euler.setFromQuaternion(q, 'YXZ');
+                                out.yaw = euler.y;  
+                                out.pitch = euler.x;    
+                                
+                                if (debug === true) {
+                                    out.runPlayerDebug(dt, rayOrigin);
+                                }
+                                if (!user.mousePressed) {out.holding.ch = false;}                                    
+
+                            }
+                            }
+                            
+                        return out
+                    })({})
                         
                 /*user*/
                     function vel(dt) {
@@ -1559,19 +1555,19 @@
                         }
                         
                         document.onkeydown=function(e){
-                            controls.keysHeld[e.key.toLowerCase()]=true
+                            controls.keysHeld[e.code.toString()]=true
                         }
                         
                         document.onkeyup=function(e){
-                            controls.keysHeld[e.key.toLowerCase()]=false
+                            controls.keysHeld[e.code.toString()]=false
                         }
 
                         document.addEventListener("keydown", (e) => {
-                            controls.keysPressed[e.key.toLowerCase()] = true;
+                            controls.keysPressed[e.code.toString()] = true;
                         });
 
                         document.addEventListener("keyup", (e) => {
-                            controls.keysPressed[e.key.toLowerCase()] = false;
+                            controls.keysPressed[e.code.toString()] = false;
                         });
 
                         controls.update = function() {
