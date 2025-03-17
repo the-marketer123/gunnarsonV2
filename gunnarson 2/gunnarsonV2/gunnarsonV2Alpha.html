@@ -674,27 +674,49 @@
                  })({})
                  //console.log(crosshair);
                 function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gun='hand') {
-                    let rigid,collider,mesh;
+                    let rigidS,rigidP,colliderS,colliderP,mesh,box;
                     function init () {
-                        let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true)
-                        rigid = world.createRigidBody(rigidBodyDesc);
-                        let colliderDesc = RAPIER.ColliderDesc.cuboid(0.25,0.25,0.25).setDensity(1).setSensor(true);
-                        collider = world.createCollider(colliderDesc, rigid);
-                        collider.userData = { id: "enemy" }; 
-                        rigid.wakeUp();
+                        let rigidBodyDesc1 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations().lockTranslations()
+                        rigidS = world.createRigidBody(rigidBodyDesc1);
+                        let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1,2.1,0.25).setDensity(1).setSensor(true);
+                        colliderS = world.createCollider(colliderDesc1, rigidS);
+                        colliderS.userData = { id: "enemy" }; 
+                        rigidS.wakeUp();
+
+                        let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations()
+                        rigidP = world.createRigidBody(rigidBodyDesc2);
+                        let colliderDesc2 = RAPIER.ColliderDesc.cuboid(1,2.1,0.25).setDensity(1).setSensor(false);
+                        colliderP = world.createCollider(colliderDesc2, rigidP);
+                        colliderP.userData = { id: "enemy" }; 
+                        rigidP.wakeUp();
 
                         mesh = drawEnemy(pos,0)
+
+                        const geometry = new THREE.BoxGeometry( 1,2.1,0.25 );
+                        const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+                        material.transparent = true;
+                        material.opacity = 0.5;
+                        box = new THREE.Mesh( geometry, material );
+                        scene.add( box );                    
                     }
                     init()
                     function update() {
-
+                        rigidS.setTranslation(rigidP.translation())
                         mesh.update()
+                        let{x,y,z} = rigidP.translation()
+                        mesh.enemy.position.set(x,y-1,z)
+                        box.position.copy(colliderS.translation())
+                        rigidP.setRotation(mesh.enemy.rotation)
+                        console.log(mesh.enemy.position)
                     }
-                    enemies.push({rigid,collider,mesh,update})
-                    return {rigid,collider,mesh,update}
+                    enemies.push({rigidP,colliderP,mesh,update})
+                    return {rigidP,colliderP,mesh,update}
                  }
                 function drawEnemy (position = { x: 0, y: 5, z: 0 },pose=0) {
                     let enemy = new THREE.Group();
+                    position.y -= 5;
+                    enemy.position.copy( position );
+                    position = {x:0,y:0,z:0}
 
                     const torsoSize = { x: 0.5, y: 0.75, z: 0.25 };
                     const limbSize = { x: 0.25, y: 0.75, z: 0.25 };
@@ -785,16 +807,8 @@
                     function update (pose=0) {
                         applyPos()
 
-                        let targetPosition = new THREE.Vector3(player.body.translation().x, torso.position.y, player.body.translation().z);
+                        let targetPosition = new THREE.Vector3(player.body.translation().x, enemy.position.y, player.body.translation().z);
                         torso.lookAt(targetPosition); 
-                        
-
-                        //stuff
-                        //torso.position.set(-2,2,somevar)
-                        //if (somevar < 0.01) {somevar +=0.1;} else {somevar = 0}
-                        //stuff
-
-
                      }
                      enemyMeshes.push({ enemy , update })
                      console.log(enemy)
@@ -1106,7 +1120,7 @@
                     }
                     for (var i = 0; i < enemies.length; i++) {
                         if (enemies[i]!==undefined && enemies.length!==0) {
-                            enemies[i].mesh.update();
+                            enemies[i].update();
                         }
                     }
                  }
@@ -1486,7 +1500,7 @@
                                     out.body.setLinvel({x:0,y:0,z:0})
                                     out.body.setTranslation({x: out.sz, y: out.sy, z: out.sz});
                                     out.dead = false;
-                                    
+                                    level.update = true;
                                 }
                     
                                 let quaternion = new THREE.Quaternion();
@@ -1727,11 +1741,17 @@
                     });
                     enemies.forEach(enemy => {                        
                         if (enemy != undefined) {
-                            if (enemy.collider) {
-                                world.removeCollider(enemy.collider); 
+                            if (enemy.colliderP) {
+                                world.removeCollider(enemy.colliderP); 
                             }
-                            if (enemy.rigid) {
-                                world.removeRigidBody(enemy.rigid); 
+                            if (enemy.rigidP) {
+                                world.removeRigidBody(enemy.rigidP); 
+                            }
+                            if (enemy.colliderS) {
+                                world.removeCollider(enemy.colliderS); 
+                            }
+                            if (enemy.rigidS) {
+                                world.removeRigidBody(enemy.rigidS); 
                             }
                             if (enemy.mesh) {
                                 while (enemy.mesh.enemy.children.length > 0) {
