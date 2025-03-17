@@ -487,6 +487,7 @@
 
                 const gravity = { x: 0.0, y: -9.81, z: 0.0 };
                 let world = new RAPIER.World(gravity);
+                world.timestep = 0.008; // Faster physics (120 FPS)
 
                 let rigidBodies = [];
                 let pcolliders = [];
@@ -552,8 +553,11 @@
                     if (debug !== true) {
                         document.addEventListener( 'click', function () {
                             controls.lock();
+                            controls.pointerSpeed = camera.sensitivity
                         } );        
-                    }            
+                    }      
+
+                    camera.sensitivity = 1
                     pointerLocks.push(controls);
                     camera.pointerLockNum = pointerLocks.length - 1;
 
@@ -1531,11 +1535,8 @@
                         controls.shift=false
 
                         uiCanvas.onmousemove=function(e){
-                            
                             controls.mouseX+=e.movementX
                             controls.mouseY+=e.movementY
-                            
-                            
                         }
                         
                         uiCanvas.onmousedown=function(){
@@ -2061,9 +2062,21 @@
                     if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
                     cooldown.updateCooldowns();
+                    console.log('FPS:   '+ fps)
+                    //world.timestep = 0.008; // Faster physics (120 FPS)
+
                  }
 
             /*nessecities*/
+                let lastFrameTime = performance.now();
+                let fps = 0;
+
+                function updateFPS() {
+                    let now = performance.now();
+                    let delta = now - lastFrameTime;
+                    fps = 1000 / delta;  // FPS = 1000ms / time per frame
+                    lastFrameTime = now;
+                }
                 function onWindowResize() {
 
                     fpscamera.aspect = window.innerWidth / window.innerHeight;
@@ -2088,6 +2101,7 @@
                         stats.update();
                         world.step();
                         vel(Math.min( 0.05, clock.getDelta() ) * 35);
+                        updateFPS()
                     //}
                  }
 		</script>
