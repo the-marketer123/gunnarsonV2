@@ -1329,25 +1329,34 @@
                                         out.crouching = false;
                                     }
                                     let moving = false
+                                    
                                     if (user.keysHeld.d) {
                                         impulse.x += cdir * speed;
                                         impulse.z -= sdir * speed;
                                         moving = true
-                                    } else if (user.keysHeld.a) {
+                                    } 
+                                    if (user.keysHeld.a) {
                                         impulse.x -= cdir * speed;
                                         impulse.z += sdir * speed;
                                         moving = true
                                     }
-
+                                    if (user.keysHeld.d && user.keysHeld.a){
+                                        moving = false
+                                    } 
                                     if (user.keysHeld.w) {
                                         impulse.x -= sdir * speed;
                                         impulse.z -= cdir * speed;
                                         moving = true
-                                    } else if (user.keysHeld.s) {
+                                    } 
+                                    if (user.keysHeld.s) {
                                         impulse.x += sdir * speed;
                                         impulse.z += cdir * speed;
                                         moving = true
                                     }
+                                    if (user.keysHeld.w && user.keysHeld.s){
+                                        moving = false
+                                    }
+
                                     let velocity = out.body.linvel();
                                     let groundFrictionImpulse = {
                                         x: -velocity.x * 2, // Adjust multiplier to control slowdown rate
