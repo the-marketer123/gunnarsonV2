@@ -702,12 +702,14 @@
                     init()
                     function update() {
                         rigidS.setTranslation(rigidP.translation())
+                        rigidS.setRotation(rigidP.rotation())
                         mesh.update()
                         let{x,y,z} = rigidP.translation()
                         mesh.enemy.position.set(x,y-1,z)
-                        box.position.copy(colliderS.translation())
-                        rigidP.setRotation(mesh.enemy.rotation)
-                        console.log(mesh.enemy.position)
+                        rigidP.setRotation(mesh.enemy.quaternion)
+                        box.position.copy(colliderP.translation())
+                        box.quaternion.copy(colliderP.rotation())
+
                     }
                     enemies.push({rigidP,colliderP,mesh,update})
                     return {rigidP,colliderP,mesh,update}
@@ -808,7 +810,7 @@
                         applyPos()
 
                         let targetPosition = new THREE.Vector3(player.body.translation().x, enemy.position.y, player.body.translation().z);
-                        torso.lookAt(targetPosition); 
+                        enemy.lookAt(targetPosition); 
                      }
                      enemyMeshes.push({ enemy , update })
                      console.log(enemy)
