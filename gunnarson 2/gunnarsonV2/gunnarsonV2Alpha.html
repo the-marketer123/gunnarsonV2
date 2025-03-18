@@ -215,7 +215,7 @@
         <canvas id='ui-canvas' width='600' height='600'></canvas>
 
 		<script type="module">
-            /*basics*/
+            /*Basics*/
                 import * as THREE from 'three';
                 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
                 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -820,7 +820,7 @@
                     }
                     let somevar = 0;
                     function update (pose=0) {
-                        applyPos()
+                        applyPos(pose)
 
                         let targetPosition = new THREE.Vector3(player.body.translation().x, enemy.position.y, player.body.translation().z);
                         enemy.lookAt(targetPosition); 
@@ -1358,14 +1358,17 @@
                                     out.crouching = false;
                                 }
 
-                                let movingX = !(user.keysHeld.KeyD && user.keysHeld.KeyA);
-                                let movingZ = !(user.keysHeld.KeyW && user.keysHeld.KeyS);
+                                let moving = false
+                                let movingX = (user.keysHeld.KeyD || user.keysHeld.KeyA);
+                                if (user.keysHeld.KeyD && user.keysHeld.KeyA) movingX = false
+                                let movingZ = (user.keysHeld.KeyW || user.keysHeld.KeyS);
+                                if (user.keysHeld.KeyW && user.keysHeld.KeyS) movingZ = false
 
                                 if (movingX) {
                                     if (user.keysHeld.KeyD) {
                                         impulse.x += cdir * speed;
                                         impulse.z -= sdir * speed;
-                                    }
+                                    } 
                                     if (user.keysHeld.KeyA) {
                                         impulse.x -= cdir * speed;
                                         impulse.z += sdir * speed;
@@ -1382,23 +1385,25 @@
                                         impulse.z += cdir * speed;
                                     }
                                 }
+                                //movingX = !movingX
+                                //movingZ = !movingZ
                                 
 
                                 let velocity = out.body.linvel();
                                 let groundFrictionImpulse = {
-                                    x: -velocity.x * 0.125, // Adjust multiplier to control slowdown rate
+                                    x: -velocity.x * 1.5, // Adjust multiplier to control slowdown rate
                                     y: 0,
-                                    z: -velocity.z * 0.125
+                                    z: -velocity.z * 1.5
                                 };
                                 let airFrictionImpulse = {
-                                    x: -velocity.x * 0.0625, // Adjust multiplier to control slowdown rate
+                                    x: -velocity.x * 0.75, // Adjust multiplier to control slowdown rate
                                     y: 0,
-                                    z: -velocity.z * 0.0625
+                                    z: -velocity.z * 0.75
                                 };
 
-                                if ( out.grounded ) {
+                                if ( out.grounded && !movingX && !movingZ) {
                                     out.body.applyImpulse(groundFrictionImpulse, true);
-                                } else if ( !out.ground ) {
+                                } else if ( !out.ground  && !movingX && !movingZ) {
                                     out.body.applyImpulse(airFrictionImpulse, true);
                                 }
 
@@ -2049,7 +2054,7 @@
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
                     }
-                    if (user.keysPressed.q){
+                    if (user.keysPressed.KeyQ){
                         level.update = true;
                         if (level.curLevel < levels.length - 1){
                             level.curLevel++
@@ -2067,7 +2072,6 @@
  
 
                 function UPDATE(debug) {
-
                     if (currentScene === 'menu') {
                         if (scenes.menu.count === 0) {
                             scenes.menu.update();
@@ -2077,6 +2081,7 @@
                     } else if (currentScene === 'play') {
                         scenes.levelSetup(debug);
                         crosshair.update();
+                        console.log(pointerLocks[fpscamera.pointerLockNum].pointerSpeed)
                         document.getElementById("ui-canvas").style.zIndex = "-1";
                     } else if (currentScene === 'pause') {
                         scenes.pause.update();
@@ -2091,6 +2096,7 @@
 
                     if (player.playerIsExistent === true) {   
                         player.runPlayerPhysics(dt);
+                        pointerLocks[fpscamera.pointerLockNum].pointerSpeed = 1
                     }
 
                     if (debug === false && player.playerIsExistent === true) {                    
@@ -2106,7 +2112,7 @@
 
                  }
 
-            /*nessecities*/
+            /*Nessecities*/
                 let lastFrameTime = performance.now();
                 let fps = 0;
 
