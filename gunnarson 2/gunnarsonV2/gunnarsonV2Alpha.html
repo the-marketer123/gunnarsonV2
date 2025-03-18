@@ -674,30 +674,41 @@
                  })({})
                  //console.log(crosshair);
                 function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gun='hand') {
-                    let rigidS,rigidP,colliderS,colliderP,mesh,box;
+                    let rigidS,rigidP,colliderS,colliderP,mesh,collBox,sensBox;
                     function init () {
                         let rigidBodyDesc1 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations().lockTranslations()
                         rigidS = world.createRigidBody(rigidBodyDesc1);
-                        let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1,2.1,0.25).setDensity(1).setSensor(true);
+                        let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1/2,2.1/2,0.25/2).setDensity(1).setSensor(true);
                         colliderS = world.createCollider(colliderDesc1, rigidS);
                         colliderS.userData = { id: "enemy" }; 
                         rigidS.wakeUp();
 
-                        let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations()
+                        let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y+10,pos.z).setCanSleep(true).lockRotations()
                         rigidP = world.createRigidBody(rigidBodyDesc2);
-                        let colliderDesc2 = RAPIER.ColliderDesc.cuboid(1,2.1,0.25).setDensity(1).setSensor(false);
+                        let colliderDesc2 = RAPIER.ColliderDesc.cuboid(0.9/2,2.1/2,0.225/2).setDensity(1).setSensor(false);
                         colliderP = world.createCollider(colliderDesc2, rigidP);
                         colliderP.userData = { id: "enemy" }; 
                         rigidP.wakeUp();
 
                         mesh = drawEnemy(pos,0)
 
-                        const geometry = new THREE.BoxGeometry( 1,2.1,0.25 );
-                        const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-                        material.transparent = true;
-                        material.opacity = 0;
-                        box = new THREE.Mesh( geometry, material );
-                        scene.add( box );                    
+                        const geometryc = new THREE.BoxGeometry(0.9,2.1,0.225);
+
+                        const geometrys = new THREE.BoxGeometry( 1,2.1,0.25 );
+
+                        const materialo = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+                        materialo.transparent = true;
+                        materialo.opacity = 0.5;
+
+                        const materialy = new THREE.MeshBasicMaterial( { color: 0xebe534 } );
+                        materialy.transparent = true;
+                        materialy.opacity = 0.5;
+
+                        collBox = new THREE.Mesh( geometryc, materialo );
+                        sensBox = new THREE.Mesh( geometrys, materialy );
+                        scene.add( sensBox );                         
+                        scene.add( collBox ); 
+                   
                     }
                     init()
                     function update() {
@@ -705,10 +716,12 @@
                         rigidS.setRotation(rigidP.rotation())
                         mesh.update()
                         let{x,y,z} = rigidP.translation()
-                        mesh.enemy.position.set(x,y-1,z)
+                        mesh.enemy.position.set(x,y,z)
                         rigidP.setRotation(mesh.enemy.quaternion)
-                        box.position.copy(colliderP.translation())
-                        box.quaternion.copy(colliderP.rotation())
+                        collBox.position.copy(colliderP.translation())
+                        collBox.quaternion.copy(colliderP.rotation())
+                        sensBox.position.copy(colliderS.translation())
+                        sensBox.quaternion.copy(colliderS.rotation())
 
                     }
                     enemies.push({rigidP,colliderP,mesh,update})
