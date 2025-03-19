@@ -227,7 +227,7 @@
                 let objectsToRemove=[]
                 let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = false;
+                const debug = true;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
                 const eventQueue = new RAPIER.EventQueue(true);
@@ -711,18 +711,83 @@
                    
                     }
                     init()
+                    let swayOffset = 0,pose=0;
                     function update() {
+                        let{x,y,z} = rigidP.translation()
+
+                        const direction = new THREE.Vector3();
+                        fpscamera.getWorldDirection(direction);
+                        const vel = direction.clone().multiplyScalar(-1);
+
+                        let rayOrigin =  rigidP.translation();
+                        let size = colliderP.halfExtents();
+                        let rays = [];
+                        const rayDistance = 1.5; 
+                        let playerPosition = player.body.translation()
+
+                        rays[0] = new RAPIER.Ray(
+                            new THREE.Vector3( rayOrigin.x + -direction.x * rayDistance, rayOrigin.y - size.y, rayOrigin.z + -direction.z * rayDistance),
+                            new THREE.Vector3(0, -1, 0) // Downward
+                        );
+                        rays[1] = new RAPIER.Ray(
+                            new THREE.Vector3( x, y, z ),
+                            new THREE.Vector3(
+                                playerPosition.x - x,
+                                playerPosition.y - y,
+                                playerPosition.z - z
+                            ).normalize()
+                        );
+
+                        // Debug visualization
+                        drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y, rays[0].origin.z)]);
+                        drawDebugLine(scene, [
+                            rays[1].origin, 
+                            new THREE.Vector3(
+                                playerPosition.x, 
+                                playerPosition.y,  // Adjusting for height difference
+                                playerPosition.z
+                            )
+                        ]);
+
+                        let hits = [];
+                        hits[0] = world.castRay(rays[0], 1.1, true);
+                        hits[1] = world.castRay(rays[1], 1.1, true);
+
+                        let trueHits = 0;
+                        if (hits[0] && hits[0].collider && hits[0].toi < 0.1) { //hits[0].toi > 0.001 && hits[0].toi < 0.1) {
+                            trueHits++;
+                        }  
+
+                        if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player' && hits[1].toi > 0.1) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
+                            if (trueHits == 1) {
+                                rigidP.setLinvel({  x: vel.x * 2,  y: rigidP.linvel().y,  z: vel.z * 2  });
+                            } else {
+                                rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
+                            }
+                        } 
+
+                        
                         rigidS.setTranslation(rigidP.translation())
                         rigidS.setRotation(rigidP.rotation())
                         mesh.update()
-                        let{x,y,z} = rigidP.translation()
-                        mesh.enemy.position.set(x,y,z)
+
+                        swayOffset += 0.035; 
+                        let swayAmount = Math.sin(swayOffset) * 0.1; 
+
+                        let right = new THREE.Vector3(1, 0, 0); 
+                        right.applyQuaternion(rigidP.rotation()); 
+
+                        let swayVector = right.multiplyScalar(swayAmount);
+                        if (pose == 0) {
+                            mesh.enemy.position.set(x + swayVector.x, y + swayVector.y, z + swayVector.z);       
+                        } else {
+                            mesh.enemy.position.set(x, y, z);       
+                        }
                         rigidP.setRotation(mesh.enemy.quaternion)
                         collBox.position.copy(colliderP.translation())
                         collBox.quaternion.copy(colliderP.rotation())
                         sensBox.position.copy(colliderS.translation())
                         sensBox.quaternion.copy(colliderS.rotation())
-
                     }
                     enemies.push({rigidP,colliderP,mesh,update})
                     return {rigidP,colliderP,mesh,update}
@@ -1256,6 +1321,7 @@
                             out.gun = 'hand'
                             out.holding = {ch:false, coll: undefined, body: undefined}
                             out.collider = world.createCollider(out.colliderDesc, out.body);
+                            out.collider.userData = {id:'player'}
                             addPointerLock(camera, uiCanvas);
                             if (debug) {scene.add(out.debugmesh);}
                             }
@@ -2072,6 +2138,9 @@
  
 
                 function UPDATE(debug) {
+                    for (var i = 0; i < lines.length; i++) {
+                        scene.remove(lines[i]);
+                    }
                     if (currentScene === 'menu') {
                         if (scenes.menu.count === 0) {
                             scenes.menu.update();
@@ -2104,7 +2173,7 @@
                     } else {
                         renderer.render( scene, fpscamera );
                     }
-                    if (debug&&currentScene==='play') {runDebug(dt);}
+                    //if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
                     cooldown.updateCooldowns();
 
