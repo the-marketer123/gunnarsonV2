@@ -225,9 +225,9 @@
                 await RAPIER.init();
 
                 let objectsToRemove=[]
-                let fpscamera, bupcamera, scene, renderer, plat1, prototype5x5G;
+                let fpscamera, debugCam, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = true;
+                const debug = false;
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
                 const eventQueue = new RAPIER.EventQueue(true);
@@ -532,10 +532,10 @@
                 
                 fpscamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 5000 );
 
-                bupcamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
+                debugCam = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
 
                 let orbits = [];
-                function addOrbit (camera, element) {
+                function addOrbit (camera, element=renderer.domElement) {
                     const orbitControls = new OrbitControls(camera, element);// originally renderer.domElement
                     orbitControls.enableDamping = true
                     orbitControls.minDistance = 0.1
@@ -564,7 +564,7 @@
                 }
 
                 scene.add( fpscamera );
-                scene.add( bupcamera );
+                scene.add( debugCam );
                 
 
 
@@ -716,7 +716,7 @@
                         let{x,y,z} = rigidP.translation()
 
                         const direction = new THREE.Vector3();
-                        fpscamera.getWorldDirection(direction);
+                        player.camera.getWorldDirection(direction);
                         const vel = direction.clone().multiplyScalar(-1);
 
                         let rayOrigin =  rigidP.translation();
@@ -744,7 +744,7 @@
                             rays[1].origin, 
                             new THREE.Vector3(
                                 playerPosition.x, 
-                                playerPosition.y,  // Adjusting for height difference
+                                playerPosition.y - 2,  // Adjusting for height difference
                                 playerPosition.z
                             )
                         ]);
@@ -1530,9 +1530,7 @@
                                 
                                 
                                 let moved = false;
-                                if(user.keysHeld.KeyR){
-                                    out.dead = true;
-                                }
+                               
                                 
                                 let rayOrigin = out.body.translation();
                                 out.rays = [];
@@ -1588,10 +1586,17 @@
                                     out.dead = false;
                                     level.update = true;
                                 }
+                                if(user.keysHeld.KeyR && out.dead === false){
+                                    out.dead = true;
+                                }
                     
                                 let quaternion = new THREE.Quaternion();
                                 quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                     
+                                if (debug) {
+                                out.camera.quaternion.copy(debugCam.quaternion)
+                                }
+
                                 let cam = pointerLocks[out.camera.pointerLockNum].object
                                 if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
                                 else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
@@ -1696,9 +1701,9 @@
                             const speed = 10;
 
                             // Get camera position and forward direction
-                            const cameraPosition = fpscamera.position;
+                            const cameraPosition = player.camera.position;
                             const direction = new THREE.Vector3();
-                            fpscamera.getWorldDirection(direction);
+                            player.camera.getWorldDirection(direction);
                             
                             // Set initial spawn position slightly in front of the camera
                             const spawnOffset = 1.5;
@@ -1873,9 +1878,14 @@
                 scenes.menu = (function(out){
                     out.setBackground = function () {
                         clearWorld(world);
-                        fpscamera.position.set(1.5,2.5,1.5);
-                        fpscamera.lookAt(0, 2, 0);
-                        fpscamera.fov = 50;
+                        if (!debug) {
+                            fpscamera.position.set(1.5,2.5,1.5);
+                            fpscamera.lookAt(0, 2, 0);
+                            fpscamera.fov = 78;
+                        } else {
+                            debugCam.position.set(1.5,2.5,1.5);
+                            debugCam.lookAt(0, 2, 0);
+                        }
                         addSkybox(90);
 
                         addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
@@ -1909,14 +1919,13 @@
                     
                     clearWorld(world);
                     clearText();
-
-                    if (debug === false) {
+                    if (debug == false) {                        
                         player.setPlayer(0,1,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
-                        fpscamera.lookAt(new THREE.Vector3(-2,5,-2))
+                        player.camera.lookAt(new THREE.Vector3(-2,5,-2))
                     } else {
-                        addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,1,0,bupcamera,world);
+                        addOrbit(debugCam, renderer.domElement);    
+                        player.setPlayer(0,1,0,fpscamera,world);
                     }
 
                     level.hasCube = true;
@@ -1944,8 +1953,8 @@
                         player.setPlayer(0,1,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
-                        addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,1,0,bupcamera,world);
+                        addOrbit(debugCam, renderer.domElement);    
+                        player.setPlayer(0,1,0,fpscamera,world);
                     }
 
                     level.hasCube = true;
@@ -1976,8 +1985,8 @@
                         player.setPlayer(0,10,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
-                        addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,10,0,bupcamera,world);
+                        addOrbit(debugCam, renderer.domElement);    
+                        player.setPlayer(0,10,0,fpscamera,world);
                     }
 
                     level.hasCube = true;
@@ -2033,8 +2042,8 @@
                         player.setPlayer(0,100,0,fpscamera,world);
                         player.restart = world.takeSnapshot();
                     } else {
-                        addOrbit(fpscamera, document.body);    
-                        player.setPlayer(0,100,0,bupcamera,world);
+                        addOrbit(debugCam, renderer.domElement);    
+                        player.setPlayer(0,100,0,fpscamera,world);
                     }
 
                     level.hasCube = true;
@@ -2113,9 +2122,13 @@
 
                 scenes.levelSetup = function(debug) {
                     if (level.startup === true || level.update === true) {
-                        levels[level.curLevel]();
+                        levels[level.curLevel](debug);
                         level.startup = false;
                         level.update = false;
+                        if (debug && player.playerIsExistent && orbits.length > 0) {
+                            orbits[debugCam.orbitNum].enabled = true;
+                            pointerLocks[fpscamera.pointerLockNum].enabled = false;
+                        }
                     }
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
@@ -2138,6 +2151,7 @@
  
 
                 function UPDATE(debug) {
+            
                     for (var i = 0; i < lines.length; i++) {
                         scene.remove(lines[i]);
                     }
@@ -2161,23 +2175,24 @@
                     }
 
                     let dt = Math.min( 0.05, clock.getDelta() ) * 13;
-                    //if (dt < (1 / 60)*13) {dt = 1 / 60 * 13;}
 
                     if (player.playerIsExistent === true) {   
                         player.runPlayerPhysics(dt);
                         pointerLocks[fpscamera.pointerLockNum].pointerSpeed = 1
+                        
                     }
 
                     if (debug === false && player.playerIsExistent === true) {                    
                         renderer.render( scene, player.camera );
+                    } else if (debug === true){
+                        renderer.render( scene, debugCam );
                     } else {
                         renderer.render( scene, fpscamera );
                     }
-                    //if (debug&&currentScene==='play') {runDebug(dt);}
                     user.update();
                     cooldown.updateCooldowns();
 
-                    world.timestep = 1 / fps; // Faster physics (120 FPS)
+                    world.timestep = 1 / fps;
 
                  }
 
