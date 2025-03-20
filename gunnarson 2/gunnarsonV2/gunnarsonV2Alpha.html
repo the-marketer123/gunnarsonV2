@@ -698,11 +698,17 @@
 
                         const materialo = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
                         materialo.transparent = true;
-                        materialo.opacity = 0.5;
 
                         const materialy = new THREE.MeshBasicMaterial( { color: 0xebe534 } );
                         materialy.transparent = true;
-                        materialy.opacity = 0.5;
+                        if (debug) {
+                            materialy.opacity = 0.5;
+                            materialo.opacity = 0.5;
+                        } else {
+                            materialy.opacity = 0;
+                            materialo.opacity = 0;
+                        }
+
 
                         collBox = new THREE.Mesh( geometryc, materialo );
                         sensBox = new THREE.Mesh( geometrys, materialy );
