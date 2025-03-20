@@ -739,15 +739,17 @@
                         );
 
                         // Debug visualization
-                        drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y, rays[0].origin.z)]);
-                        drawDebugLine(scene, [
-                            rays[1].origin, 
-                            new THREE.Vector3(
-                                playerPosition.x, 
-                                playerPosition.y - 2,  // Adjusting for height difference
-                                playerPosition.z
-                            )
-                        ]);
+                        if (debug) {
+                            drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y, rays[0].origin.z)]);
+                            drawDebugLine(scene, [
+                                rays[1].origin, 
+                                new THREE.Vector3(
+                                    playerPosition.x, 
+                                    playerPosition.y - 2,  // Adjusting for height difference
+                                    playerPosition.z
+                                )
+                            ]);
+                        }
 
                         let hits = [];
                         hits[0] = world.castRay(rays[0], 1.1, true);
@@ -1322,7 +1324,9 @@
                             out.holding = {ch:false, coll: undefined, body: undefined}
                             out.collider = world.createCollider(out.colliderDesc, out.body);
                             out.collider.userData = {id:'player'}
-                            addPointerLock(camera, uiCanvas);
+                            if (pointerLocks.length < 1) {
+                                addPointerLock(camera, uiCanvas);
+                            }
                             if (debug) {scene.add(out.debugmesh);}
                             }
                         out.prevPos;       
@@ -1916,16 +1920,15 @@
 
                 let levels = [];
                 levels[1] = function(debug=false){
-                    
                     clearWorld(world);
                     clearText();
-                    if (debug == false) {                        
-                        player.setPlayer(0,1,0,fpscamera,world);
-                        player.restart = world.takeSnapshot();
-                        player.camera.lookAt(new THREE.Vector3(-2,5,-2))
+                    player.setPlayer(0,1,0,fpscamera,world);
+                    if (!player.playerIsExistent) {
+                        if (debug) {
+                            addOrbit(debugCam, renderer.domElement);
+                        }
                     } else {
-                        addOrbit(debugCam, renderer.domElement);    
-                        player.setPlayer(0,1,0,fpscamera,world);
+                        player.camera.lookAt(new THREE.Vector3(-2,5,-2))       
                     }
 
                     level.hasCube = true;
@@ -1942,7 +1945,9 @@
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
-                    spawnEnemy({x:-2,y:2,z:-2})
+                    if (player.playerIsExistent) {
+                        spawnEnemy({x:-2,y:2,z:-2})
+                    }
 
                  }
                 levels[2] = function(debug=false) {
@@ -2121,7 +2126,7 @@
 
 
                 scenes.levelSetup = function(debug) {
-                    if (level.startup === true || level.update === true) {
+                    if (level.startup === true || level.update === true || !player.playerIsExistent) {
                         levels[level.curLevel](debug);
                         level.startup = false;
                         level.update = false;
@@ -2164,7 +2169,6 @@
                     } else if (currentScene === 'play') {
                         scenes.levelSetup(debug);
                         crosshair.update();
-                        console.log(pointerLocks[fpscamera.pointerLockNum].pointerSpeed)
                         document.getElementById("ui-canvas").style.zIndex = "-1";
                     } else if (currentScene === 'pause') {
                         scenes.pause.update();
