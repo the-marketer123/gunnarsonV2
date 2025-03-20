@@ -1450,6 +1450,12 @@
                                         impulse.z += sdir * speed;
                                     }
                                 }
+                                if (user.keysHeld.g){
+                                    debug = true
+                                }
+                                if (user.keysHeld.h){
+                                    debug = false
+                                }
 
                                 if (movingZ) {
                                     if (user.keysHeld.KeyW) {
