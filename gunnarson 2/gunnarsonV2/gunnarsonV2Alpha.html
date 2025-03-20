@@ -227,7 +227,11 @@
                 let objectsToRemove=[]
                 let fpscamera, debugCam, scene, renderer, plat1, prototype5x5G;
                 const pi = Math.PI;
-                const debug = false;
+                const debug = {
+                    lines:false,
+                    cam:false,
+                    hitboxes:false
+                };
                 let windowWidth = window.innerWidth;
                 let windowHeight = window.innerHeight;
                 const eventQueue = new RAPIER.EventQueue(true);
@@ -268,7 +272,6 @@
                         }
                     }
                     out.checkCooldown = function(id) {
-                        //console.log(cooldowns[id].num);
                         return cooldowns[id].check
                     }
                     return out;
@@ -538,7 +541,7 @@
                 function addOrbit (camera, element=renderer.domElement) {
                     const orbitControls = new OrbitControls(camera, element);// originally renderer.domElement
                     orbitControls.enableDamping = true
-                    orbitControls.minDistance = 0.1
+                    orbitControls.minDistance = 0.01
                     orbitControls.maxDistance = 1500
                     orbitControls.enablePan = false
                     orbitControls.maxPolarAngle = Math.PI / 2 - 0.05
@@ -550,17 +553,14 @@
                 let pointerLocks = [];
                 function addPointerLock ( camera, element ) {
                     let controls = new PointerLockControls( camera, element );
-                    if (debug !== true) {
-                        document.addEventListener( 'click', function () {
+                    document.addEventListener( 'click', function () {
+                        if (controls && !debug.cam){
                             controls.lock();
-                            controls.pointerSpeed = camera.sensitivity
-                        } );        
-                    }      
-
+                        }                    
+                    } );
                     camera.sensitivity = 1
                     pointerLocks.push(controls);
                     camera.pointerLockNum = pointerLocks.length - 1;
-
                 }
 
                 scene.add( fpscamera );
@@ -672,54 +672,59 @@
                     }
                     return out;
                  })({})
-                 //console.log(crosshair);
                 function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gun='hand') {
                     let rigidS,rigidP,colliderS,colliderP,mesh,collBox,sensBox;
-                    function init () {
-                        let rigidBodyDesc1 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations().lockTranslations()
-                        rigidS = world.createRigidBody(rigidBodyDesc1);
-                        let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1/2,2.1/2,0.25/2).setDensity(1).setSensor(true);
-                        colliderS = world.createCollider(colliderDesc1, rigidS);
-                        colliderS.userData = { id: "enemy" }; 
-                        rigidS.wakeUp();
+                    let rigidBodyDesc1 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations().lockTranslations()
+                    rigidS = world.createRigidBody(rigidBodyDesc1);
+                    let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1/2,2.1/2,0.25/2).setDensity(1).setSensor(true);
+                    colliderS = world.createCollider(colliderDesc1, rigidS);
+                    colliderS.userData = { id: "enemy" }; 
+                    rigidS.wakeUp();
 
-                        let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y+10,pos.z).setCanSleep(true).lockRotations()
-                        rigidP = world.createRigidBody(rigidBodyDesc2);
-                        let colliderDesc2 = RAPIER.ColliderDesc.cuboid(0.9/2,2.1/2,0.225/2).setDensity(1).setSensor(false);
-                        colliderP = world.createCollider(colliderDesc2, rigidP);
-                        colliderP.userData = { id: "enemy" }; 
-                        rigidP.wakeUp();
+                    let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y+10,pos.z).setCanSleep(true).lockRotations()
+                    rigidP = world.createRigidBody(rigidBodyDesc2);
+                    let colliderDesc2 = RAPIER.ColliderDesc.cuboid(0.9/2,2.1/2,0.225/2).setDensity(1).setSensor(false);
+                    colliderP = world.createCollider(colliderDesc2, rigidP);
+                    colliderP.userData = { id: "enemy" }; 
+                    rigidP.wakeUp();
 
-                        mesh = drawEnemy(pos,0)
+                    mesh = drawEnemy(pos,0)
 
-                        const geometryc = new THREE.BoxGeometry(0.9,2.1,0.225);
+                    const geometryc = new THREE.BoxGeometry(0.9,2.1,0.225);
 
-                        const geometrys = new THREE.BoxGeometry( 1,2.1,0.25 );
+                    const geometrys = new THREE.BoxGeometry( 1,2.1,0.25 );
 
-                        const materialo = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-                        materialo.transparent = true;
+                    const materialo = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+                    materialo.transparent = true;
 
-                        const materialy = new THREE.MeshBasicMaterial( { color: 0xebe534 } );
-                        materialy.transparent = true;
-                        if (debug) {
-                            materialy.opacity = 0.5;
-                            materialo.opacity = 0.5;
-                        } else {
-                            materialy.opacity = 0;
-                            materialo.opacity = 0;
-                        }
-
-
-                        collBox = new THREE.Mesh( geometryc, materialo );
-                        sensBox = new THREE.Mesh( geometrys, materialy );
-                        scene.add( sensBox );                         
-                        scene.add( collBox ); 
-                   
+                    const materialy = new THREE.MeshBasicMaterial( { color: 0xebe534 } );
+                    materialy.transparent = true;
+                    if (debug.hitboxes) {
+                        materialy.opacity = 0.5;
+                        materialo.opacity = 0.5;
+                    } else {
+                        materialy.opacity = 0;
+                        materialo.opacity = 0;
                     }
-                    init()
+
+
+                    collBox = new THREE.Mesh( geometryc, materialo );
+                    sensBox = new THREE.Mesh( geometrys, materialy );
+                    scene.add( sensBox );                         
+                    scene.add( collBox ); 
+                
+                    
                     let swayOffset = 0,pose=0;
                     function update() {
                         let{x,y,z} = rigidP.translation()
+
+                        if (debug.hitboxes) {
+                            collBox.material.opacity = 0.5;
+                            sensBox.material.opacity = 0.5;
+                        } else {
+                            collBox.material.opacity = 0;
+                            sensBox.material.opacity = 0;
+                        }
 
                         const direction = new THREE.Vector3();
                         player.camera.getWorldDirection(direction);
@@ -745,7 +750,7 @@
                         );
 
                         // Debug visualization
-                        if (debug) {
+                        if (debug.lines) {
                             drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y, rays[0].origin.z)]);
                             drawDebugLine(scene, [
                                 rays[1].origin, 
@@ -769,8 +774,10 @@
                         if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player' && hits[1].toi > 0.1) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
                             if (trueHits == 1) {
                                 rigidP.setLinvel({  x: vel.x * 2,  y: rigidP.linvel().y,  z: vel.z * 2  });
+                                pose=0
                             } else {
                                 rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
+                                pose=1
                             }
                         } 
 
@@ -899,7 +906,6 @@
                         enemy.lookAt(targetPosition); 
                      }
                      enemyMeshes.push({ enemy , update })
-                     console.log(enemy)
 
                      return { enemy , update }
                     
@@ -1034,7 +1040,6 @@
                     }
                 
                 function addPlatform (pos, rot, size, shape, color) {
-                    //console.log('hi');
                     let rttx = rot.x * pi/180
                     let rtty = rot.y * pi/180
                     let rttz = rot.z * pi/180;
@@ -1158,7 +1163,6 @@
                     
                     function update () {
                         if (rigid !== undefined) {
-                            //console.log(rigid);
                             rigid.resetForces(true); 
                             let { x, y, z } = rigid.translation();
                             let rot = rigid.rotation();
@@ -1330,10 +1334,10 @@
                             out.holding = {ch:false, coll: undefined, body: undefined}
                             out.collider = world.createCollider(out.colliderDesc, out.body);
                             out.collider.userData = {id:'player'}
-                            if (pointerLocks.length < 1) {
+                            if (pointerLocks.length < 1 && !debug.cam) {
                                 addPointerLock(camera, uiCanvas);
                             }
-                            if (debug) {scene.add(out.debugmesh);}
+                            scene.add(out.debugmesh);                            
                             }
                         out.prevPos;       
                         out.runPlayerDebug = function (dt, rayOrigin) {
@@ -1450,12 +1454,6 @@
                                         impulse.z += sdir * speed;
                                     }
                                 }
-                                if (user.keysHeld.g){
-                                    debug = true
-                                }
-                                if (user.keysHeld.h){
-                                    debug = false
-                                }
 
                                 if (movingZ) {
                                     if (user.keysHeld.KeyW) {
@@ -1467,8 +1465,32 @@
                                         impulse.z += cdir * speed;
                                     }
                                 }
-                                //movingX = !movingX
-                                //movingZ = !movingZ
+
+                                if (user.keysPressed.KeyJ){
+                                    switch (debug.lines){
+                                        case true:debug.lines = false
+                                        break;
+                                        case false:debug.lines = true
+                                    }
+                                }
+                                if (user.keysPressed.KeyH){
+                                    switch (debug.hitboxes){
+                                        case true:debug.hitboxes = false
+                                        break;
+                                        case false:debug.hitboxes = true
+                                    }                                
+                                }
+                                if (user.keysPressed.KeyK){
+                                    switch (debug.cam){
+                                        case true:
+                                            debug.cam = false
+                                        break;
+                                        case false:
+                                            debug.cam = true
+                                            addOrbit(debugCam, document.body)
+                                            debugCam.position.copy(fpscamera.position)
+                                    }                                
+                                }
                                 
 
                                 let velocity = out.body.linvel();
@@ -1579,7 +1601,6 @@
                                 if (out.hits[4] && out.hits[4].collider && out.hits[4].toi < 0.1) { //out.hits[4].toi > 0.001 && out.hits[4].toi < 0.1) {
                                     trueHits++;
                                 }
-                                //console.log(trueHits);
                                 if (trueHits > 2) {
                                     out.grounded = true;
                                 } else {
@@ -1609,11 +1630,11 @@
                                 let quaternion = new THREE.Quaternion();
                                 quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
                     
-                                if (debug) {
+                                if (debug.cam) {
                                 out.camera.quaternion.copy(debugCam.quaternion)
                                 }
 
-                                let cam = pointerLocks[out.camera.pointerLockNum].object
+                                let cam = out.camera
                                 if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
                                 else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
                                 let q = cam.quaternion;
@@ -1623,8 +1644,11 @@
                                 out.yaw = euler.y;  
                                 out.pitch = euler.x;    
                                 
-                                if (debug === true) {
+                                if (debug.cam === true) {
                                     out.runPlayerDebug(dt, rayOrigin);
+                                    out.debugmesh.material.opacity = 0.5
+                                } else {
+                                    out.debugmesh.material.opacity = 0
                                 }
                                 if (!user.mousePressed) {out.holding.ch = false;}                                    
 
@@ -1676,6 +1700,16 @@
                         }
                         
                         document.onkeydown=function(e){
+                            if (   controls.keysHeld[e.code.toString()] !== true   ) {
+
+                                controls.keysPressed[e.code.toString()]=true
+
+                            } else {
+
+                                controls.keysPressed[e.code.toString()]=false
+
+                            }
+
                             controls.keysHeld[e.code.toString()]=true
                         }
                         
@@ -1683,13 +1717,13 @@
                             controls.keysHeld[e.code.toString()]=false
                         }
 
-                        document.addEventListener("keydown", (e) => {
+                        /*document.addEventListener("keydown", (e) => {
                             controls.keysPressed[e.code.toString()] = true;
                         });
 
                         document.addEventListener("keyup", (e) => {
                             controls.keysPressed[e.code.toString()] = false;
-                        });
+                        });*/
 
                         controls.update = function() {
                             controls.keysPressed={}
@@ -1759,7 +1793,6 @@
                                 
                                     rigid.setRotation(quaternion);
 
-                                    //console.log(initialVelocity);
                                     ///rigid.setLinvel(initialVelocity);
                                     mesh.position.set(x, y, z);
                                     mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
@@ -1800,12 +1833,17 @@
                 level.curLevel = 1;
                 let restart;
                 function clearWorld(world) {
+
                     rigidBodies.forEach((body, index) => {
                         world.removeCollider(body.collider);
                         world.removeRigidBody(body);
                     });
                     if (player.playerIsExistent) {
                         world.removeCollider(player.collider)
+                        world.removeRigidBody(player.body)
+                        player.playerIsExistent = false              
+                        //pointerLocks = [], orbits = []
+
                     }
                     plats.forEach(plat => {
                         if (plat.colliderDesc) {
@@ -1894,7 +1932,7 @@
                 scenes.menu = (function(out){
                     out.setBackground = function () {
                         clearWorld(world);
-                        if (!debug) {
+                        if (!debug.cam) {
                             fpscamera.position.set(1.5,2.5,1.5);
                             fpscamera.lookAt(0, 2, 0);
                             fpscamera.fov = 78;
@@ -1931,17 +1969,14 @@
                 
 
                 let levels = [];
-                levels[1] = function(debug=false){
+                function quickLevelSetup(x,y,z,camera=fpscamera,debugCamera=debugCam) {
+
                     clearWorld(world);
                     clearText();
-                    player.setPlayer(0,1,0,fpscamera,world);
-                    if (!player.playerIsExistent) {
-                        if (debug) {
-                            addOrbit(debugCam, renderer.domElement);
-                        }
-                    } else {
-                        player.camera.lookAt(new THREE.Vector3(-2,5,-2))       
-                    }
+                    player.setPlayer(x,y,z,camera,world);
+                }
+                levels[1] = function(debug){
+                    quickLevelSetup(0,1,0)
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -1962,17 +1997,9 @@
                     }
 
                  }
-                levels[2] = function(debug=false) {
-                    clearWorld(world);
-                    clearText();
+                levels[2] = function(debug) {
+                    quickLevelSetup(0,1,0)
 
-                    if (debug === false) {
-                        player.setPlayer(0,1,0,fpscamera,world);
-                        player.restart = world.takeSnapshot();
-                    } else {
-                        addOrbit(debugCam, renderer.domElement);    
-                        player.setPlayer(0,1,0,fpscamera,world);
-                    }
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -1994,17 +2021,9 @@
                     
 
                  }
-                levels[3] = function(debug=false) {
-                    clearWorld(world);
-                    clearText();
+                levels[3] = function(debug) {
+                    quickLevelSetup(0,10,0)
 
-                    if (debug === false) {
-                        player.setPlayer(0,10,0,fpscamera,world);
-                        player.restart = world.takeSnapshot();
-                    } else {
-                        addOrbit(debugCam, renderer.domElement);    
-                        player.setPlayer(0,10,0,fpscamera,world);
-                    }
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -2038,7 +2057,6 @@
                     addPBall(-10, 20,-10);
                     addPBall(-10, 20, 10);
 
-                    //console.log('testLevel1');
 
 
                     //C U B E S
@@ -2051,17 +2069,9 @@
                   }
 
 
-                levels[4] = function(debug=false) {
-                    clearWorld(world);
-                    clearText();
+                levels[4] = function(debug) {
+                    quickLevelSetup(0,100,0)
 
-                    if (debug === false) {
-                        player.setPlayer(0,100,0,fpscamera,world);
-                        player.restart = world.takeSnapshot();
-                    } else {
-                        addOrbit(debugCam, renderer.domElement);    
-                        player.setPlayer(0,100,0,fpscamera,world);
-                    }
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -2095,7 +2105,6 @@
                     addPBall(-10, 20,-10);
                     addPBall(-10, 20, 10);
 
-                    //console.log('testLevel1');
 
                     for (var x = 0; x < 20; x++) {
                         for (var z = 0; z < 20; z++) {
@@ -2142,10 +2151,6 @@
                         levels[level.curLevel](debug);
                         level.startup = false;
                         level.update = false;
-                        if (debug && player.playerIsExistent && orbits.length > 0) {
-                            orbits[debugCam.orbitNum].enabled = true;
-                            pointerLocks[fpscamera.pointerLockNum].enabled = false;
-                        }
                     }
                     if (level.hasCube === true) {
                         updatePhysicsObjects();
@@ -2193,14 +2198,12 @@
                     let dt = Math.min( 0.05, clock.getDelta() ) * 13;
 
                     if (player.playerIsExistent === true) {   
-                        player.runPlayerPhysics(dt);
-                        pointerLocks[fpscamera.pointerLockNum].pointerSpeed = 1
-                        
+                        player.runPlayerPhysics(dt);                        
                     }
 
-                    if (debug === false && player.playerIsExistent === true) {                    
+                    if (!debug.cam && player.playerIsExistent === true) {                    
                         renderer.render( scene, player.camera );
-                    } else if (debug === true){
+                    } else if (debug.cam){
                         renderer.render( scene, debugCam );
                     } else {
                         renderer.render( scene, fpscamera );
@@ -2209,6 +2212,10 @@
                     cooldown.updateCooldowns();
 
                     world.timestep = 1 / fps;
+
+                    if (debug.cam && player.playerIsExistent && orbits.length > 0) {
+                        pointerLocks = []
+                    }
 
                  }
 
@@ -2234,7 +2241,6 @@
 
                     renderer.setSize( window.innerWidth, window.innerHeight );
 
-                    //render(debug);
                     scenes.menu.count = 0;
 
                  }
