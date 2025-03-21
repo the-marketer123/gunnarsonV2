@@ -749,7 +749,7 @@
                             new THREE.Vector3(0, -1, 0) // Downward
                         );
                         rays[1] = new RAPIER.Ray(
-                            new THREE.Vector3( x + 0.1 * (playerPosition.x - x), y+ 0.1 * (playerPosition.y - y), z+ 0.1 * (playerPosition.y - y) ),
+                            new THREE.Vector3( x + 0.1 * (playerPosition.x - x), y+ 0.1 * (playerPosition.y - y), z+ 0.1 * (playerPosition.z - z) ),
                             new THREE.Vector3(
                                 playerPosition.x - x,
                                 playerPosition.y - y,
@@ -1985,9 +1985,10 @@
                     clearWorld(world);
                     clearText();
                     player.setPlayer(x,y,z,camera,world);
+                    player.camera.lookAt(new THREE.Vector3(0,2,0))
                 }
                 levels[1] = function(debug){
-                    quickLevelSetup(0,1,0)
+                    quickLevelSetup(-10,1,0)
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -1997,9 +1998,9 @@
                     level.id = '1';
 
                     addSkybox(85);
-                    addPlatform(  { x: 0, y: -5, z: 0 },   {x:0,y:0,z:0}, { x: 100, y: 1, z: 100 },"SQRE","GRAY"); 
-                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 10, y: 1, z: 10 },"SQRE","GRAY"); 
-                    addPlatform(  { x: -2.5, y: 5, z: 0 },   {x:0,y:0,z:0}, { x: 1, y: 10, z: 5 },"SQRE","GRAY"); 
+                    //addPlatform(  { x: 0, y: -5, z: 0 },   {x:0,y:0,z:0}, { x: 100, y: 1, z: 100 },"SQRE","GRAY"); 
+                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 2500, y: 0.01, z: 2500 },"SQRE","GRAY"); 
+                    addPlatform(  { x: -2.5, y: 2.5, z: 0 },   {x:0,y:0,z:0}, { x: 1, y: 5, z: 5 },"SQRE","GRAY"); 
                     addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); 
                     addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
                     addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
