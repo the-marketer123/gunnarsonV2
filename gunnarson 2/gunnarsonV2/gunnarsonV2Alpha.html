@@ -759,12 +759,12 @@
 
                         // Debug visualization
                         if (debug.lines) {
-                            drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y, rays[0].origin.z)]);
+                            drawDebugLine(scene, [rays[0].origin, new THREE.Vector3(rays[0].origin.x, rays[0].origin.y-1, rays[0].origin.z)]);
                             drawDebugLine(scene, [
                                 rays[1].origin, 
                                 new THREE.Vector3(
                                     playerPosition.x, 
-                                    playerPosition.y,  // Adjusting for height difference
+                                    playerPosition.y,  
                                     playerPosition.z
                                 )
                             ]);
@@ -778,8 +778,7 @@
                         if (hits[0] && hits[0].collider && hits[0].toi < 0.1) { //hits[0].toi > 0.001 && hits[0].toi < 0.1) {
                             trueHits++;
                         }  
-
-                        if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' && hits[1].toi > 0.1) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
+                        if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' || collBox.position.distanceTo(player.body.translation()) > 10) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
                             if (trueHits == 1) {
                                 rigidP.setLinvel({  x: vel.x * 2,  y: rigidP.linvel().y,  z: vel.z * 2  });
                                 pose=0
@@ -1350,7 +1349,7 @@
                             }
                             scene.add(out.debugmesh);                            
                             }
-                        out.prevPos;       
+                         out.prevPos;       
                         out.runPlayerDebug = function (dt, rayOrigin) {
                             out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
                             for (var i = 0; i < lines.length; i++) {
@@ -1430,7 +1429,10 @@
                             }
                         out.runPlayerPhysics = function (dt){
                             if (out.playerIsExistent) {
-                            
+                                if (debug.cam){
+                                    orbits[debugCam.orbitNum].target.set(out.body.translation().x,out.body.translation().y,out.body.translation().z)
+                                    orbits[debugCam.orbitNum].update()
+                                }
                                 out.cosPitch = Math.cos(-out.pitch);
                                 out.sinPitch = Math.sin(-out.pitch);
                                 out.cosYaw = Math.cos(-out.yaw);
@@ -1438,11 +1440,11 @@
 
                                 let sdir = out.sinYaw,
                                     cdir = -out.cosYaw,
-                                    speed = -out.walkSpeed * (out.crouching ? (out.grounded ? 0.75 : 0.5) : 1) * (out.grounded ? 1 : 0.85);
+                                    speed = (-out.walkSpeed * (out.crouching ? (out.grounded ? 0.75 : 0.5) : 1) * (out.grounded ? 1 : 0.85) );
 
                                 let impulse = { x: 0, y: 0, z: 0 }; // Initialize impulse vector
 
-                                let e = 5
+                                let e = 10
                                 if (user.keysHeld.ShiftLeft){
                                     out.crouching = true;
                                 } else {
@@ -1456,13 +1458,24 @@
                                 if (user.keysHeld.KeyW && user.keysHeld.KeyS) movingZ = false
 
                                 if (movingX) {
-                                    if (user.keysHeld.KeyD) {
-                                        impulse.x += cdir * speed;
-                                        impulse.z -= sdir * speed;
-                                    } 
-                                    if (user.keysHeld.KeyA) {
-                                        impulse.x -= cdir * speed;
-                                        impulse.z += sdir * speed;
+                                    if (!movingZ){
+                                        if (user.keysHeld.KeyD) {
+                                            impulse.x += cdir * speed;
+                                            impulse.z -= sdir * speed;
+                                        } 
+                                        if (user.keysHeld.KeyA) {
+                                            impulse.x -= cdir * speed;
+                                            impulse.z += sdir * speed;
+                                        }
+                                    } else {
+                                        if (user.keysHeld.KeyD) {
+                                            impulse.x += cdir * speed * 2;
+                                            impulse.z -= sdir * speed * 2;
+                                        } 
+                                        if (user.keysHeld.KeyA) {
+                                            impulse.x -= cdir * speed * 2;
+                                            impulse.z += sdir * speed * 2;
+                                        }
                                     }
                                 }
 
