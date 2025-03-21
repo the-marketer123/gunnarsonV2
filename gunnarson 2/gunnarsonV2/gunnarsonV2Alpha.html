@@ -533,9 +533,9 @@
 
             /*Camera*/
                 
-                fpscamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 5000 );
+                fpscamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.01, 5000 );
 
-                debugCam = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
+                debugCam = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.01, 5000 );
 
                 let orbits = [];
                 function addOrbit (camera, element=renderer.domElement) {
@@ -794,7 +794,7 @@
                         
                         rigidS.setTranslation(rigidP.translation())
                         rigidS.setRotation(rigidP.rotation())
-                        mesh.update()
+                        mesh.update(pose)
 
                         swayOffset += 0.035; 
                         let swayAmount = Math.sin(swayOffset) * 0.1; 
@@ -823,7 +823,7 @@
                     enemy.position.copy( position );
                     position = {x:0,y:0,z:0}
 
-                    const torsoSize = { x: 0.5, y: 0.75, z: 0.25 };
+                    const torsoSize = { x: 0.6, y: 0.75, z: 0.25 };
                     const limbSize = { x: 0.25, y: 0.75, z: 0.25 };
                     const headRadius = 0.3;
 
@@ -887,8 +887,8 @@
                         // Set positions based on torso
                         leftLeg.position.set(pos.x + leftLegOffset.x, pos.y + leftLegOffset.y, pos.z + leftLegOffset.z);
                         rightLeg.position.set(pos.x + rightLegOffset.x, pos.y + rightLegOffset.y, pos.z + rightLegOffset.z);
-                        leftArm.position.set(pos.x + leftArmOffset.x, pos.y + leftArmOffset.y, pos.z + leftArmOffset.z);
-                        rightArm.position.set(pos.x + rightArmOffset.x, pos.y + rightArmOffset.y, pos.z + rightArmOffset.z);
+                        //leftArm.position.set(pos.x + leftArmOffset.x, pos.y + leftArmOffset.y, pos.z + leftArmOffset.z);
+                        //rightArm.position.set(pos.x + rightArmOffset.x, pos.y + rightArmOffset.y, pos.z + rightArmOffset.z);
                         head.position.set(pos.x + headOffset.x, pos.y + headOffset.y, pos.z + headOffset.z);
 
                         // Apply rotation to maintain alignment
@@ -898,15 +898,84 @@
                         rightArm.quaternion.copy(rot);
                         head.quaternion.copy(rot);
 
-                        const rightLegTiltAngle = Math.PI / -12;                   
-                        const leftLegTiltAngle = Math.PI /   12; 
-                        const rightLegTiltQuaternion = new THREE.Quaternion();
-                        const leftLegTiltQuaternion = new THREE.Quaternion();
-                        rightLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rightLegTiltAngle); 
-                        leftLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), leftLegTiltAngle); 
+                        let laoffset,raoffset,larot,rarot,xrot,yang,xang
+                        switch (pose){
+                            case 1:
+                                laoffset = new THREE.Vector3(-0.2, 0.25, 0.3);  
+                                raoffset = new THREE.Vector3(0.2, 0.25, 0.3);  
 
-                        leftLeg.quaternion.multiply(leftLegTiltQuaternion);
-                        rightLeg.quaternion.multiply(rightLegTiltQuaternion);
+                                yang = Math.PI / 10;  // 45-degree inward tilt
+                                xang = Math.PI / 2;  // 90-degree upward rotation
+
+                                // Create rotation quaternions
+                                larot = new THREE.Quaternion();
+                                rarot = new THREE.Quaternion();
+                                xrot = new THREE.Quaternion();
+
+                                // Set rotations
+                                xrot.setFromAxisAngle(new THREE.Vector3(1, 0, 0), xang);
+                                larot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -yang);
+                                rarot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yang);
+
+                                // Combine rotations (apply x-axis first, then y-axis)
+                                larot.premultiply(xrot);
+                                rarot.premultiply(xrot);
+
+                                // Rotate offsets to align with enemy rotation
+                                laoffset.applyQuaternion(rot);
+                                raoffset.applyQuaternion(rot);
+
+                                // Set arm positions
+                                leftArm.position.set(pos.x + laoffset.x, pos.y + laoffset.y, pos.z + laoffset.z);
+                                rightArm.position.set(pos.x + raoffset.x, pos.y + raoffset.y, pos.z + raoffset.z);
+
+                                // Apply rotation to arms
+                                leftArm.quaternion.copy(rot).multiply(larot);
+                                rightArm.quaternion.copy(rot).multiply(rarot);
+                            break;
+                            case 0:
+                                laoffset = new THREE.Vector3(-0.4, 0.25, -0.3);  
+                                raoffset = new THREE.Vector3(0.4, 0.25, -0.3);  
+
+                                yang = Math.PI / 4;  // 45-degree inward tilt
+                                xang = Math.PI / 1.5;  // 90-degree upward rotation
+
+                                // Create rotation quaternions
+                                larot = new THREE.Quaternion();
+                                rarot = new THREE.Quaternion();
+                                xrot = new THREE.Quaternion();
+
+                                // Set rotations
+                                xrot.setFromAxisAngle(new THREE.Vector3(1, 0, 0), xang);
+                                larot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -yang);
+                                rarot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yang);
+
+                                // Combine rotations (apply x-axis first, then y-axis)
+                                larot.premultiply(xrot);
+                                rarot.premultiply(xrot);
+
+                                // Rotate offsets to align with enemy rotation
+                                laoffset.applyQuaternion(rot);
+                                raoffset.applyQuaternion(rot);
+
+                                // Set arm positions
+                                leftArm.position.set(pos.x + laoffset.x, pos.y + laoffset.y, pos.z + laoffset.z);
+                                rightArm.position.set(pos.x + raoffset.x, pos.y + raoffset.y, pos.z + raoffset.z);
+
+                                // Apply rotation to arms
+                                leftArm.quaternion.copy(rot).multiply(larot);
+                                rightArm.quaternion.copy(rot).multiply(rarot);
+                            }
+
+                            const tilt = Math.PI /   12; 
+                            const rightLegTiltQuaternion = new THREE.Quaternion();
+                            const leftLegTiltQuaternion = new THREE.Quaternion();
+                            rightLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -tilt); 
+                            leftLegTiltQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tilt); 
+                            
+
+                            leftLeg.quaternion.multiply(leftLegTiltQuaternion);
+                            rightLeg.quaternion.multiply(rightLegTiltQuaternion);
                     }
                     let somevar = 0;
                     function update (pose=0) {
