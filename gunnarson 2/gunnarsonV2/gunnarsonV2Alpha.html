@@ -624,6 +624,9 @@
                 scene.add(sphereInstancedMesh);
                 scene.add(boxInstancedMesh);
 
+                gplatmaterial.metalness = 0; // No metallic reflection
+                gplatmaterial.roughness = 1;
+
                 let sphereCount = 0;
                 let boxCount = 0;
                 // stuff
@@ -714,8 +717,37 @@
                     sensBox = new THREE.Mesh( geometrys, materialy );
                     scene.add( sensBox );                         
                     scene.add( collBox ); 
+
+                    function destroy() {
+                        let {x,y,z} = rigidP.translation()
+                        scene.remove(mesh.enemy)
+                        mesh = undefined
+
+                        world.removeRigidBody(rigidP)
+                        world.removeRigidBody(rigidS)
+                        world.removeCollider(colliderS)
+                        world.removeCollider(colliderP)
+
+                        rigidP = undefined
+                        rigidS = undefined
+                        colliderS = undefined
+                        colliderP = undefined
+
+                        spawnEnemyRag({x:x,y:y,z:z})
+
+                    }
                 
-                    
+                    function checkCollision() {
+                        if (!rigidP || !mesh || !mesh.enemy.parent) return;
+
+                        world.intersectionsWith(colliderS, (otherCollider) => {
+                            if (otherCollider.userData.id == 'bullet') {
+                                destroy(); 
+                            }
+                            return;
+                        });
+                    }
+
                     let swayOffset = 0,pose=0;
                     function update() {
                         let{x,y,z} = rigidP.translation()
@@ -1218,8 +1250,48 @@
                     }
 
                     return line;
-                    }
+                 }
                 
+                function addGround(pos={x:0,y:0,z:0}, size={x:1000,z:1000}, texture = "GRAY") {
+                    let newMaterial;
+                    switch (texture) {
+                        case "GRAY":
+                            newMaterial = gplatmaterial;
+                            newMaterial.side = THREE.FrontSide; // Only visible from above
+                            newMaterial.metalness = 0; // Remove reflections
+                            newMaterial.roughness = 1;
+                            break;
+                    }
+
+                    // Create a large plane geometry
+                    let geometry = new THREE.PlaneGeometry(size.x, size.z);
+                    
+                    // Adjust UV mapping manually for tiling
+                    let uvAttribute = geometry.getAttribute("uv");
+                    for (let i = 0; i < uvAttribute.count; i++) {
+                        let uv = new THREE.Vector2(uvAttribute.getX(i), uvAttribute.getY(i));
+                        uv.multiply(new THREE.Vector2(size.x , size.z )); // Adjust tiling
+                        uvAttribute.setXY(i, uv.x, uv.y);
+                    }
+                    uvAttribute.needsUpdate = true;
+
+                    let mesh = new THREE.Mesh(geometry, newMaterial);
+                    mesh.position.set(pos.x, pos.y, pos.z);
+                    mesh.rotation.x = -Math.PI / 2; // Make it horizontal
+
+                    scene.add(mesh);
+
+                    // Physics (static rigid body)
+                    let rigidBodyDesc = RAPIER.RigidBodyDesc.fixed()
+                        .setTranslation(pos.x, pos.y, pos.z);
+                    let rigid = world.createRigidBody(rigidBodyDesc);
+                    
+                    let colliderDesc = RAPIER.ColliderDesc.cuboid(size.x / 2, 0.01, size.z / 2);
+                    world.createCollider(colliderDesc, rigid);
+
+                    return { mesh, rigid };
+                }
+
                 function addPlatform (pos, rot, size, shape, color) {
                     let rttx = rot.x * pi/180
                     let rtty = rot.y * pi/180
@@ -1601,9 +1673,9 @@
                             let gun 
                         out.runPlayerPhysics = function (dt){
                             if (out.gun == 'pistol' && gun == undefined) {
-                                gun = guns.pistol.draw(out.body.translation(),out.camera.quaternion,false)
+                                gun = guns.pistol.draw(out.camera.position,out.camera.quaternion,false)
                             } else if (out.gun == 'pistol'){
-                                gun.update(out.body.translation(),out.camera.quaternion,false)
+                                gun.update(out.camera.position,out.camera.quaternion,false)
                             } else if (gun !== undefined) {
                                 scene.remove(gun.gun)
                                 gun = undefined
@@ -1966,8 +2038,8 @@
                                 }
                             } else {
                                 offsets = {
-                                    b:new THREE.Vector3(0.5,0.02,-0.75),
-                                    h:new THREE.Vector3(0.5,0.145,-0.475),
+                                    b:new THREE.Vector3(0.6,-0.7,-1.3),
+                                    h:new THREE.Vector3(0.6,-0.85,-1.1),
                                     g:new THREE.Vector3(0,0,0)
                                 }
 
@@ -1991,7 +2063,7 @@
                             }
                             return {update, gun}
 
-                        }
+                         }
 
                         out.shoot = function() {
                             cooldown.activateCooldown(out.cooldown.id);
@@ -2074,7 +2146,7 @@
                             let projectile = { mesh, rigid, update, checkCollision, destroy };
                             projectiles.push(projectile);
                                     
-                        }
+                         }
                         return out;
                     })({}) 
 
@@ -2220,15 +2292,18 @@
                 
 
                 let levels = [];
-                function quickLevelSetup(x,y,z,camera=fpscamera,debugCamera=debugCam) {
+                function quickLevelSetup(x,y,z,camera=fpscamera,debugCamera=debugCam,ground=false) {
 
                     clearWorld(world);
                     clearText();
                     player.setPlayer(x,y,z,camera,world);
                     player.camera.lookAt(new THREE.Vector3(0,2,0))
+                    if (ground){
+                        addGround()
+                    }
                 }
                 levels[1] = function(debug){
-                    quickLevelSetup(-10,1,0)
+                    quickLevelSetup(-10,1,0,fpscamera,debugCam,true)
 
                     level.hasCube = true;
                     level.hasEnem = false;
@@ -2239,7 +2314,7 @@
 
                     addSkybox(85);
                     //addPlatform(  { x: 0, y: -5, z: 0 },   {x:0,y:0,z:0}, { x: 100, y: 1, z: 100 },"SQRE","GRAY"); 
-                    addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 2500, y: 0.01, z: 2500 },"SQRE","GRAY"); 
+                    //addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 2500, y: 0.01, z: 2500 },"SQRE","GRAY"); 
                     addPlatform(  { x: -2.5, y: 2.5, z: 0 },   {x:0,y:0,z:0}, { x: 1, y: 5, z: 5 },"SQRE","GRAY"); 
                     addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); 
                     addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
