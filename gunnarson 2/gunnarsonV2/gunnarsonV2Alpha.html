@@ -670,8 +670,8 @@
                     }
                     return out;
                  })({})
-                function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gun='hand') {
-                    let rigidS,rigidP,colliderS,colliderP,mesh,collBox,sensBox;
+                function spawnEnemy (pos={ x: 0, y: 5, z: 0 },gunID='hand') {
+                    let rigidS,rigidP,colliderS,colliderP,mesh,collBox,sensBox,gun;
                     let rigidBodyDesc1 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations().lockTranslations()
                     rigidS = world.createRigidBody(rigidBodyDesc1);
                     let colliderDesc1 = RAPIER.ColliderDesc.cuboid(1/2,2.1/2,0.25/2).setDensity(1).setSensor(true);
@@ -687,6 +687,9 @@
                     rigidP.wakeUp();
 
                     mesh = drawEnemy(pos,0)
+                    if (gunID !== 'hand') {
+                        gun = guns.pistol.draw(pos,rigidP.rotation())
+                    }
 
                     const geometryc = new THREE.BoxGeometry(1,2.1,0.25);
 
@@ -717,6 +720,15 @@
                     function update() {
                         let{x,y,z} = rigidP.translation()
                         let playerPosition = player.body.translation()
+
+                        if (gunID !== 'hand' && pose == 1) {
+                            gun.gun.visible = true;
+                            gun.update(rigidP.translation(),mesh.enemy.quaternion)
+                        } else if (gunID !== 'hand' && pose!=1) {
+                            gun.gun.visible = false;
+                        }
+                        //player.body.setTranslation(gun.gun.position)
+                        //rigidP.setLinvel({  x: 2,  y: 2,  z: 2  });
 
 
                         if (debug.hitboxes) {
@@ -1499,7 +1511,7 @@
                             out.restart= 1
                             out.grounded= false
                             out.debugmesh = new THREE.Mesh(new THREE.BoxGeometry(xwidth, height, zwidth), new THREE.MeshBasicMaterial({color: 0x00ff00,  transparent: true, opacity: 0.5}));
-                            out.gun = 'hand'
+                            out.gun = 'pistol'
                             out.holding = {ch:false, coll: undefined, body: undefined}
                             out.collider = world.createCollider(out.colliderDesc, out.body);
                             out.collider.userData = {id:'player'}
@@ -1586,7 +1598,16 @@
                                 
                             }
                             }
+                            let gun 
                         out.runPlayerPhysics = function (dt){
+                            if (out.gun == 'pistol' && gun == undefined) {
+                                gun = guns.pistol.draw(out.body.translation(),out.camera.quaternion,false)
+                            } else if (out.gun == 'pistol'){
+                                gun.update(out.body.translation(),out.camera.quaternion,false)
+                            } else if (gun !== undefined) {
+                                scene.remove(gun.gun)
+                                gun = undefined
+                            }
                             if (out.playerIsExistent) {
                                 if (debug.cam){
                                     orbits[debugCam.orbitNum].target.set(out.body.translation().x,out.body.translation().y,out.body.translation().z)
@@ -1818,7 +1839,7 @@
                                 }
 
                                 let cam = out.camera
-                                if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);}
+                                if (!out.crouching) {cam.position.set(out.body.translation().x, out.body.translation().y+(out.height/2), out.body.translation().z);}
                                 else {cam.position.set(out.body.translation().x, out.body.translation().y-(out.height/2), out.body.translation().z);}
                                 let q = cam.quaternion;
                                 
@@ -1926,6 +1947,52 @@
                     guns.pistol = (function(out){
                         out.cooldown = cooldown.createCooldown(1,10);
                         
+                        out.draw = function(pos, quat,enemy=true) {
+                            let gun = new THREE.Group();
+
+                            const barrelGeometry = new THREE.BoxGeometry(0.1, 0.15, 0.5);
+                            const handleGeometry = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+                            const material = new THREE.MeshStandardMaterial({ color: 0x000000 });
+
+                            let barrel = new THREE.Mesh(barrelGeometry,material)
+                            let handle = new THREE.Mesh(handleGeometry,material)
+
+                            let offsets
+                            if (enemy) {
+                                offsets = {
+                                    b:new THREE.Vector3(0,-0.02,0.45),
+                                    h:new THREE.Vector3(0,-0.145,0.175),
+                                    g:new THREE.Vector3(0,0,0)
+                                }
+                            } else {
+                                offsets = {
+                                    b:new THREE.Vector3(0.5,0.02,-0.75),
+                                    h:new THREE.Vector3(0.5,0.145,-0.475),
+                                    g:new THREE.Vector3(0,0,0)
+                                }
+
+                            }
+                                
+
+                            gun.add(barrel)
+                            gun.add(handle)
+
+                            gun.position.copy(pos)
+                            gun.quaternion.copy(quat)
+
+                            scene.add(gun)
+                            function update(pos,quat){
+                                offsets.g.applyQuaternion(quat)
+                                barrel.position.copy(offsets.b)
+                                handle.position.copy(offsets.h)
+                                gun.position.copy(pos).add(offsets.g)
+                                gun.quaternion.copy(quat)
+                                offsets.g = new THREE.Vector3(0,0.5,0.5)
+                            }
+                            return {update, gun}
+
+                        }
+
                         out.shoot = function() {
                             cooldown.activateCooldown(out.cooldown.id);
                             const radius = 0.2;
@@ -2131,6 +2198,7 @@
                     }
 
                     out.update = function() {
+                        clearText()
                         out.setBackground();
                         drawText('Gunnarson 3D', 'center', windowHeight  * 2/18, '125px', 'red', 'Afacad', 'normal', true);
                         drawButton('Play', 'center', windowHeight  * 8/18, '100px', 'red', 'Afacad', 'normal', true, function(){currentScene = 'play'});
@@ -2179,7 +2247,7 @@
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
                     if (player.playerIsExistent) {
-                        spawnEnemy({x:-4,y:1,z:-2})
+                        spawnEnemy({x:-4,y:1,z:-2},'pistol')
                     }
 
                  }
@@ -2416,7 +2484,7 @@
                     lastFrameTime = now;
                 }
                 function onWindowResize() {
-
+                    clearText()
                     fpscamera.aspect = window.innerWidth / window.innerHeight;
                     fpscamera.updateProjectionMatrix();
                     debugCam.aspect = window.innerWidth / window.innerHeight;
