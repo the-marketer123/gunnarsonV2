@@ -679,7 +679,7 @@
                     colliderS.userData = { id: "enemy" }; 
                     rigidS.wakeUp();
 
-                    let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y+10,pos.z).setCanSleep(true).lockRotations()
+                    let rigidBodyDesc2 = RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x,pos.y,pos.z).setCanSleep(true).lockRotations()
                     rigidP = world.createRigidBody(rigidBodyDesc2);
                     let colliderDesc2 = RAPIER.ColliderDesc.cuboid(0.9/2,2.1/2,0.225/2).setDensity(1).setSensor(false);
                     colliderP = world.createCollider(colliderDesc2, rigidP);
@@ -773,7 +773,7 @@
                         hits[1] = world.castRay(rays[1], 1.1, true);
 
                         let trueHits = 0;
-                        if (hits[0] && hits[0].collider && hits[0].toi < 0.1) { //hits[0].toi > 0.001 && hits[0].toi < 0.1) {
+                        if (hits[0] && hits[0].collider && hits[0].toi < 1) { //hits[0].toi > 0.001 && hits[0].toi < 0.1) {
                             trueHits++;
                         }  
                         if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' || collBox.position.distanceTo(player.body.translation()) > 10) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
@@ -792,6 +792,9 @@
                         
                         rigidS.setTranslation(rigidP.translation())
                         rigidS.setRotation(rigidP.rotation())
+                        x = rigidP.translation().x;      
+                        y = rigidP.translation().y;      
+                        z = rigidP.translation().z;      
                         mesh.update(pose,x,y,z)
 
                         rigidP.setRotation(mesh.enemy.quaternion)
@@ -799,6 +802,8 @@
                         collBox.quaternion.copy(colliderP.rotation())
                         sensBox.position.copy(colliderS.translation())
                         sensBox.quaternion.copy(colliderS.rotation())
+
+                        
                     }
                     enemies.push({rigidP,colliderP,mesh,update})
                     return {rigidP,colliderP,mesh,update}
@@ -835,11 +840,12 @@
                         return mesh
                      }
 
-                    let quaternion1 = new THREE.Quaternion();
+                    
+                     let quaternion1 = new THREE.Quaternion();
                     let quaternion2 = new THREE.Quaternion();
                     let axis = new THREE.Vector3(0, 1, 0); // Y-axis
-                    let angle1 = THREE.MathUtils.degToRad(-25); // Convert 45 degrees to radians
-                    let angle2 = THREE.MathUtils.degToRad(25); // Convert 45 degrees to radians
+                    let angle1 = THREE.MathUtils.degToRad(25); // Convert 45 degrees to radians
+                    let angle2 = THREE.MathUtils.degToRad(-25); // Convert 45 degrees to radians
                     quaternion1.setFromAxisAngle(axis, angle1);
                     quaternion2.setFromAxisAngle(axis, angle2);
 
@@ -854,151 +860,192 @@
                     scene.add( enemy )
                     function applyPose(pose=0) {
                         if (pose == 1) {
-                                let pos = torso.position
-                                let rot = torso.quaternion
+                            let center = enemy.position
+                            let rot = enemy.quaternion
 
-                                // Define relative positions for limbs and head
-                                const lloffset = new THREE.Vector3(-1 / 6, -0.75, 0);
-                                const rloffset = new THREE.Vector3(1 / 6, -0.75, 0);
-                                const leftArmOffset = new THREE.Vector3(-0.4, 0, 0);
-                                const rightArmOffset = new THREE.Vector3(0.4, 0, 0);
-                                const headOffset = new THREE.Vector3(0, 0.65, 0);
-
-                                // Apply torso rotation to the offsets
-                                lloffset.applyQuaternion(rot);
-                                rloffset.applyQuaternion(rot);
-                                leftArmOffset.applyQuaternion(rot);
-                                rightArmOffset.applyQuaternion(rot);
-                                headOffset.applyQuaternion(rot);
-
-                                // Set positions based on torso
-                                leftLeg.position.set(pos.x + lloffset.x, pos.y + lloffset.y, pos.z + lloffset.z);
-                                rightLeg.position.set(pos.x + rloffset.x, pos.y + rloffset.y, pos.z + rloffset.z);
-                                //leftArm.position.set(pos.x + leftArmOffset.x, pos.y + leftArmOffset.y, pos.z + leftArmOffset.z);
-                                //rightArm.position.set(pos.x + rightArmOffset.x, pos.y + rightArmOffset.y, pos.z + rightArmOffset.z);
-                                head.position.set(pos.x + headOffset.x, pos.y + headOffset.y, pos.z + headOffset.z);
-
-                                // Apply rotation to maintain alignment
-                                leftLeg.quaternion.copy(rot);
-                                rightLeg.quaternion.copy(rot);
-                                leftArm.quaternion.copy(rot);
-                                rightArm.quaternion.copy(rot);
-                                head.quaternion.copy(rot);
-
-                                let laoffset,raoffset,larot,rarot,xrot,ayang,axang
-                       
-                                laoffset = new THREE.Vector3(-0.2, 0.25, 0.3);  
-                                raoffset = new THREE.Vector3(0.2, 0.25, 0.3);  
-
-                                ayang = Math.PI / 10;  // 45-degree inward tilt
-                                axang = Math.PI / 2;  // 90-degree upward rotation
-
-                                // Create rotation quaternions
-                                larot = new THREE.Quaternion();
-                                rarot = new THREE.Quaternion();
-                                xrot = new THREE.Quaternion();
-
-                                // Set rotations
-                                xrot.setFromAxisAngle(new THREE.Vector3(1, 0, 0), axang);
-                                larot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -ayang);
-                                rarot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), ayang);
-
-                                // Combine rotations (apply x-axis first, then y-axis)
-                                larot.premultiply(xrot);
-                                rarot.premultiply(xrot);
-
-                                // Rotate offsets to align with enemy rotation
-                                laoffset.applyQuaternion(rot);
-                                raoffset.applyQuaternion(rot);
-
-                                // Set arm positions
-                                leftArm.position.set(pos.x + laoffset.x, pos.y + laoffset.y, pos.z + laoffset.z);
-                                rightArm.position.set(pos.x + raoffset.x, pos.y + raoffset.y, pos.z + raoffset.z);
-
-                                // Apply rotation to arms
-                                leftArm.quaternion.copy(rot).multiply(larot);
-                                rightArm.quaternion.copy(rot).multiply(rarot);
-
-                                const tilt = Math.PI /   12; 
-                                const rltilt = new THREE.Quaternion();
-                                const lltilt = new THREE.Quaternion();
-                                rltilt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -tilt); 
-                                lltilt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tilt); 
-                                
-
-                                leftLeg.quaternion.multiply(lltilt);
-                                rightLeg.quaternion.multiply(rltilt);
-                        } else if (pose == 0){
-                                let pos = enemy.position
-                                let rot = enemy.quaternion
-
-                                // Define relative positions for limbs and head
-                                const lloffset = new THREE.Vector3(-1 / 6, -0.75, 0);
-                                const rloffset = new THREE.Vector3(1 / 6, -0.75, 0);
-                                const headOffset = new THREE.Vector3(0, 0.65, 0);
-
-                                // Apply torso rotation to the offsets
-                                lloffset.applyQuaternion(rot);
-                                rloffset.applyQuaternion(rot);
-                                headOffset.applyQuaternion(rot);
-
-                                // Set positions based on torso
-                                leftLeg.position.set(pos.x + lloffset.x, pos.y + lloffset.y, pos.z + lloffset.z);
-                                rightLeg.position.set(pos.x + rloffset.x, pos.y + rloffset.y, pos.z + rloffset.z);
-                                head.position.set(pos.x + headOffset.x, pos.y + headOffset.y, pos.z + headOffset.z);
-
-                                // Apply rotation to maintain alignment
-                                leftLeg.quaternion.copy(rot);
-                                rightLeg.quaternion.copy(rot);
-                                leftArm.quaternion.copy(rot);
-                                rightArm.quaternion.copy(rot);
-                                head.quaternion.copy(rot);
-
-                                let laoffset,raoffset,torsoOffset,larot,rarot,xrot,ayang,axang,trot
-
-                                laoffset = new THREE.Vector3(-0.4, 0.25, -0.3);  
-                                raoffset = new THREE.Vector3(0.4, 0.25, -0.3);  
-                                torsoOffset = new THREE.Vector3(0,-0.5,0.5)
-
-                                ayang = Math.PI / 4;  // 45 deg
-                                axang = Math.PI / 1.5;  // 135 deg
-
-                                // Create rotation quaternions
-                                trot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -ayang);
-                                larot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -ayang);
-                                rarot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), ayang);
-                                xrot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), axang);
-
-                                // Combine rotations (apply x-axis first, then y-axis)
-                                larot.premultiply(xrot);
-                                rarot.premultiply(xrot);
-
-                                // Rotate offsets to align with enemy rotation
-                                laoffset.applyQuaternion(rot);
-                                raoffset.applyQuaternion(rot);
-
-                                // Set arm positions
-                                leftArm.position.set(pos.x + laoffset.x, pos.y + laoffset.y, pos.z + laoffset.z);
-                                rightArm.position.set(pos.x + raoffset.x, pos.y + raoffset.y, pos.z + raoffset.z);
-                                torso.position.set(pos.x + torsoOffset.x, pos.y + torsoOffset.y, pos.z+torsoOffset.z)
-
-                                // Apply rotation to arms
-                                leftArm.quaternion.copy(rot).multiply(larot);
-                                rightArm.quaternion.copy(rot).multiply(rarot);
-                                torso.quaternion.copy(trot)
-
-                                const tilt = Math.PI /   12; 
-                                const rltilt = new THREE.Quaternion();
-                                const lltilt = new THREE.Quaternion();
-                                rltilt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -tilt); 
-                                lltilt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tilt); 
-                                
-
-                                leftLeg.quaternion.multiply(lltilt);
-                                rightLeg.quaternion.multiply(rltilt);
+                            let offsets = {
+                                rl: new THREE.Vector3(  1.1/6,  -0.75,  0 ),
+                                ll: new THREE.Vector3( -1.1/6,  -0.75,  0 ),
+                                t:  new THREE.Vector3(    0,     0 ,  0 ),
+                                la: new THREE.Vector3( -0.25,     0.2 ,  0.35 ),
+                                ra: new THREE.Vector3(  0.25,     0.2 ,  0.35 ),
+                                h:  new THREE.Vector3(    0,  0.65 ,  0 )
                             }
 
+                            rightLeg.position.copy(offsets.rl)
+                            leftLeg.position.copy(offsets.ll)
+                            torso.position.copy(offsets.t)
+                            leftArm.position.copy(offsets.la)
+                            rightArm.position.copy(offsets.ra)
+                            head.position.copy(offsets.h)
                             
+                            let axes = {
+                                x: new THREE.Vector3(1,0,0),
+                                y: new THREE.Vector3(0,1,0),
+                                z: new THREE.Vector3(0,0,1)
+                            }
+
+                            let rots1 = {
+                                rl: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / -25),
+                                ll: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / 25),
+                                t:  new THREE.Quaternion(), 
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / -2),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / -2),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            let rots2 = {
+                                rl: new THREE.Quaternion(), 
+                                ll: new THREE.Quaternion(),
+                                t:  new THREE.Quaternion(),
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI /  6),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / -6),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            // Multiply in correct order & avoid modifying original quaternions
+                            let combinedRots = {
+                                rl: rots2.rl.clone().multiply(rots1.rl),
+                                ll: rots2.ll.clone().multiply(rots1.ll),
+                                t:  rots2.t.clone().multiply(rots1.t),
+                                la: rots2.la.clone().multiply(rots1.la),
+                                ra: rots2.ra.clone().multiply(rots1.ra),
+                                h:  rots2.h.clone().multiply(rots1.h)
+                            };
+
+                            
+                            rightLeg.quaternion.copy(combinedRots.rl)
+                            leftLeg.quaternion.copy(combinedRots.ll)
+                            torso.quaternion.copy(combinedRots.t)
+                            leftArm.quaternion.copy(combinedRots.la)
+                            rightArm.quaternion.copy(combinedRots.ra)
+                            head.quaternion.copy(combinedRots.h)
+
+                        } else if (pose == 0){
+                            let center = enemy.position
+                            let rot = enemy.quaternion
+
+                            let offsets = {
+                                rl: new THREE.Vector3(  1.1/6,-0.75,   0),
+                                ll: new THREE.Vector3( -1.1/6,-0.75,   0),
+                                t:  new THREE.Vector3(      0, -0.1,0.15),
+                                la: new THREE.Vector3(  -0.45,  0.3,   0),
+                                ra: new THREE.Vector3(   0.45,  0.3,   0),
+                                h:  new THREE.Vector3(      0, 0.45, 0.5)
+                            }
+
+                            rightLeg.position.copy(offsets.rl)
+                            leftLeg.position.copy(offsets.ll)
+                            torso.position.copy(offsets.t)
+                            leftArm.position.copy(offsets.la)
+                            rightArm.position.copy(offsets.ra)
+                            head.position.copy(offsets.h)
+
+                            let axes = {
+                                x: new THREE.Vector3(1,0,0),
+                                y: new THREE.Vector3(0,1,0),
+                                z: new THREE.Vector3(0,0,1)
+                            }
+
+                            let rots1 = {
+                                rl: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / -25),
+                                ll: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / 25),
+                                t:  new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / 6), 
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.z, Math.PI / 12),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.z, Math.PI / -12),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            let rots2 = {
+                                rl: new THREE.Quaternion(), 
+                                ll: new THREE.Quaternion(),
+                                t:  new THREE.Quaternion(),
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / -3),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / -3),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            // Multiply in correct order & avoid modifying original quaternions
+                            let combinedRots = {
+                                rl: rots2.rl.clone().multiply(rots1.rl),
+                                ll: rots2.ll.clone().multiply(rots1.ll),
+                                t:  rots2.t.clone().multiply(rots1.t),
+                                la: rots2.la.clone().multiply(rots1.la),
+                                ra: rots2.ra.clone().multiply(rots1.ra),
+                                h:  rots2.h.clone().multiply(rots1.h)
+                            };
+
+                            
+                            rightLeg.quaternion.copy(combinedRots.rl)
+                            leftLeg.quaternion.copy(combinedRots.ll)
+                            torso.quaternion.copy(combinedRots.t)
+                            leftArm.quaternion.copy(combinedRots.la)
+                            rightArm.quaternion.copy(combinedRots.ra)
+                            head.quaternion.copy(combinedRots.h)
+
+                        } else if (pose == 2){
+                            let center = enemy.position
+                            let rot = enemy.quaternion
+
+                            let offsets = {
+                                rl: new THREE.Vector3(  1.1/6,  -0.75,  0 ),
+                                ll: new THREE.Vector3( -1.1/6,  -0.75,  0 ),
+                                t:  new THREE.Vector3(    0,     0 ,  0 ),
+                                la: new THREE.Vector3( -0.45,     0 ,  0 ),
+                                ra: new THREE.Vector3(  0.45,     0 ,  0 ),
+                                h:  new THREE.Vector3(    0,  0.65 ,  0 )
+                            }
+
+                            rightLeg.position.copy(offsets.rl)
+                            leftLeg.position.copy(offsets.ll)
+                            torso.position.copy(offsets.t)
+                            leftArm.position.copy(offsets.la)
+                            rightArm.position.copy(offsets.ra)
+                            head.position.copy(offsets.h)
+
+                            
+                            let axes = {
+                                x: new THREE.Vector3(1,0,0),
+                                y: new THREE.Vector3(0,1,0),
+                                z: new THREE.Vector3(0,0,1)
+                            }
+
+                            let rots1 = {
+                                rl: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / -25),
+                                ll: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / 25),
+                                t:  new THREE.Quaternion(), 
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / 12),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.y, Math.PI / -12),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            let rots2 = {
+                                rl: new THREE.Quaternion(), 
+                                ll: new THREE.Quaternion(),
+                                t:  new THREE.Quaternion(),
+                                la: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / 90),
+                                ra: new THREE.Quaternion().setFromAxisAngle(axes.x, Math.PI / 90),
+                                h:  new THREE.Quaternion()
+                            };
+
+                            // Multiply in correct order & avoid modifying original quaternions
+                            let combinedRots = {
+                                rl: rots2.rl.clone().multiply(rots1.rl),
+                                ll: rots2.ll.clone().multiply(rots1.ll),
+                                t:  rots2.t.clone().multiply(rots1.t),
+                                la: rots2.la.clone().multiply(rots1.la),
+                                ra: rots2.ra.clone().multiply(rots1.ra),
+                                h:  rots2.h.clone().multiply(rots1.h)
+                            };
+
+                            
+                            rightLeg.quaternion.copy(combinedRots.rl)
+                            leftLeg.quaternion.copy(combinedRots.ll)
+                            torso.quaternion.copy(combinedRots.t)
+                            leftArm.quaternion.copy(combinedRots.la)
+                            rightArm.quaternion.copy(combinedRots.ra)
+                            head.quaternion.copy(combinedRots.h)
+                        }
                     }
                     
                     let somevar = 0;
@@ -1008,26 +1055,28 @@
                     function update (pose=0,x=0,y=0,z=0) {
 
                         
-                        swayOffset += 0.035; 
-                        let swayAmount = Math.sin(swayOffset) * 0.1; 
+                        swayOffset += 0.09; 
+                        let swayAmount = Math.sin(swayOffset) * 2; 
 
                         let right = new THREE.Vector3(1, 0, 0); 
                         right.applyQuaternion(enemy.quaternion); 
 
                         let swayVector = right.multiplyScalar(swayAmount);
-                        if (pose == 0) {
-                            enemy.position.set(x + swayVector.x, y + swayVector.y, z + swayVector.z);       
+                        
+                        enemy.position.set(x, y, z);  
+                        let targetPosition     
+                        if (pose == 0){
+                            targetPosition = new THREE.Vector3(player.body.translation().x+ swayVector.x, enemy.position.y, player.body.translation().z+ swayVector.z);
                         } else {
-                            enemy.position.set(x, y, z);       
+                            targetPosition = new THREE.Vector3(player.body.translation().x, enemy.position.y, player.body.translation().z);
                         }
-
-                        let targetPosition = new THREE.Vector3(player.body.translation().x, enemy.position.y, player.body.translation().z);
                         enemy.lookAt(targetPosition); 
+
                         applyPose(pose)
                      }
                      enemyMeshes.push({ enemy , update })
 
-                     return { enemy , update }
+                     return { enemy , update , torso, rightArm, leftArm, head, leftLeg, rightLeg}
                     
                  }
                 function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
@@ -2130,7 +2179,7 @@
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
 
                     if (player.playerIsExistent) {
-                        spawnEnemy({x:-4,y:2,z:-2})
+                        spawnEnemy({x:-4,y:1,z:-2})
                     }
 
                  }
