@@ -211,7 +211,7 @@
 
         <canvas id='gl-canvas' width='600' height='600'></canvas>
         <canvas id='ui-canvas' width='600' height='600'></canvas>
-
+        
 		<script type="module">
             /*Basics*/
                 import * as THREE from 'three';
@@ -246,16 +246,16 @@
 
                 let cooldowns = [];
                 const cooldown = (function(out){
-                    out.createCooldown= function(id, length) {
+                    out.create= function(id, length) {
                         cooldowns[id] = {num: 0, time: length * 10, run: false, check: true};
                         return {id, length}
 
                     }
-                    out.activateCooldown = function(id) {
+                    out.activate = function(id) {
                         cooldowns[id].run = true
                         cooldowns[id].check = false
                     }
-                    out.updateCooldowns = function() {
+                    out.update = function() {
                         for (var i = 0; i < cooldowns.length; i++){
                             if (cooldowns.length > 0 && cooldowns[i] !== undefined) {
                                 if (cooldowns[i].run === true) {
@@ -269,7 +269,7 @@
                             }
                         }
                     }
-                    out.checkCooldown = function(id) {
+                    out.check = function(id) {
                         return cooldowns[id].check
                     }
                     return out;
@@ -717,24 +717,42 @@
                     sensBox = new THREE.Mesh( geometrys, materialy );
                     scene.add( sensBox );                         
                     scene.add( collBox ); 
+                    let shootcooldown = cooldown.create(309586,30);
+                    cooldown.activate(shootcooldown.id)
 
+                    function shoot() {
+                        if (gunID === 'pistol' && pose == 1) {                                        
+                            if (cooldown.check(shootcooldown.id)) {
+                                if (cooldown.check(shootcooldown.id)) {
+                                guns.pistol.shoot(mesh.cam,shootcooldown.id,true);
+                                }
+                            }
+                        } 
+                     }
                     function destroy() {
-                        let {x,y,z} = rigidP.translation()
-                        scene.remove(mesh.enemy)
-                        mesh = undefined
-
-                        world.removeRigidBody(rigidP)
-                        world.removeRigidBody(rigidS)
-                        world.removeCollider(colliderS)
-                        world.removeCollider(colliderP)
-
-                        rigidP = undefined
-                        rigidS = undefined
-                        colliderS = undefined
-                        colliderP = undefined
-
-                        spawnEnemyRag({x:x,y:y,z:z})
-
+                        let enemy = {collliderP,rigidP,colliderS,rigidS,mesh}
+                        if (enemy != undefined) {
+                            if (enemy.colliderP) {
+                                world.removeCollider(enemy.colliderP); 
+                            }
+                            if (enemy.rigidP) {
+                                world.removeRigidBody(enemy.rigidP); 
+                            }
+                            if (enemy.colliderS) {
+                                world.removeCollider(enemy.colliderS); 
+                            }
+                            if (enemy.rigidS) {
+                                world.removeRigidBody(enemy.rigidS); 
+                            }
+                            if (enemy.mesh) {
+                                while (enemy.mesh.enemy.children.length > 0) {
+                                    let child = enemy.mesh.enemy.children[0];
+                                    scene.remove(child);
+                                    enemy.mesh.enemy.remove(child);
+                                }
+                            }
+                        }
+                        enemies[numberenemy] = undefined
                     }
                 
                     function checkCollision() {
@@ -750,6 +768,7 @@
 
                     let swayOffset = 0,pose=0;
                     function update() {
+                        shoot()
                         let{x,y,z} = rigidP.translation()
                         let playerPosition = player.body.translation()
 
@@ -847,8 +866,9 @@
                         sensBox.position.copy(colliderS.translation())
                         sensBox.quaternion.copy(colliderS.rotation())
 
-                        
+                        checkCollision()
                     }
+                    let numberenemy = enemies.length
                     enemies.push({rigidP,colliderP,mesh,update})
                     return {rigidP,colliderP,mesh,update}
                  }
@@ -899,7 +919,8 @@
                     let leftArm = createBox(limbSize, { x: position.x - 0.4  , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
                     let rightArm = createBox(limbSize, { x: position.x + 0.4 , y: position.y       , z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
                     let head = createSphere(headRadius, { x: position.x       , y: position.y + 0.65, z: position.z }, 0x0000ff,new THREE.Quaternion(0,0,0,1));
-                    
+                    let cam = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.01, 5000 );
+                    scene.add(cam)
 
                     scene.add( enemy )
                     function applyPose(pose=0) {
@@ -1096,6 +1117,7 @@
                     let swayOffset = 0
                     enemy.position.copy(torso.position)
                     enemy.quaternion.copy(torso.quaternion)
+
                     function update (pose=0,x=0,y=0,z=0) {
 
                         
@@ -1117,10 +1139,16 @@
                         enemy.lookAt(targetPosition); 
 
                         applyPose(pose)
+
+                        targetPosition = new THREE.Vector3(player.body.translation().x, player.body.translation().y, player.body.translation().z);
+
+                        cam.position.copy(enemy.position)
+                        cam.quaternion.copy(enemy.quaternion)
+                        cam.lookAt(targetPosition)
                      }
                      enemyMeshes.push({ enemy , update })
 
-                     return { enemy , update , torso, rightArm, leftArm, head, leftLeg, rightLeg}
+                     return { enemy , update , torso, rightArm, leftArm, head, leftLeg, rightLeg, cam}
                     
                  }
                 function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
@@ -1290,9 +1318,9 @@
                     world.createCollider(colliderDesc, rigid);
 
                     return { mesh, rigid };
-                }
+                 }
 
-                function addPlatform (pos, rot, size, shape, color) {
+                function addPlatform (pos, rot, size,color="GRAY",collisions=true ) {
                     let rttx = rot.x * pi/180
                     let rtty = rot.y * pi/180
                     let rttz = rot.z * pi/180;
@@ -1316,14 +1344,19 @@
 
 
                     // physics
-                    let rigidBodyDesc = RAPIER.RigidBodyDesc.fixed()
+                    let rigid,collider,num,colliderDesc,rigidBodyDesc
+                    //if (collisions) {
+                    rigidBodyDesc = RAPIER.RigidBodyDesc.fixed()
                             .setTranslation(pos.x, pos.y, pos.z)
                             .setRotation(mesh.quaternion);
-                    let rigid = world.createRigidBody(rigidBodyDesc);
-                    let colliderDesc = RAPIER.ColliderDesc.cuboid(size.x/2, size.y/2, size.z/2);
-                    let collider = world.createCollider(colliderDesc, rigid);
-                    let num = plats.length;
+                    rigid = world.createRigidBody(rigidBodyDesc);
+                    colliderDesc = RAPIER.ColliderDesc.cuboid(size.x/2, size.y/2, size.z/2);
+                    collider = world.createCollider(colliderDesc, rigid);
+                    num = plats.length;
                     collider.userData = { id: "unmovable_object" }; 
+                    //} else {
+                        num = plats.length
+                    //}
 
                     function update () {
                         if (rigid !== undefined) {
@@ -1340,9 +1373,9 @@
                             }
                         }
                     }
-                    plats.push({ mesh, rigid, update, num, colliderDesc });
+                    plats.push({ mesh, rigid, update, num, collider });
                     scene.add(mesh);
-                    return { mesh, rigid, update, num, colliderDesc };
+                    return { mesh, rigid, update, num, collider };
                  }
 
                 function addPBall(x, y, z,radius=0.25) {
@@ -1576,8 +1609,11 @@
                             out.radius=0.5
                             out.dead= false
                             out.rigid= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.3)
+                            out.rigidS= RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setGravityScale(0.3)
                             out.body = out.world.createRigidBody(out.rigid);
-                            out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40)
+                            out.bodyS = out.world.createRigidBody(out.rigidS);
+                            out.colliderDesc= RAPIER.ColliderDesc.cuboid(xwidth / 2 - 0.01,height / 2-0.01,zwidth / 2-0.01).setDensity(40)
+                            out.colliderDescS= RAPIER.ColliderDesc.cuboid(xwidth / 2,height / 2,zwidth / 2).setDensity(40).setSensor(true)
                             out.colliderDesc.userData = { id: "unmovable_object" }; 
                             out.playerIsExistent= true
                             out.restart= 1
@@ -1586,13 +1622,23 @@
                             out.gun = 'pistol'
                             out.holding = {ch:false, coll: undefined, body: undefined}
                             out.collider = world.createCollider(out.colliderDesc, out.body);
+                            out.colliderS = world.createCollider(out.colliderDescS, out.bodyS);
                             out.collider.userData = {id:'player'}
+                            out.colliderS.userData = {id:'player'}
                             if (pointerLocks.length < 1 && !debug.cam) {
                                 addPointerLock(camera, uiCanvas);
                             }
                             scene.add(out.debugmesh);                            
                             }
                          out.prevPos;       
+                        out.checkCollision = function() {
+                            world.intersectionsWith(out.colliderS, (otherCollider) => {
+                                if (otherCollider.userData.id == 'enemy_bullet'){
+                                    out.dead = true
+                                }
+                                return;
+                            });
+                         }
                         out.runPlayerDebug = function (dt, rayOrigin) {
                             out.debugmesh.position.set(out.body.translation().x, out.body.translation().y, out.body.translation().z);
                             for (var i = 0; i < lines.length; i++) {
@@ -1618,8 +1664,8 @@
                             }
                         out.shoot = function() {
                             if (out.gun === 'pistol') {                                        
-                                if (cooldown.checkCooldown(guns.pistol.cooldown.id)) {
-                                    guns.pistol.shoot();
+                                if (cooldown.check(guns.pistol.cooldown.id)) {
+                                    guns.pistol.shoot(out.camera,guns.pistol.cooldown.id);
                                 }
                             } else {
 
@@ -1672,6 +1718,7 @@
                             }
                             let gun 
                         out.runPlayerPhysics = function (dt){
+                            out.checkCollision()
                             if (out.gun == 'pistol' && gun == undefined) {
                                 gun = guns.pistol.draw(out.camera.position,out.camera.quaternion,false)
                             } else if (out.gun == 'pistol'){
@@ -2017,7 +2064,7 @@
 
                     };
                     guns.pistol = (function(out){
-                        out.cooldown = cooldown.createCooldown(1,10);
+                        out.cooldown = cooldown.create(1,10);
                         
                         out.draw = function(pos, quat,enemy=true) {
                             let gun = new THREE.Group();
@@ -2065,17 +2112,18 @@
 
                          }
 
-                        out.shoot = function() {
-                            cooldown.activateCooldown(out.cooldown.id);
+                        out.shoot = function(camera,cooldownid,enemy=false) {
+                            cooldown.activate(cooldownid);
                             const radius = 0.2;
                             const halfHeight = 0.01;
                             const density = 10;
-                            const speed = 10;
+                            const speed = 50;
 
                             // Get camera position and forward direction
-                            const cameraPosition = player.camera.position;
+                            console.log(camera)
+                            const cameraPosition = camera.position;
                             const direction = new THREE.Vector3();
-                            player.camera.getWorldDirection(direction);
+                            camera.getWorldDirection(direction);
                             
                             // Set initial spawn position slightly in front of the camera
                             const spawnOffset = 1.5;
@@ -2086,7 +2134,11 @@
                             let rigid = world.createRigidBody(rigidBodyDesc);
                             let colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius).setDensity(density).setSensor(true);
                             let collider = world.createCollider(colliderDesc, rigid);
-                            collider.userData = { id: 'bullet' }
+                            if (enemy){
+                                collider.userData = { id: 'enemy_bullet' }
+                            }else{
+                                collider.userData = { id: 'bullet' }
+                            }
 
 
                             // Apply initial velocity in camera direction
@@ -2138,6 +2190,8 @@
 
                                 world.intersectionsWith(collider, (otherCollider) => {
                                     if (otherCollider == player.colliderDesc) {return;}
+                                    if (enemy && otherCollider.userData.id == 'enemy') {return;}
+                                    console.log(otherCollider.userData.id)
                                     destroy(); 
                                     return;
                                 });
@@ -2168,8 +2222,8 @@
 
                     }
                     plats.forEach(plat => {
-                        if (plat.colliderDesc) {
-                            world.removeCollider(plat.colliderDesc); // Remove physics collider
+                        if (plat.collider) {
+                            world.removeCollider(plat.collider); // Remove physics collider
                         }
                         if (plat.rigid) {
                             world.removeRigidBody(plat.rigid); // Remove physics body
@@ -2264,9 +2318,9 @@
                         }
                         addSkybox(90);
 
-                        addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
-                        addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:50,y:1,z:50},"SQRE","GRAY");
-                        addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:50,y:1,z:50},"SQRE","GRAY");
+                        addPlatform({x: 0, y:0, z: 0},{x:0, y:0, z:0}, {x:50,y:1,z:50},"GRAY");
+                        addPlatform({x: -5, y:0, z:0},{x:0, y:0, z:90}, {x:50,y:1,z:50},"GRAY");
+                        addPlatform({x: 0, y:0, z:-5},{x:90, y:0, z:0}, {x:50,y:1,z:50},"GRAY");
                     }
 
                     out.update = function() {
@@ -2313,13 +2367,13 @@
                     level.id = '1';
 
                     addSkybox(85);
-                    //addPlatform(  { x: 0, y: -5, z: 0 },   {x:0,y:0,z:0}, { x: 100, y: 1, z: 100 },"SQRE","GRAY"); 
-                    //addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 2500, y: 0.01, z: 2500 },"SQRE","GRAY"); 
-                    addPlatform(  { x: -2.5, y: 2.5, z: 0 },   {x:0,y:0,z:0}, { x: 1, y: 5, z: 5 },"SQRE","GRAY"); 
-                    addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 }, "SQRE","GRAY"); 
-                    addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
-                    addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "SQRE","GRAY" ); 
-                    addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "SQRE","GRAY"); 
+                    //addPlatform(  { x: 0, y: -5, z: 0 },   {x:0,y:0,z:0}, { x: 100, y: 1, z: 100 },"GRAY"); 
+                    //addPlatform(  { x: 0, y: 0, z: 0 },   {x:0,y:0,z:0}, { x: 2500, y: 0.01, z: 2500 },"GRAY"); 
+                    addPlatform(  { x: -2.5, y: 2.5, z: 0 },   {x:0,y:0,z:0}, { x: 1, y: 5, z: 5 },"GRAY"); 
+                    addPlatform(  { x: 10, y: 2, z: 0 },   {x:0,y:0,z:0},{ x: 4, y: 1, z: 4 },"GRAY"); 
+                    addPlatform(  { x: 20, y: 5, z: 0 },    {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "GRAY"); 
+                    addPlatform(  { x: 25, y: 8, z: -5 },    {x:0,y:0,z:0},{ x: 5, y: 1, z: 5 }, "GRAY" ); 
+                    addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "GRAY"); 
 
                     if (player.playerIsExistent) {
                         spawnEnemy({x:-4,y:1,z:-2},'pistol')
@@ -2338,11 +2392,11 @@
                     level.id = 'ballpit'
                     
                     addSkybox(85);
-                    addPlatform({x: 0, y:0, z:0},{x:0, y:0, z:0}, {x:16,y:1,z:16},"SQRE","GRAY");
-                    addPlatform({x: 8, y:0, z: 0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
-                    addPlatform({x:0, y:0, z: 8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
-                    addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"SQRE","GRAY");
-                    addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z:0},{x:0, y:0, z:0}, {x:16,y:1,z:16},"GRAY");
+                    addPlatform({x: 8, y:0, z: 0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"GRAY");
+                    addPlatform({x:0, y:0, z: 8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"GRAY");
+                    addPlatform({x:-8, y:0, z:0},{x:0, y:0, z:0}, {x:1,y:5,z:17},"GRAY");
+                    addPlatform({x:0, y:0, z:-8},{x:0, y:0, z:0}, {x:17,y:5,z:1},"GRAY");
 
                     for (var i = 0; i < 1500; i++) {
                         addPBall(random(-7, 7), random(5, 10), random(-7, 7),0.25);
@@ -2362,17 +2416,17 @@
                     level.id = 'test';
                     
                     addSkybox(85);
-                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
                     
-                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
 
-                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
 
                     addPCube(0,20,0);
                     addPCube( 10, 20, 10);
@@ -2410,17 +2464,17 @@
                     level.id = 'test';
                     
                     addSkybox(85);
-                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"SQRE","GRAY");
+                    addPlatform({x: 10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x: 10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x:-10, y:0, z: 10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
+                    addPlatform({x:-10, y:0, z:-10},{x:0, y:0, z:0}, {x:10,y:1,z:10},"GRAY");
                     
-                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    addPlatform({x:  0, y:0, z:-10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x:-10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x:  0, y:0, z: 10},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                    addPlatform({x: 10, y:0, z:  0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
 
-                    //addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                    //addPlatform({x: 0, y:0, z: 0},  {x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
 
                     addPCube(0,20,0);
                     addPCube( 10, 20, 10);
@@ -2438,30 +2492,30 @@
                     for (var x = 0; x < 20; x++) {
                         for (var z = 0; z < 20; z++) {
                             if (x !== 0 && z !== 0){
-                                addPlatform({x: 20 * x, y:0, z:   20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
-                                addPlatform({x: 20 * -x, y:0, z:  20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
-                                addPlatform({x: 20 * -x, y:0, z:  20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
-                                addPlatform({x: 20 * x, y:0, z:   20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "SQRE","GRAY");
+                                addPlatform({x: 20 * x, y:0, z:   20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "GRAY");
+                                addPlatform({x: 20 * -x, y:0, z:  20 * z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "GRAY");
+                                addPlatform({x: 20 * -x, y:0, z:  20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "GRAY");
+                                addPlatform({x: 20 * x, y:0, z:   20 * -z},{x:0, y:0, z:0},{x:10,y:1,z:10}, "GRAY");
                             }
                         }
                     }
                     for (var x = -19; x < 20; x++) {
                         x *= 20;
-                        addPlatform({x: x, y:0, z:0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                        addPlatform({x: x, y:0, z:0},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
                         x = x / 20;
                     }
                     for (var z = -19; z < 20; z++) {
                         z *= 20;
-                        addPlatform({x: 0, y:0, z:z},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                        addPlatform({x: 0, y:0, z:z},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
                         z = z / 20;
                     }
                     for (var x = 0; x < 19; x++) {
                         for (var z = 0; z < 9; z++) {
                             let y=30
-                            addPlatform({x: 20 *  x + y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 * -x - y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 *  x + y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
-                            addPlatform({x: 20 * -x - y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "SQRE","GRAY");
+                            addPlatform({x: 20 *  x + y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                            addPlatform({x: 20 * -x - y, y:0, z:  20 *  z + y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                            addPlatform({x: 20 *  x + y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
+                            addPlatform({x: 20 * -x - y, y:0, z:  20 * -z - y},{x:0, y:45, z:0},{x:2 ,y:1,z:2}, "GRAY");
                         }
                     }
 
@@ -2538,7 +2592,7 @@
                         renderer.render( scene, fpscamera );
                     }
                     user.update();
-                    cooldown.updateCooldowns();
+                    cooldown.update();
 
                     world.timestep = 1 / fps;
 
