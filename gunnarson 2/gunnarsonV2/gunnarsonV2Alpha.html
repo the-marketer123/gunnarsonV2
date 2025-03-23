@@ -730,42 +730,41 @@
                         } 
                      }
                     function destroy() {
-                        if (rigidP) {
-                            let {x,y,z} = rigidP.translation()
-                            spawnEnemyRag({x:x,y:y,z:z})
-                        }
+                        let {x,y,z} = rigidP.translation()
+
                         if (colliderP) {
                             world.removeCollider(colliderP); 
                             colliderP = undefined
-                        }
+                        }                           
                         if (rigidP) {
                             world.removeRigidBody(rigidP); 
                             rigidP = undefined
-                        }
+                        }                      
                         if (colliderS) {
                             world.removeCollider(colliderS); 
                             colliderS= undefined
-                        }
+                        }                           
                         if (rigidS) {
                             world.removeRigidBody(rigidS); 
                             rigidS= undefined
-                        }
+                        }                            
                         if (mesh) {
                             scene.remove(mesh.enemy)
                             mesh= undefined
-                        }
+                            }
                         if (gun){
                             scene.remove(gun.gun)
                             gun = undefined
-                        }
+                        }                            
                         enemies[numberenemy] = undefined
-                        
+
+                        spawnEnemyRag({x:x,y:y,z:z})
                     }
                 
                     function checkCollision() {
                         if (!rigidP || !mesh || !mesh.enemy.parent) return;
 
-                        world.intersectionsWith(colliderS, (otherCollider) => {
+                        world.intersectionsWith(colliderS, (otherCollider) => {                                
                             if (otherCollider.userData.id == 'bullet') {
                                 destroy(); 
                             }
@@ -848,14 +847,14 @@
                         }  
                         if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' || collBox.position.distanceTo(player.body.translation()) > 10) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
                             if (trueHits == 1) {
-                                rigidP.setLinvel({  x: vel.x * 2,  y: rigidP.linvel().y,  z: vel.z * 2  });
+                                rigidP.applyImpulse({  x: vel.x / 20,  y: 0,  z: vel.z / 20  });
                                 pose=0
                             } else {
-                                rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
+                                //rigidP.setLinvel({  x: 0,  y: 0,  z: 0  });
                                 pose=1
                             }       
                         } else {
-                            rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
+                            //rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
                             pose=1               
                         }
 
@@ -876,7 +875,7 @@
                         checkCollision()
                     }
                     let numberenemy = enemies.length
-                    enemies.push({rigidP,colliderP,mesh,update})
+                    enemies.push({rigidP,colliderP,mesh,gun,update})
                     return {rigidP,colliderP,mesh,update}
                  }
                 function drawEnemy (position = { x: 0, y: 5, z: 0 },pose=0) {
@@ -1160,6 +1159,8 @@
                  }
                 function spawnEnemyRag(position = { x: 0, y: 5, z: 0 }) {
                     let enemy = new THREE.Group();
+                    scene.add( enemy );
+
                     let physicsBodies = [];
 
                     // Define sizes
@@ -1216,6 +1217,7 @@
                     let rightArm = createBox(limbSize, { x: position.x + 0.6, y: position.y + 0.1, z: position.z }, 0x0000ff);
                     let head = createSphere(headRadius, { x: position.x, y: position.y + 1, z: position.z }, 0x0000ff);
 
+
                     // Add joints to connect parts
                     function createJoint(bodyA, bodyB, anchorA, anchorB) {
                         let params = RAPIER.JointData.spherical(anchorA, anchorB); // Use a spherical joint
@@ -1243,9 +1245,12 @@
                     createJoint(torso, rightArm, { x: 0.3, y: 0.25, z: 0 }, { x: -0.125, y: 0, z: 0 });
                     createJoint(torso, head, { x: 0, y: 0.5, z: 0 }, { x: 0, y: -0.3, z: 0 });
 
-                    ragEnemies.push({enemy, physicsBodies, update})
-                    scene.add( enemy );
-                    return { enemy, physicsBodies, update};
+                    let meshes = []
+                    enemy.children.forEach(mesh=>{
+                        meshes.push(mesh)
+                    })
+                    ragEnemies.push({enemy, physicsBodies, update, meshes})
+                    return { enemy, physicsBodies, update, meshes};
                  }
                 function explosion(position, power, range) {
                     world.forEachRigidBody((body) => { 
@@ -1980,7 +1985,9 @@
                                 } else {
                                     out.debugmesh.material.opacity = 0
                                 }
-                                if (!user.mousePressed) {out.holding.ch = false;}                                    
+                                if (!user.mousePressed) {out.holding.ch = false;}    
+                                
+                                out.bodyS.setTranslation(out.body.translation())
 
                             }
                             }
@@ -2217,13 +2224,17 @@
                 let restart;
                 function clearWorld(world) {
 
-                    rigidBodies.forEach((body, index) => {
-                        world.removeCollider(body.collider);
+
+                    world.forEachRigidBody(body => {
+                        world.removeCollider(body.collider());
                         world.removeRigidBody(body);
                     });
+
                     if (player.playerIsExistent) {
-                        world.removeCollider(player.collider)
-                        world.removeRigidBody(player.body)
+                        if (player.body.isValid()) {
+                            world.removeCollider(player.collider)
+                            world.removeRigidBody(player.body)
+                        }
                         player.playerIsExistent = false              
                         //pointerLocks = [], orbits = []
 
@@ -2232,7 +2243,7 @@
                         if (plat.collider) {
                             world.removeCollider(plat.collider); // Remove physics collider
                         }
-                        if (plat.rigid) {
+                        if (plat.rigid.isValid()) {
                             world.removeRigidBody(plat.rigid); // Remove physics body
                         }
                         if (plat.mesh) {
@@ -2245,7 +2256,7 @@
                             if (cube.colliderDesc) {
                                 world.removeCollider(cube.colliderDesc); // Remove physics collider
                             }
-                            if (cube.rigid) {
+                            if (cube.rigid.isValid()) {
                                 world.removeRigidBody(cube.rigid); // Remove physics body
                             }
                             if (cube.mesh) {
@@ -2259,7 +2270,7 @@
                             if (sphere.colliderDesc) {
                                 world.removeCollider(sphere.colliderDesc); // Remove physics collider
                             }
-                            if (sphere.rigid) {
+                            if (sphere.rigid.isValid()) {
                                 world.removeRigidBody(sphere.rigid); // Remove physics body
                             }
                             if (sphere.mesh) {
@@ -2272,7 +2283,7 @@
                             if (enemy.colliderP) {
                                 world.removeCollider(enemy.colliderP); 
                             }
-                            if (enemy.rigidP) {
+                            if (enemy.rigidP.isValid()) {
                                 world.removeRigidBody(enemy.rigidP); 
                             }
                             if (enemy.colliderS) {
@@ -2288,8 +2299,23 @@
                                     enemy.mesh.enemy.remove(child);
                                 }
                             }
+                            if (enemy.gun){
+                                scene.remove(enemy.gun.gun)
+                                enemy.gun = undefined
+                            }
                         }
                     });
+                    ragEnemies.forEach(enemy =>{
+                        if (enemy.meshes) {
+                            enemy.meshes.forEach(mesh => {
+                                console.log(mesh)
+                                scene.remove(mesh)
+                            })
+                        }
+                        if (enemy.enemy){
+                            scene.remove(enemy.enemy)
+                        }
+                    })
 
                     plats = []; // Clear the array
                     cubes = []; // Clear the array
@@ -2297,12 +2323,15 @@
                     enemies = []; // Clear the array
                     ragEnemies = []; // Clear the array
                     enemyMeshes = []; // Clear the arrayenemyMeshes = [],ragEnemies = []
+                    projectiles = [];
                     
 
                     rigidBodies = []; // Clear the array
 
                     // Remove corresponding meshes from the scene
                     scene.children = scene.children.filter(child => !(child.isMesh));
+
+                    console.log(world)
                  }
                 function clearText() {
                     texts.length = 0; // Empty the texts array
@@ -2358,11 +2387,11 @@
                     clearWorld(world);
                     clearText();
                     player.setPlayer(x,y,z,camera,world);
-                    player.camera.lookAt(new THREE.Vector3(0,2,0))
+                    player.camera.lookAt(new THREE.Vector3(0,0,0))
                     if (ground){
                         addGround()
                     }
-                }
+                 }
                 levels[1] = function(debug){
                     quickLevelSetup(-10,1,0,fpscamera,debugCam,true)
 
@@ -2383,7 +2412,9 @@
                     addPlatform(  { x: 15, y: 10, z: -10 },   {x:0,y:0,z:0},{ x: 6, y: 1, z: 6 }, "GRAY"); 
 
                     if (player.playerIsExistent) {
-                        spawnEnemy({x:-4,y:1,z:-2},'pistol')
+                        for (var i = 0;i<10;i++){
+                            spawnEnemy({x:-4,y:1,z:-2},'pistol')
+                        }
                     }
 
                  }
@@ -2460,7 +2491,7 @@
 
 
                 levels[4] = function(debug) {
-                    quickLevelSetup(0,100,0)
+                    quickLevelSetup(0,100,0,true)
 
 
                     level.hasCube = true;
