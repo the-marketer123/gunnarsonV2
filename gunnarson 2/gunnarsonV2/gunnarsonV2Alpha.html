@@ -730,29 +730,36 @@
                         } 
                      }
                     function destroy() {
-                        let enemy = {collliderP,rigidP,colliderS,rigidS,mesh}
-                        if (enemy != undefined) {
-                            if (enemy.colliderP) {
-                                world.removeCollider(enemy.colliderP); 
-                            }
-                            if (enemy.rigidP) {
-                                world.removeRigidBody(enemy.rigidP); 
-                            }
-                            if (enemy.colliderS) {
-                                world.removeCollider(enemy.colliderS); 
-                            }
-                            if (enemy.rigidS) {
-                                world.removeRigidBody(enemy.rigidS); 
-                            }
-                            if (enemy.mesh) {
-                                while (enemy.mesh.enemy.children.length > 0) {
-                                    let child = enemy.mesh.enemy.children[0];
-                                    scene.remove(child);
-                                    enemy.mesh.enemy.remove(child);
-                                }
-                            }
+                        if (rigidP) {
+                            let {x,y,z} = rigidP.translation()
+                            spawnEnemyRag({x:x,y:y,z:z})
+                        }
+                        if (colliderP) {
+                            world.removeCollider(colliderP); 
+                            colliderP = undefined
+                        }
+                        if (rigidP) {
+                            world.removeRigidBody(rigidP); 
+                            rigidP = undefined
+                        }
+                        if (colliderS) {
+                            world.removeCollider(colliderS); 
+                            colliderS= undefined
+                        }
+                        if (rigidS) {
+                            world.removeRigidBody(rigidS); 
+                            rigidS= undefined
+                        }
+                        if (mesh) {
+                            scene.remove(mesh.enemy)
+                            mesh= undefined
+                        }
+                        if (gun){
+                            scene.remove(gun.gun)
+                            gun = undefined
                         }
                         enemies[numberenemy] = undefined
+                        
                     }
                 
                     function checkCollision() {
@@ -2120,7 +2127,7 @@
                             const speed = 50;
 
                             // Get camera position and forward direction
-                            console.log(camera)
+                            //console.log(camera)
                             const cameraPosition = camera.position;
                             const direction = new THREE.Vector3();
                             camera.getWorldDirection(direction);
@@ -2191,7 +2198,7 @@
                                 world.intersectionsWith(collider, (otherCollider) => {
                                     if (otherCollider == player.colliderDesc) {return;}
                                     if (enemy && otherCollider.userData.id == 'enemy') {return;}
-                                    console.log(otherCollider.userData.id)
+                                    //console.log(otherCollider.userData.id)
                                     destroy(); 
                                     return;
                                 });
