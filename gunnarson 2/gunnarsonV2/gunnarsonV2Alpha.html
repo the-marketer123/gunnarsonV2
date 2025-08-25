@@ -847,7 +847,7 @@
                         }  
                         if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' || collBox.position.distanceTo(player.body.translation()) > 10) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
                             if (trueHits == 1) {
-                                rigidP.setLinvel({  x: vel.x,  y: 0,  z: vel.z });
+                                rigidP.applyImpulse({  x: vel.x,  y: 0,  z: vel.z });
                                 pose=0
                             } else {
                                 rigidP.setLinvel({  x: 0,  y: 0,  z: 0  });
