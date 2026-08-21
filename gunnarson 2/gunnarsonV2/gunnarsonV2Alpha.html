@@ -845,23 +845,23 @@
                         let trueHits = 0;
                         if (hits[0] && hits[0].collider && hits[0].toi < 1) { //hits[0].toi > 0.001 && hits[0].toi < 0.1) {
                             trueHits++;
-                        }  
+                        }
                         if (hits[1] && hits[1].collider && hits[1].collider.userData.id !== 'player'&& hits[1].collider.userData.id !== 'enemy' || collBox.position.distanceTo(player.body.translation()) > 10) { //hits[1].toi > 0.001 && hits[1].toi < 0.1) {
                             if (trueHits == 1) {
-								let target = new THREE.Vector3(rigidP.linvel().x,rigidP.linvel().y,rigidP.linvel().z);
-								target.lerp(vel, 0.1);
-                                rigidP.setLinvel({  x: target.x,  y: 0,  z: target.z });
+								let targetn = new THREE.Vector3(rigidP.linvel().x,rigidP.linvel().y,rigidP.linvel().z);
+								targetn.lerp(vel, 1.1);
+                                rigidP.setLinvel({  x: targetn.x,  y: 0,  z: targetn.z });
                                 pose=0;
                             } else {
                                 rigidP.applyImpulse({  x: rigidP.linvel().x * -0.5,  y: rigidP.linvel().y * -0.5,  z: rigidP.linvel().z * -0.5  });
                                 pose=1;
-                            }       
+                            }
                         } else {
                             rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
                             pose=1               
                         }
 
-                        
+
                         rigidS.setTranslation(rigidP.translation())
                         rigidS.setRotation(rigidP.rotation())
                         x = rigidP.translation().x;      
