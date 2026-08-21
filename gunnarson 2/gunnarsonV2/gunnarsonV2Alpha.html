@@ -859,7 +859,7 @@
                             rigidP.setLinvel({  x: 0,  y: rigidP.linvel().y,  z: 0  });
                             pose=1               
                         }
-						rigidP.applyImpulse({  x: 0,  y: -1,  z: 0  });
+						if (rigidP.linvel().y > -1) rigidP.applyImpulse({  x: 0,  y: -0.1,  z: 0  });
 
 
 
